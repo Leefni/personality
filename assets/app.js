@@ -11,6 +11,8 @@ let questions = [];
 let answers = {};
 let page = 0;
 
+// Question rendering only depends on `id` and `text`.
+
 function showError(message, targetId = 'progress') {
   const target = document.getElementById(targetId);
   if (!target) {
