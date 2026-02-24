@@ -10,6 +10,7 @@ const likertLabels = [
 let questions = [];
 let answers = {};
 let page = 0;
+const pendingQuestionIds = new Set();
 
 function showError(message, targetId = 'progress') {
   const target = document.getElementById(targetId);
@@ -72,14 +73,27 @@ function render() {
   slice.forEach((q, index) => {
     const div = document.createElement('article');
     div.className = 'question';
+    const isPending = pendingQuestionIds.has(q.id);
 
     div.innerHTML = `
       <p><strong>${start + index + 1}.</strong> ${q.text}</p>
-      <div class="likert">
+      <fieldset class="likert" ${isPending ? 'disabled' : ''}>
+        <legend class="sr-only">Kies een antwoordoptie voor vraag ${start + index + 1}</legend>
         ${[1, 2, 3, 4, 5].map((value) => `
-          <button data-qid="${q.id}" data-value="${value}" class="${answers[q.id] === value ? 'selected' : ''}">${value}</button>
+          <div class="likert-option">
+            <input
+              type="radio"
+              id="q-${q.id}-v-${value}"
+              name="q-${q.id}"
+              data-qid="${q.id}"
+              data-value="${value}"
+              value="${value}"
+              ${answers[q.id] === value ? 'checked' : ''}
+            >
+            <label for="q-${q.id}-v-${value}">${value} <span class="sr-only">(${likertLabels[value - 1]})</span></label>
+          </div>
         `).join('')}
-      </div>
+      </fieldset>
       <div class="likert-labels">
         <span>${likertLabels[0]}</span>
         <span>${likertLabels[4]}</span>
@@ -89,11 +103,11 @@ function render() {
     qDiv.appendChild(div);
   });
 
-  qDiv.querySelectorAll('button[data-qid]').forEach((button) => {
-    button.addEventListener('click', async () => {
-      const qid = Number(button.dataset.qid);
-      const value = Number(button.dataset.value);
-      await answer(qid, value, button);
+  qDiv.querySelectorAll('input[type="radio"][data-qid]').forEach((input) => {
+    input.addEventListener('change', async () => {
+      const qid = Number(input.dataset.qid);
+      const value = Number(input.dataset.value);
+      await answer(qid, value, input);
     });
   });
 
@@ -146,12 +160,15 @@ function updateProgress() {
     `Pagina ${page + 1} / ${totalPages} — ${Object.keys(answers).length} van ${questions.length} vragen ingevuld`;
 }
 
-async function answer(questionId, value, button) {
+async function answer(questionId, value, input) {
+  if (pendingQuestionIds.has(questionId)) {
+    return;
+  }
+
   const previousValue = answers[questionId];
   answers[questionId] = value;
-  if (button) {
-    button.disabled = true;
-  }
+  pendingQuestionIds.add(questionId);
+  render();
 
   try {
     await apiFetch('api/save_answer.php', {
@@ -171,9 +188,8 @@ async function answer(questionId, value, button) {
     render();
     showError('Opslaan mislukt. Probeer het opnieuw.', 'progress');
   } finally {
-    if (button) {
-      button.disabled = false;
-    }
+    pendingQuestionIds.delete(questionId);
+    render();
   }
 }
 
