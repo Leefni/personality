@@ -17,3 +17,6 @@ $options = [
 ];
 
 $pdo = new PDO($dsn, $config['db_user'], $config['db_pass'], $options);
+
+require_once __DIR__ . '/db_bootstrap.php';
+bootstrap_database($pdo, $config);
