@@ -10,6 +10,42 @@ const likertLabels = [
 let questions = [];
 let answers = {};
 let page = 0;
+const ANSWERS_STORAGE_KEY = 'personality.answers.v1';
+
+function loadLocalDraft() {
+  try {
+    const raw = localStorage.getItem(ANSWERS_STORAGE_KEY);
+    if (!raw) {
+      return {};
+    }
+
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      return {};
+    }
+
+    const normalized = {};
+    Object.entries(parsed).forEach(([questionId, value]) => {
+      const id = Number(questionId);
+      const numericValue = Number(value);
+      if (Number.isInteger(id) && Number.isFinite(numericValue)) {
+        normalized[id] = numericValue;
+      }
+    });
+
+    return normalized;
+  } catch (error) {
+    return {};
+  }
+}
+
+function saveLocalDraft(draft) {
+  localStorage.setItem(ANSWERS_STORAGE_KEY, JSON.stringify(draft));
+}
+
+function clearLocalDraft() {
+  localStorage.removeItem(ANSWERS_STORAGE_KEY);
+}
 const pendingQuestionIds = new Set();
 
 function showError(message, targetId = 'progress') {
@@ -52,10 +88,27 @@ async function loadData() {
   try {
     questions = await apiFetch('api/get_questions.php');
     const saved = await apiFetch('api/get_progress.php');
+    const localDraft = loadLocalDraft();
+    const serverAnswers = {};
 
     saved.forEach((item) => {
-      answers[item.question_id] = Number(item.value);
+      serverAnswers[item.question_id] = Number(item.value);
     });
+
+    answers = { ...serverAnswers, ...localDraft };
+
+    const unresolvedDraft = {};
+    Object.entries(localDraft).forEach(([questionId, value]) => {
+      if (serverAnswers[questionId] !== value) {
+        unresolvedDraft[questionId] = value;
+      }
+    });
+
+    if (Object.keys(unresolvedDraft).length === 0) {
+      clearLocalDraft();
+    } else {
+      saveLocalDraft(unresolvedDraft);
+    }
 
     render();
   } catch (error) {
@@ -177,14 +230,10 @@ async function answer(questionId, value, input) {
       body: JSON.stringify({ question_id: questionId, value: value })
     });
 
+    saveLocalDraft(answers);
     render();
   } catch (error) {
-    if (typeof previousValue === 'undefined') {
-      delete answers[questionId];
-    } else {
-      answers[questionId] = previousValue;
-    }
-
+    saveLocalDraft(answers);
     render();
     showError('Opslaan mislukt. Probeer het opnieuw.', 'progress');
   } finally {
@@ -196,6 +245,7 @@ async function answer(questionId, value, input) {
 async function submitTest() {
   try {
     const data = await apiFetch('api/submit_results.php');
+    clearLocalDraft();
     showResult(data);
   } catch (error) {
     const progress = document.getElementById('progress');
