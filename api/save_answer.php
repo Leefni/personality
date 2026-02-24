@@ -21,6 +21,15 @@ if ($questionId <= 0 || $value < 1 || $value > 5) {
     exit;
 }
 
+$questionExistsStmt = $pdo->prepare('SELECT 1 FROM questions WHERE id = ?');
+$questionExistsStmt->execute([$questionId]);
+
+if ($questionExistsStmt->fetchColumn() === false) {
+    http_response_code(422);
+    echo json_encode(['error' => 'Unknown question_id']);
+    exit;
+}
+
 $visitor = $_COOKIE['visitor_id'] ?? '';
 if ($visitor === '') {
     $visitor = bin2hex(random_bytes(16));

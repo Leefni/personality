@@ -114,15 +114,28 @@ function updateProgress() {
 }
 
 async function answer(questionId, value) {
+  const previousValue = answers[questionId];
   answers[questionId] = value;
 
-  await apiFetch('api/save_answer.php', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ question_id: questionId, value: value })
-  });
+  try {
+    await apiFetch('api/save_answer.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ question_id: questionId, value: value })
+    });
 
-  render();
+    render();
+  } catch (error) {
+    if (typeof previousValue === 'undefined') {
+      delete answers[questionId];
+    } else {
+      answers[questionId] = previousValue;
+    }
+
+    render();
+    document.getElementById('progress').textContent =
+      'Opslaan mislukt. Probeer het opnieuw.';
+  }
 }
 
 async function submitTest() {
