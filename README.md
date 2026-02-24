@@ -23,11 +23,15 @@ Steps:
 
 1. Copy this project folder to your USBWebserver `root` directory.
 2. Start **Apache** and **MySQL** from USBWebserver.
-3. Open phpMyAdmin and import:
-   - `init.sql`
-   - `questions.sql`
-4. (Optional) Copy `.env.example` to `.env` for documentation of your local values.
-5. Browse to: `http://localhost/personality/`
+3. Browse to: `http://localhost/personality/`
+
+On first startup, the app now auto-bootstraps the database when `DB_AUTO_BOOTSTRAP=true` (default):
+
+- Verifies required tables (`questions`, `answers`, `results`).
+- Runs `init.sql` if any required table is missing.
+- Seeds `questions.sql` only when the `questions` table is empty.
+
+You can still import SQL manually via phpMyAdmin if preferred.
 
 ### Environment-based deployment (server, container, CI)
 
@@ -38,6 +42,7 @@ Set the following environment variables in your runtime before serving the app:
 - `DB_NAME`
 - `DB_USER`
 - `DB_PASS`
+- `DB_AUTO_BOOTSTRAP` (optional, default `true`; set to `false` to disable automatic schema/seed bootstrap in production)
 
 Example:
 
