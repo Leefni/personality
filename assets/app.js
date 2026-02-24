@@ -11,6 +11,24 @@ let questions = [];
 let answers = {};
 let page = 0;
 
+function showError(message, targetId = 'progress') {
+  const target = document.getElementById(targetId);
+  if (!target) {
+    return;
+  }
+
+  const notice = document.createElement('div');
+  notice.className = 'error-notice';
+  notice.textContent = message;
+
+  const container = target.parentElement || target;
+  container.insertBefore(notice, target.nextSibling);
+
+  window.setTimeout(() => {
+    notice.remove();
+  }, 4000);
+}
+
 async function apiFetch(url, options = {}) {
   const response = await fetch(url, options);
   if (!response.ok) {
@@ -30,8 +48,7 @@ async function loadData() {
 
     render();
   } catch (error) {
-    document.getElementById('progress').textContent =
-      'Fout bij laden. Controleer database en API-configuratie.';
+    showError('Fout bij laden. Controleer database en API-configuratie.', 'progress');
   }
 }
 
@@ -66,7 +83,7 @@ function render() {
     button.addEventListener('click', async () => {
       const qid = Number(button.dataset.qid);
       const value = Number(button.dataset.value);
-      await answer(qid, value);
+      await answer(qid, value, button);
     });
   });
 
@@ -113,21 +130,46 @@ function updateProgress() {
     `Pagina ${page + 1} / ${totalPages} — ${Object.keys(answers).length} van ${questions.length} vragen ingevuld`;
 }
 
-async function answer(questionId, value) {
+async function answer(questionId, value, button) {
+  const previousValue = answers[questionId];
   answers[questionId] = value;
+  if (button) {
+    button.disabled = true;
+  }
 
-  await apiFetch('api/save_answer.php', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ question_id: questionId, value: value })
-  });
+  try {
+    await apiFetch('api/save_answer.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ question_id: questionId, value: value })
+    });
 
-  render();
+    render();
+  } catch (error) {
+    if (typeof previousValue === 'undefined') {
+      delete answers[questionId];
+    } else {
+      answers[questionId] = previousValue;
+    }
+
+    render();
+    showError('Opslaan mislukt. Probeer het opnieuw.', 'progress');
+  } finally {
+    if (button) {
+      button.disabled = false;
+    }
+  }
 }
 
 async function submitTest() {
-  const data = await apiFetch('api/submit_results.php');
-  showResult(data);
+  try {
+    const data = await apiFetch('api/submit_results.php');
+    showResult(data);
+  } catch (error) {
+    const result = document.getElementById('result');
+    result.innerHTML = '';
+    showError('Resultaat ophalen mislukt. Controleer je internetverbinding en probeer opnieuw.', 'result');
+  }
 }
 
 function showResult(data) {
