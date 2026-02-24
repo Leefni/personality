@@ -7,15 +7,49 @@ A lightweight PHP + MySQL personality test app with paginated questions, autosav
 - USBWebserver v8.6.6 (Apache + PHP + MySQL)
 - PHP PDO MySQL extension enabled (default in USBWebserver)
 
-## Setup (USBWebserver)
+## Setup
+
+### USBWebserver local defaults
+
+`config.php` now reads database settings from environment variables, but it keeps USBWebserver-friendly defaults:
+
+- `DB_HOST=127.0.0.1`
+- `DB_PORT=3306`
+- `DB_NAME=personality`
+- `DB_USER=root`
+- `DB_PASS=` (empty)
+
+Steps:
 
 1. Copy this project folder to your USBWebserver `root` directory.
 2. Start **Apache** and **MySQL** from USBWebserver.
 3. Open phpMyAdmin and import:
    - `init.sql`
    - `questions.sql`
-4. Verify `config.php` matches your MySQL credentials.
+4. (Optional) Copy `.env.example` to `.env` for documentation of your local values.
 5. Browse to: `http://localhost/personality/`
+
+### Environment-based deployment (server, container, CI)
+
+Set the following environment variables in your runtime before serving the app:
+
+- `DB_HOST`
+- `DB_PORT`
+- `DB_NAME`
+- `DB_USER`
+- `DB_PASS`
+
+Example:
+
+```bash
+export DB_HOST=127.0.0.1
+export DB_PORT=3306
+export DB_NAME=personality
+export DB_USER=app_user
+export DB_PASS='change_me'
+```
+
+Then run your web server/PHP runtime as usual.
 
 ## Project Structure
 
