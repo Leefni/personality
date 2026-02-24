@@ -12,6 +12,21 @@ if ($visitor === '') {
     exit;
 }
 
+$totalQuestions = (int) $pdo->query('SELECT COUNT(*) FROM questions')->fetchColumn();
+$answeredStmt = $pdo->prepare('SELECT COUNT(DISTINCT question_id) FROM answers WHERE visitor_id = ?');
+$answeredStmt->execute([$visitor]);
+$answeredCount = (int) $answeredStmt->fetchColumn();
+
+if ($answeredCount < $totalQuestions) {
+    http_response_code(422);
+    echo json_encode([
+        'error' => 'Incomplete test',
+        'answered' => $answeredCount,
+        'total' => $totalQuestions,
+    ], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
 $questions = [];
 foreach ($pdo->query('SELECT id, dimension, direction, weight FROM questions') as $question) {
     $questions[(int) $question['id']] = $question;
