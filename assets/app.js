@@ -14,7 +14,17 @@ let page = 0;
 async function apiFetch(url, options = {}) {
   const response = await fetch(url, options);
   if (!response.ok) {
-    throw new Error('Request failed: ' + url);
+    let payload = null;
+    try {
+      payload = await response.json();
+    } catch (error) {
+      payload = null;
+    }
+
+    const requestError = new Error('Request failed: ' + url);
+    requestError.status = response.status;
+    requestError.payload = payload;
+    throw requestError;
   }
   return response.json();
 }
@@ -102,6 +112,12 @@ function renderNav() {
     const submit = document.createElement('button');
     submit.className = 'submit';
     submit.textContent = 'Bekijk resultaat';
+    const answeredCount = Object.keys(answers).length;
+    const isComplete = answeredCount === questions.length;
+    submit.disabled = !isComplete;
+    submit.title = isComplete
+      ? ''
+      : 'Beantwoord eerst alle vragen voordat je het resultaat bekijkt.';
     submit.addEventListener('click', submitTest);
     nav.appendChild(submit);
   }
@@ -126,8 +142,25 @@ async function answer(questionId, value) {
 }
 
 async function submitTest() {
-  const data = await apiFetch('api/submit_results.php');
-  showResult(data);
+  try {
+    const data = await apiFetch('api/submit_results.php');
+    showResult(data);
+  } catch (error) {
+    const progress = document.getElementById('progress');
+    const result = document.getElementById('result');
+
+    if (error.status === 422 && error.payload?.error === 'Incomplete test') {
+      const answered = Number(error.payload.answered);
+      const total = Number(error.payload.total);
+      const message = `Test is nog niet compleet: ${answered} van ${total} vragen beantwoord.`;
+
+      progress.textContent = message;
+      result.innerHTML = `<p class="error">${message}</p>`;
+      return;
+    }
+
+    result.innerHTML = '<p class="error">Resultaat ophalen mislukt. Probeer het opnieuw.</p>';
+  }
 }
 
 function showResult(data) {
