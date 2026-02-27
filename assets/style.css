@@ -1,55 +1,100 @@
+:root {
+  --bg: #eef3f8;
+  --surface: #ffffff;
+  --surface-soft: #f8fafc;
+  --text: #1f2937;
+  --text-muted: #6b7280;
+  --border: #dbe3ec;
+  --primary: #1d4ed8;
+  --primary-strong: #1e40af;
+  --success: #16a34a;
+  --neutral: #6b7280;
+  --shadow-soft: 0 10px 28px rgba(15, 23, 42, 0.08);
+}
+
+* {
+  box-sizing: border-box;
+}
+
 body {
   font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-  background: #f4f6f8;
+  background: radial-gradient(circle at top, #f7fbff 0%, var(--bg) 48%, #e9f0f8 100%);
+  color: var(--text);
   margin: 0;
+  line-height: 1.45;
 }
 
 .container {
-  max-width: 900px;
-  margin: auto;
-  padding: 24px;
-  background: #fff;
-  min-height: 100vh;
-  box-sizing: border-box;
+  max-width: 920px;
+  margin: 24px auto;
+  padding: 28px;
+  background: var(--surface);
+  min-height: calc(100vh - 48px);
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-soft);
 }
 
 h1 {
   text-align: center;
+  margin: 6px 0 10px;
+  letter-spacing: 0.2px;
 }
 
 .progress {
   text-align: center;
-  color: #555;
-  margin-bottom: 16px;
+  color: var(--text-muted);
+  margin-bottom: 18px;
+  font-weight: 500;
 }
 
 .question {
   margin-bottom: 28px;
-  border-bottom: 1px solid #e0e0e0;
-  padding-bottom: 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  background: var(--surface-soft);
+}
+
+.question p {
+  margin: 0;
 }
 
 .likert {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
   gap: 8px;
-  margin-top: 10px;
+  margin-top: 12px;
 }
 
 .likert button,
 .nav button {
   padding: 10px 8px;
-  border-radius: 6px;
-  border: 1px solid #ccc;
-  background: #fafafa;
+  border-radius: 8px;
+  border: 1px solid #cfd8e3;
+  background: #fff;
   cursor: pointer;
   font-size: 13px;
+  transition: transform 0.15s ease, box-shadow 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.likert button:hover,
+.nav button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.12);
+}
+
+.likert button:focus-visible,
+.nav button:focus-visible,
+.result .restart:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
 }
 
 .likert button.selected {
-  background: #007bff;
+  background: var(--primary);
   color: #fff;
-  border-color: #007bff;
+  border-color: var(--primary);
   font-weight: 700;
 }
 
@@ -57,8 +102,8 @@ h1 {
   display: flex;
   justify-content: space-between;
   font-size: 12px;
-  color: #666;
-  margin-top: 4px;
+  color: var(--text-muted);
+  margin-top: 6px;
 }
 
 .nav {
@@ -68,12 +113,34 @@ h1 {
   margin-top: 24px;
 }
 
-.nav .prev { background: #6c757d; color: #fff; }
-.nav .next { background: #007bff; color: #fff; }
-.nav .submit { background: #28a745; color: #fff; width: 100%; }
+.nav .prev {
+  background: var(--neutral);
+  color: #fff;
+  border-color: var(--neutral);
+}
+
+.nav .next {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+}
+
+.nav .next:hover {
+  background: var(--primary-strong);
+  border-color: var(--primary-strong);
+}
+
+.nav .submit {
+  background: var(--success);
+  color: #fff;
+  border-color: var(--success);
+  width: 100%;
+}
 
 .result {
   margin-top: 32px;
+  border-top: 1px solid var(--border);
+  padding-top: 16px;
 }
 
 .bar {
@@ -82,23 +149,23 @@ h1 {
 
 .bar-label {
   font-size: 14px;
-  margin-bottom: 4px;
+  margin-bottom: 6px;
+  color: #374151;
 }
 
 .bar-track {
-  background: #e9ecef;
-  border-radius: 8px;
+  background: #e9eef4;
+  border-radius: 999px;
   height: 18px;
   overflow: hidden;
 }
 
 .bar-fill {
   height: 100%;
-  background: linear-gradient(90deg, #007bff, #00c6ff);
+  background: linear-gradient(90deg, var(--primary), #0ea5e9);
   width: 50%;
   transition: width 0.5s;
 }
-
 
 .result h3 {
   margin: 18px 0 8px;
@@ -111,10 +178,37 @@ h1 {
 
 .result .restart {
   margin-top: 16px;
-  background: #343a40;
+  background: #374151;
   color: #fff;
-  border: 1px solid #343a40;
-  border-radius: 6px;
+  border: 1px solid #374151;
+  border-radius: 8px;
   padding: 10px 12px;
   cursor: pointer;
+}
+
+.error-notice {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #fff1f2;
+  border: 1px solid #fecdd3;
+  color: #9f1239;
+  font-size: 14px;
+}
+
+@media (max-width: 720px) {
+  .container {
+    margin: 0;
+    min-height: 100vh;
+    border-radius: 0;
+    padding: 18px;
+  }
+
+  .likert {
+    grid-template-columns: 1fr;
+  }
+
+  .nav {
+    flex-direction: column;
+  }
 }
