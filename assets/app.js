@@ -47,6 +47,12 @@ function clearLocalDraft() {
   localStorage.removeItem(ANSWERS_STORAGE_KEY);
 }
 const pendingQuestionIds = new Set();
+const isDevelopmentEnvironment = window.APP_ENV === 'development';
+
+function buildDebugHint(endpoint, status) {
+  const statusLabel = Number.isFinite(status) ? status : 'onbekend';
+  return `Technische hint: ${endpoint} (status: ${statusLabel})`;
+}
 
 // Question rendering only depends on `id` and `text`.
 
@@ -75,7 +81,11 @@ async function apiFetch(url, options = {}) {
     try {
       payload = await response.json();
     } catch (error) {
-      payload = null;
+      try {
+        payload = await response.clone().text();
+      } catch (fallbackError) {
+        payload = null;
+      }
     }
 
     const requestError = new Error('Request failed: ' + url);
@@ -87,8 +97,9 @@ async function apiFetch(url, options = {}) {
 }
 
 async function loadData() {
+  const dataEndpoint = 'api/get_questions.php';
   try {
-    questions = await apiFetch('api/get_questions.php');
+    questions = await apiFetch(dataEndpoint);
     const saved = await apiFetch('api/get_progress.php');
     const localDraft = loadLocalDraft();
     const serverAnswers = {};
@@ -114,7 +125,15 @@ async function loadData() {
 
     render();
   } catch (error) {
-    showError('Fout bij laden. Controleer database en API-configuratie.', 'progress');
+    console.error('loadData mislukte.', error.status, error.payload);
+
+    const baseMessage = 'Fout bij laden. Controleer database en API-configuratie.';
+    if (isDevelopmentEnvironment) {
+      showError(`${baseMessage} ${buildDebugHint(dataEndpoint, error.status)}`, 'progress');
+      return;
+    }
+
+    showError(baseMessage, 'progress');
   }
 }
 
