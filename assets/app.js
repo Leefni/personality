@@ -1,4 +1,6 @@
 const PAGE_SIZE = 10;
+const APP_ENV = window.APP_ENV || 'production';
+const IS_DEVELOPMENT = APP_ENV === 'development';
 const likertLabels = [
   'Helemaal oneens',
   'Oneens',
@@ -71,9 +73,10 @@ function showError(message, targetId = 'progress') {
 async function apiFetch(url, options = {}) {
   const response = await fetch(url, options);
   if (!response.ok) {
+    const fallbackText = await response.text();
     let payload = null;
     try {
-      payload = await response.json();
+      payload = fallbackText ? JSON.parse(fallbackText) : null;
     } catch (error) {
       payload = null;
     }
@@ -81,9 +84,33 @@ async function apiFetch(url, options = {}) {
     const requestError = new Error('Request failed: ' + url);
     requestError.status = response.status;
     requestError.payload = payload;
+    requestError.text = fallbackText || null;
+    requestError.url = url;
     throw requestError;
   }
   return response.json();
+}
+
+function formatApiError(error, fallbackMessage) {
+  const statusMessages = {
+    400: 'Je verzoek is ongeldig. Controleer je invoer en probeer opnieuw.',
+    422: 'Niet alle gegevens zijn compleet of geldig. Vul ontbrekende velden in en probeer opnieuw.',
+    500: 'Er ging iets mis op de server. Probeer het later opnieuw.'
+  };
+
+  const message = statusMessages[error?.status] || fallbackMessage;
+
+  if (IS_DEVELOPMENT) {
+    console.error('API error:', {
+      message,
+      status: error?.status,
+      payload: error?.payload,
+      text: error?.text,
+      url: error?.url
+    });
+  }
+
+  return message;
 }
 
 async function loadData() {
@@ -114,7 +141,8 @@ async function loadData() {
 
     render();
   } catch (error) {
-    showError('Fout bij laden. Controleer database en API-configuratie.', 'progress');
+    const message = formatApiError(error, 'Gegevens laden mislukt. Probeer het opnieuw.');
+    showError(message, 'progress');
   }
 }
 
@@ -237,7 +265,8 @@ async function answer(questionId, value, input) {
   } catch (error) {
     saveLocalDraft(answers);
     render();
-    showError('Opslaan mislukt. Probeer het opnieuw.', 'progress');
+    const message = formatApiError(error, 'Opslaan mislukt. Probeer het opnieuw.');
+    showError(message, 'progress');
   } finally {
     pendingQuestionIds.delete(questionId);
     render();
@@ -252,18 +281,20 @@ async function submitTest() {
   } catch (error) {
     const progress = document.getElementById('progress');
     const result = document.getElementById('result');
+    const message = formatApiError(error, 'Resultaat ophalen mislukt. Probeer het opnieuw.');
 
     if (error.status === 422 && error.payload?.error === 'Incomplete test') {
       const answered = Number(error.payload.answered);
       const total = Number(error.payload.total);
-      const message = `Test is nog niet compleet: ${answered} van ${total} vragen beantwoord.`;
+      const incompleteMessage = `Test is nog niet compleet: ${answered} van ${total} vragen beantwoord.`;
 
-      progress.textContent = message;
-      result.innerHTML = `<p class="error">${message}</p>`;
+      progress.textContent = incompleteMessage;
+      result.innerHTML = `<p class="error">${incompleteMessage}</p>`;
       return;
     }
 
-    result.innerHTML = '<p class="error">Resultaat ophalen mislukt. Probeer het opnieuw.</p>';
+    progress.textContent = message;
+    result.innerHTML = `<p class="error">${message}</p>`;
   }
 }
 

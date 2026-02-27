@@ -16,6 +16,9 @@
     <section class="result" id="result"></section>
   </main>
 
+  <script>
+    window.APP_ENV = '<?php echo getenv('APP_ENV') ?: 'production'; ?>';
+  </script>
   <script src="assets/app.js"></script>
 </body>
 </html>
