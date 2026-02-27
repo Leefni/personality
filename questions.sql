@@ -1,5 +1,3 @@
-USE personality;
-
 INSERT INTO questions (text, dimension, direction, weight) VALUES
 ('Ik maak me veel zorgen', 'EI', -1, 1),
 ('Ik maak gemakkelijk vrienden', 'EI', 1, 1),

@@ -1,6 +1,3 @@
-CREATE DATABASE IF NOT EXISTS personality CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE personality;
-
 CREATE TABLE IF NOT EXISTS questions (
     id INT AUTO_INCREMENT PRIMARY KEY,
     text TEXT NOT NULL,

@@ -12,7 +12,7 @@ function bootstrap_database(PDO $pdo, array $config): void
 
     $requiredTables = ['questions', 'answers', 'results'];
 
-    if (has_required_tables($pdo, (string) $config['db_name'], $requiredTables)) {
+    if (has_required_tables($pdo, $requiredTables)) {
         seed_questions_if_empty($pdo);
         return;
     }
@@ -40,7 +40,7 @@ function bootstrap_database(PDO $pdo, array $config): void
     }
 }
 
-function has_required_tables(PDO $pdo, string $dbName, array $requiredTables): bool
+function has_required_tables(PDO $pdo, array $requiredTables): bool
 {
     $sql = <<<'SQL'
 SELECT TABLE_NAME
@@ -50,8 +50,14 @@ WHERE TABLE_SCHEMA = ?
 SQL;
 
     $placeholders = implode(', ', array_fill(0, count($requiredTables), '?'));
+    $databaseName = (string) $pdo->query('SELECT DATABASE()')->fetchColumn();
+
+    if ($databaseName === '') {
+        throw new RuntimeException('No active database selected for bootstrap.');
+    }
+
     $stmt = $pdo->prepare(sprintf($sql, $placeholders));
-    $stmt->bindValue(1, $dbName);
+    $stmt->bindValue(1, $databaseName);
 
     foreach ($requiredTables as $index => $tableName) {
         $stmt->bindValue($index + 2, $tableName);
@@ -83,7 +89,20 @@ function execute_sql_file(PDO $pdo, string $filePath): void
     }
 
     foreach (split_sql_statements($sql) as $statement) {
+        assert_db_agnostic_statement($statement, $filePath);
         $pdo->exec($statement);
+    }
+}
+
+function assert_db_agnostic_statement(string $statement, string $filePath): void
+{
+    $normalized = ltrim($statement);
+
+    if (preg_match('/^(USE\s+|CREATE\s+DATABASE\b|DROP\s+DATABASE\b)/i', $normalized) === 1) {
+        throw new RuntimeException(sprintf(
+            'Database-specific statement found in %s. Keep SQL bootstrap files DB-agnostic.',
+            $filePath
+        ));
     }
 }
 
