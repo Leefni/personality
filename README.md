@@ -11,7 +11,7 @@ A lightweight PHP + MySQL personality test app with paginated questions, autosav
 
 ### USBWebserver local defaults
 
-`config.php` now reads database settings from environment variables, but it keeps USBWebserver-friendly defaults:
+`config.php` reads database settings from environment variables and then optionally merges `config.local.php` (if present) for easy machine-local overrides. It still keeps USBWebserver-friendly defaults:
 
 - `DB_HOST=127.0.0.1`
 - `DB_PORT=3306`
@@ -24,6 +24,32 @@ Steps:
 1. Copy this project folder to your USBWebserver `root` directory.
 2. Start **Apache** and **MySQL** from USBWebserver.
 3. Browse to: `http://localhost/personality/`
+
+
+If your MySQL `root` account has a password, create `config.local.php` in the project root and set the exact values you use locally:
+
+```php
+<?php
+return [
+    'db_host' => '127.0.0.1', // DB_HOST
+    'db_port' => 3306,        // DB_PORT
+    'db_name' => 'personality', // DB_NAME
+    'db_user' => 'root',      // DB_USER
+    'db_pass' => 'your_root_password', // DB_PASS
+    'app_env' => 'development',
+];
+```
+
+You can make equivalent changes with environment variables instead:
+
+```bash
+export DB_HOST=127.0.0.1
+export DB_PORT=3306
+export DB_NAME=personality
+export DB_USER=root
+export DB_PASS='your_root_password'
+export APP_ENV=development
+```
 
 On first startup, the app now auto-bootstraps the database when `DB_AUTO_BOOTSTRAP=true` (default):
 
@@ -43,6 +69,7 @@ Set the following environment variables in your runtime before serving the app:
 - `DB_USER`
 - `DB_PASS`
 - `DB_AUTO_BOOTSTRAP` (optional, default `true`; set to `false` to disable automatic schema/seed bootstrap in production)
+- `APP_ENV` (optional, set to `development`/`local` to show short actionable DB auth errors during local setup)
 
 Example:
 

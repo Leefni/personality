@@ -19,7 +19,7 @@ function env_bool_or_default(string $key, bool $default): bool
     return $parsed ?? $default;
 }
 
-return [
+$baseConfig = [
     // USBWebserver defaults: MySQL host 127.0.0.1, user root, empty password.
     'db_host' => (string) env_or_default('DB_HOST', '127.0.0.1'),
     'db_port' => (int) env_or_default('DB_PORT', 3306),
@@ -27,4 +27,17 @@ return [
     'db_user' => (string) env_or_default('DB_USER', 'root'),
     'db_pass' => (string) env_or_default('DB_PASS', ''),
     'db_auto_bootstrap' => env_bool_or_default('DB_AUTO_BOOTSTRAP', true),
+    'app_env' => (string) env_or_default('APP_ENV', 'production'),
 ];
+
+// Optional local, non-env override for setups where editing a local file is easier.
+$localConfigPath = __DIR__ . '/config.local.php';
+if (is_file($localConfigPath)) {
+    $localConfig = require $localConfigPath;
+
+    if (is_array($localConfig)) {
+        $baseConfig = array_replace($baseConfig, $localConfig);
+    }
+}
+
+return $baseConfig;
