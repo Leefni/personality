@@ -51,11 +51,14 @@ export DB_PASS='your_root_password'
 export APP_ENV=development
 ```
 
-On first startup, the app now auto-bootstraps the database when `DB_AUTO_BOOTSTRAP=true` (default):
+On first startup, the app now auto-bootstraps the selected database when `DB_AUTO_BOOTSTRAP=true` (default):
 
-- Verifies required tables (`questions`, `answers`, `results`).
+- Uses the active PDO connection database (`DB_NAME`) as the single source of truth.
+- Verifies required tables (`questions`, `answers`, `results`) in that selected database.
 - Runs `init.sql` if any required table is missing.
 - Seeds `questions.sql` only when the `questions` table is empty.
+
+`init.sql` and `questions.sql` are database-agnostic (no hardcoded `USE ...` or `CREATE DATABASE ...`). This means `DB_NAME` fully determines where schema and seed data are applied.
 
 You can still import SQL manually via phpMyAdmin if preferred.
 
@@ -65,7 +68,7 @@ Set the following environment variables in your runtime before serving the app:
 
 - `DB_HOST`
 - `DB_PORT`
-- `DB_NAME`
+- `DB_NAME` (fully leading: selects the exact database used by the app/bootstrap)
 - `DB_USER`
 - `DB_PASS`
 - `DB_AUTO_BOOTSTRAP` (optional, default `true`; set to `false` to disable automatic schema/seed bootstrap in production)
@@ -97,3 +100,27 @@ Then run your web server/PHP runtime as usual.
 - Visitor progress is stored per browser using a `visitor_id` cookie.
 - Answers autosave on each click.
 - Final result is also persisted in the `results` table.
+
+## Troubleshooting
+
+### Health endpoint
+
+Use `api/health.php` to quickly validate PHP/PDO/MySQL runtime health:
+
+- URL: `http://localhost/personality/api/health.php`
+- Response is JSON with: `status`, `php_version`, `pdo_loaded`, `pdo_mysql_loaded`, `db_connectable`, and (when configured) `bootstrap_enabled`.
+- On failures, the endpoint returns safe error codes only (for example `DB_DRIVER_MISSING` or `DB_CONNECT_FAILED`) and does not expose credentials or DSN details.
+
+Example:
+
+```json
+{
+  "status": "ok",
+  "php_version": "8.2.12",
+  "pdo_loaded": true,
+  "pdo_mysql_loaded": true,
+  "db_connectable": true,
+  "bootstrap_enabled": true
+}
+```
+

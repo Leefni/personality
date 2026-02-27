@@ -16,6 +16,11 @@ $options = [
     PDO::ATTR_EMULATE_PREPARES => false,
 ];
 
+function quote_mysql_identifier(string $identifier): string
+{
+    return '`' . str_replace('`', '``', $identifier) . '`';
+}
+
 $environment = strtolower((string) ($config['app_env'] ?? 'production'));
 $isDevelopment = in_array($environment, ['dev', 'development', 'local'], true);
 
@@ -24,9 +29,34 @@ try {
 } catch (PDOException $exception) {
     $sqlState = (string) ($exception->errorInfo[0] ?? $exception->getCode());
     $driverErrorCode = (int) ($exception->errorInfo[1] ?? 0);
+    $isUnknownDatabaseError = $sqlState === 'HY000' && $driverErrorCode === 1049;
     $isAuthError = $sqlState === '28000' || $driverErrorCode === 1045;
 
-    if ($isDevelopment && $isAuthError) {
+    if ($isUnknownDatabaseError) {
+        try {
+            $fallbackDsn = sprintf(
+                'mysql:host=%s;port=%d;charset=utf8mb4',
+                $config['db_host'],
+                $config['db_port']
+            );
+
+            $fallbackPdo = new PDO($fallbackDsn, $config['db_user'], $config['db_pass'], $options);
+            $createDatabaseSql = sprintf(
+                'CREATE DATABASE IF NOT EXISTS %s CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci',
+                quote_mysql_identifier((string) $config['db_name'])
+            );
+            $fallbackPdo->exec($createDatabaseSql);
+
+            $pdo = new PDO($dsn, $config['db_user'], $config['db_pass'], $options);
+        } catch (PDOException $fallbackException) {
+            $exception = $fallbackException;
+            $sqlState = (string) ($exception->errorInfo[0] ?? $exception->getCode());
+            $driverErrorCode = (int) ($exception->errorInfo[1] ?? 0);
+            $isAuthError = $sqlState === '28000' || $driverErrorCode === 1045;
+        }
+    }
+
+    if (!isset($pdo) && $isDevelopment && $isAuthError) {
         http_response_code(500);
 
         $message = sprintf(
@@ -42,7 +72,9 @@ try {
         exit($message);
     }
 
-    throw $exception;
+    if (!isset($pdo)) {
+        throw $exception;
+    }
 }
 
 require_once __DIR__ . '/db_bootstrap.php';
