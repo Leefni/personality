@@ -10,6 +10,7 @@ const likertLabels = [
 let questions = [];
 let answers = {};
 let page = 0;
+let hasQuestionChangeListener = false;
 const ANSWERS_STORAGE_KEY = 'personality.answers.v1';
 const RESULT_CONTENT = {
   dimensions: {
@@ -217,6 +218,31 @@ async function apiFetch(url, options = {}) {
 async function loadData() {
   const dataEndpoint = 'api/get_questions.php';
   try {
+    if (!hasQuestionChangeListener) {
+      const questionsElement = document.getElementById('questions');
+      questionsElement?.addEventListener('change', async (event) => {
+        const target = event.target;
+        if (!(target instanceof HTMLInputElement)) {
+          return;
+        }
+
+        if (!target.matches('input[type="radio"][data-qid]')) {
+          return;
+        }
+
+        const qid = Number(target.dataset.qid);
+        const value = Number(target.dataset.value);
+
+        if (!Number.isInteger(qid) || !Number.isFinite(value)) {
+          return;
+        }
+
+        await answer(qid, value, target);
+      });
+
+      hasQuestionChangeListener = true;
+    }
+
     questions = await apiFetch(dataEndpoint);
     const saved = await apiFetch('api/get_progress.php');
     const localDraft = loadLocalDraft();
@@ -293,14 +319,6 @@ function render() {
     `;
 
     qDiv.appendChild(div);
-  });
-
-  qDiv.querySelectorAll('input[type="radio"][data-qid]').forEach((input) => {
-    input.addEventListener('change', async () => {
-      const qid = Number(input.dataset.qid);
-      const value = Number(input.dataset.value);
-      await answer(qid, value, input);
-    });
   });
 
   renderNav();
