@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-function env_or_default(string $key, mixed $default): mixed
+function env_or_default(string $key, $default)
 {
     $value = getenv($key);
     return $value === false ? $default : $value;
