@@ -11,6 +11,124 @@ let questions = [];
 let answers = {};
 let page = 0;
 const ANSWERS_STORAGE_KEY = 'personality.answers.v1';
+const RESULT_CONTENT = {
+  dimensions: {
+    EI: {
+      poles: ['E', 'I'],
+      names: ['Extraversie', 'Introversie']
+    },
+    SN: {
+      poles: ['S', 'N'],
+      names: ['Sensing', 'Intuïtie']
+    },
+    TF: {
+      poles: ['T', 'F'],
+      names: ['Thinking', 'Feeling']
+    },
+    JP: {
+      poles: ['J', 'P'],
+      names: ['Judging', 'Perceiving']
+    }
+  },
+  types: {
+    ESTJ: {
+      shortDescription: 'Praktische organisator die structuur en verantwoordelijkheid omarmt.',
+      strengths: ['Besluitvaardig', 'Betrouwbaar', 'Sterk in plannen'],
+      attentionPoints: ['Kan star overkomen', 'Minder geduld met vaagheid'],
+      tips: ['Plan bewust rustmomenten in', 'Vraag actief om alternatieve ideeën']
+    },
+    ESTP: {
+      shortDescription: 'Energieke doener die kansen ziet en direct in actie komt.',
+      strengths: ['Snel schakelen', 'Pragmatisch', 'Sociaal overtuigend'],
+      attentionPoints: ['Neiging tot impulsiviteit', 'Minder focus op lange termijn'],
+      tips: ['Check eerst risico’s', 'Werk met korte evaluatiemomenten']
+    },
+    ESFJ: {
+      shortDescription: 'Betrokken verbinder die harmonie en samenwerking stimuleert.',
+      strengths: ['Empathisch', 'Loyaal', 'Sterk in teamdynamiek'],
+      attentionPoints: ['Kan te veel pleasen', 'Neemt kritiek persoonlijk op'],
+      tips: ['Stel heldere grenzen', 'Plan reflectie in op eigen behoeften']
+    },
+    ESFP: {
+      shortDescription: 'Enthousiaste sfeermaker die graag in het moment leeft.',
+      strengths: ['Positieve energie', 'Flexibel', 'Praktisch creatief'],
+      attentionPoints: ['Moeite met routine', 'Vermijdt soms moeilijke keuzes'],
+      tips: ['Gebruik reminders voor structuur', 'Vertaal doelen naar korte acties']
+    },
+    ENTJ: {
+      shortDescription: 'Strategische leider die richting geeft en resultaten nastreeft.',
+      strengths: ['Visiegericht', 'Doelgericht', 'Sterk in organiseren'],
+      attentionPoints: ['Kan dominant overkomen', 'Soms te weinig ruimte voor gevoel'],
+      tips: ['Luister actief vóór besluiten', 'Beloon ook proces, niet alleen resultaat']
+    },
+    ENTP: {
+      shortDescription: 'Inventieve uitdager die nieuwe ideeën en mogelijkheden verkent.',
+      strengths: ['Innovatief', 'Scherp analyserend', 'Snel lerend'],
+      attentionPoints: ['Verliest interesse in details', 'Start meer dan hij afrondt'],
+      tips: ['Werk met concrete deadlines', 'Kies per project één focusdoel']
+    },
+    ENFJ: {
+      shortDescription: 'Inspirerende motivator die mensen in beweging brengt.',
+      strengths: ['Coachend', 'Communicatief sterk', 'Waarde-gedreven'],
+      attentionPoints: ['Kan zichzelf wegcijferen', 'Neiging tot oververantwoordelijkheid'],
+      tips: ['Delegeer bewust', 'Reserveer tijd voor eigen herstel']
+    },
+    ENFP: {
+      shortDescription: 'Creatieve vernieuwer die kansen ziet in mensen en ideeën.',
+      strengths: ['Enthousiast', 'Origineel', 'Empathisch verbindend'],
+      attentionPoints: ['Snel afgeleid', 'Moeite met strakke systemen'],
+      tips: ['Gebruik visuele planning', 'Rond eerst af, start daarna iets nieuws']
+    },
+    ISTJ: {
+      shortDescription: 'Nauwkeurige bouwer die stabiliteit en kwaliteit bewaakt.',
+      strengths: ['Consistent', 'Verantwoordelijk', 'Detailgericht'],
+      attentionPoints: ['Kan behoudend zijn', 'Moeite met plotselinge verandering'],
+      tips: ['Plan ruimte voor experiment', 'Benoem expliciet je flexibiliteit']
+    },
+    ISTP: {
+      shortDescription: 'Rustige probleemoplosser die techniek en logica combineert.',
+      strengths: ['Analytisch', 'Praktisch', 'Kalm onder druk'],
+      attentionPoints: ['Houdt afstand in communicatie', 'Stelt beslissingen soms uit'],
+      tips: ['Maak verwachtingen expliciet', 'Deel tussentijds je voortgang']
+    },
+    ISFJ: {
+      shortDescription: 'Zorgzame ondersteuner die aandacht heeft voor detail en mensen.',
+      strengths: ['Betrouwbaar', 'Geduldig', 'Dienstbaar'],
+      attentionPoints: ['Vermijdt conflict', 'Neemt te veel op zich'],
+      tips: ['Zeg vaker tijdig nee', 'Plan vaste momenten voor feedback']
+    },
+    ISFP: {
+      shortDescription: 'Gevoelige maker die authenticiteit en vrijheid belangrijk vindt.',
+      strengths: ['Empathisch', 'Creatief', 'Flexibel'],
+      attentionPoints: ['Mijdt strakke planning', 'Houdt zorgen voor zich'],
+      tips: ['Werk met zachte deadlines', 'Spreek behoeften eerder uit']
+    },
+    INTJ: {
+      shortDescription: 'Conceptuele strateeg die lange-termijnplannen scherp uitwerkt.',
+      strengths: ['Onafhankelijk', 'Visionair', 'Sterk analyserend'],
+      attentionPoints: ['Kan afstandelijk lijken', 'Onvoldoende geduld met inefficiëntie'],
+      tips: ['Vertaal visie naar begrijpelijke stappen', 'Check regelmatig teamgevoel']
+    },
+    INTP: {
+      shortDescription: 'Nieuwsgierige denker die patronen en systemen diep wil begrijpen.',
+      strengths: ['Logisch', 'Origineel', 'Objectief'],
+      attentionPoints: ['Overanalyse', 'Minder aandacht voor praktische opvolging'],
+      tips: ['Koppel ideeën aan concrete acties', 'Plan beslismomenten in']
+    },
+    INFJ: {
+      shortDescription: 'Inzichtvolle idealist die betekenis en richting zoekt.',
+      strengths: ['Intuïtief', 'Waarde-gedreven', 'Diep empathisch'],
+      attentionPoints: ['Perfectionistisch', 'Snel mentaal overbelast'],
+      tips: ['Bewaak energiegrenzen', 'Maak grote doelen meetbaar']
+    },
+    INFP: {
+      shortDescription: 'Reflectieve idealist die authenticiteit en persoonlijke groei nastreeft.',
+      strengths: ['Creatief', 'Compassievol', 'Loyaal aan waarden'],
+      attentionPoints: ['Stelt conflict uit', 'Kan moeite hebben met prioriteren'],
+      tips: ['Kies dagelijks één hoofdtaak', 'Gebruik assertieve ik-boodschappen']
+    }
+  }
+};
 
 function loadLocalDraft() {
   try {
@@ -286,28 +404,81 @@ async function submitTest() {
   }
 }
 
+function buildList(items) {
+  return `<ul>${items.map((item) => `<li>${item}</li>`).join('')}</ul>`;
+}
+
+function getDimensionInterpretation(score, config) {
+  const numericScore = Number(score);
+  const [leftPole, rightPole] = config.poles;
+  const [leftName, rightName] = config.names;
+
+  if (Math.abs(numericScore) < 1) {
+    return `Vrij gebalanceerd tussen ${leftName} (${leftPole}) en ${rightName} (${rightPole}).`;
+  }
+
+  const dominantPole = numericScore >= 0 ? leftPole : rightPole;
+  const dominantName = numericScore >= 0 ? leftName : rightName;
+  const intensity = Math.abs(numericScore) >= 4 ? 'sterke' : 'lichte';
+
+  return `${intensity.charAt(0).toUpperCase() + intensity.slice(1)} voorkeur voor ${dominantName} (${dominantPole}).`;
+}
+
+async function resetTest() {
+  try {
+    await apiFetch('api/reset_progress.php', { method: 'POST' });
+    answers = {};
+    page = 0;
+    clearLocalDraft();
+    document.getElementById('result').innerHTML = '';
+    render();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  } catch (error) {
+    showError('Resetten mislukt. Probeer het opnieuw.', 'progress');
+  }
+}
+
 function showResult(data) {
-  const map = {
-    EI: ['E', 'I'],
-    SN: ['S', 'N'],
-    TF: ['T', 'F'],
-    JP: ['J', 'P']
-  };
+  const profile = RESULT_CONTENT.types[data.type];
 
   const res = document.getElementById('result');
   res.innerHTML = `<h2>Resultaat: ${data.type}</h2>`;
 
+  if (profile) {
+    res.innerHTML += `
+      <p>${profile.shortDescription}</p>
+      <h3>Sterke punten</h3>
+      ${buildList(profile.strengths)}
+      <h3>Aandachtspunten</h3>
+      ${buildList(profile.attentionPoints)}
+      <h3>Praktische tips</h3>
+      ${buildList(profile.tips)}
+    `;
+  }
+
+  res.innerHTML += '<h3>Dimensiescores</h3>';
+
   Object.keys(data.scores).forEach((dimension) => {
+    const config = RESULT_CONTENT.dimensions[dimension];
+    if (!config) {
+      return;
+    }
+
     const score = Number(data.scores[dimension]);
     const percent = Math.max(0, Math.min(100, 50 + score * 10));
+    const interpretation = getDimensionInterpretation(score, config);
 
     res.innerHTML += `
       <div class="bar">
-        <div class="bar-label">${map[dimension][0]} — ${map[dimension][1]}</div>
+        <div class="bar-label">${config.poles[0]} — ${config.poles[1]} (score: ${score.toFixed(1)})</div>
         <div class="bar-track"><div class="bar-fill" style="width:${percent}%"></div></div>
+        <p>${interpretation}</p>
       </div>
     `;
   });
+
+  res.innerHTML += '<button type="button" class="restart">Opnieuw doen</button>';
+  res.querySelector('.restart')?.addEventListener('click', resetTest);
 
   window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
 }
