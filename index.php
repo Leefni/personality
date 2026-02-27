@@ -16,6 +16,10 @@
     <section class="result" id="result"></section>
   </main>
 
+  <?php $appEnv = getenv('APP_ENV') ?: 'production'; ?>
+  <script>
+    window.APP_ENV = <?php echo json_encode($appEnv, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
+  </script>
   <script src="assets/app.js"></script>
 </body>
 </html>
