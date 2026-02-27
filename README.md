@@ -97,3 +97,27 @@ Then run your web server/PHP runtime as usual.
 - Visitor progress is stored per browser using a `visitor_id` cookie.
 - Answers autosave on each click.
 - Final result is also persisted in the `results` table.
+
+## Troubleshooting
+
+### Health endpoint
+
+Use `api/health.php` to quickly validate PHP/PDO/MySQL runtime health:
+
+- URL: `http://localhost/personality/api/health.php`
+- Response is JSON with: `status`, `php_version`, `pdo_loaded`, `pdo_mysql_loaded`, `db_connectable`, and (when configured) `bootstrap_enabled`.
+- On failures, the endpoint returns safe error codes only (for example `DB_DRIVER_MISSING` or `DB_CONNECT_FAILED`) and does not expose credentials or DSN details.
+
+Example:
+
+```json
+{
+  "status": "ok",
+  "php_version": "8.2.12",
+  "pdo_loaded": true,
+  "pdo_mysql_loaded": true,
+  "db_connectable": true,
+  "bootstrap_enabled": true
+}
+```
+
