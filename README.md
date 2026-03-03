@@ -95,6 +95,37 @@ Then run your web server/PHP runtime as usual.
 - `db.php` - Database bootstrap (PDO)
 - `init.sql` / `questions.sql` - Database schema and seed data
 
+### How the app works (beginner overview)
+
+#### Lifecycle walkthrough
+
+1. The browser loads `index.php`, which renders the personality test shell (HTML/CSS/JS).
+2. The frontend script in `assets/app.js` starts the app and fetches questions from `api/get_questions.php`.
+3. Each answer click immediately sends the choice to `api/save_answer.php` so progress is autosaved.
+4. The frontend reads current completion state from `api/get_progress.php` to restore or update progress.
+5. When the test is finished, final submission is sent to `api/submit_results.php` to compute and persist the result.
+
+#### API endpoints at a glance
+
+| Endpoint | Purpose | Input (high-level) | Output (high-level) |
+| --- | --- | --- | --- |
+| `api/get_questions.php` | Load the question set for the UI. | Usually no body; identifies visitor via cookie context. | Question list (IDs, text, answer options). |
+| `api/save_answer.php` | Save one answer as soon as the user clicks. | `question_id`, selected `choice`, and visitor context. | Success status and updated progress/acknowledgement. |
+| `api/get_progress.php` | Return what the current visitor has already answered. | Visitor context (from cookie). | Answered count, remaining/next question state, or saved answers snapshot. |
+| `api/submit_results.php` | Finalize test, compute type, and persist result. | Visitor context plus completion trigger/final answers. | Final personality result (for example 4-letter type) and save confirmation. |
+
+#### `visitor_id` cookie (what it is and why it exists)
+
+The app stores a `visitor_id` cookie in the browser so the backend can associate API requests with one anonymous visitor session. This allows answers and progress to persist across page reloads and lets the app resume where the same browser left off without requiring user accounts.
+
+#### Where to start reading the code
+
+If you are new to this codebase, read files in this order:
+
+1. `index.php` to see what gets rendered first.
+2. `assets/app.js` to understand frontend behavior and API calls.
+3. `api/*.php` to see how each endpoint validates, saves, and returns data.
+
 ## Notes
 
 - Visitor progress is stored per browser using a `visitor_id` cookie.
