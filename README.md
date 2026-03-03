@@ -95,6 +95,48 @@ Then run your web server/PHP runtime as usual.
 - `db.php` - Database bootstrap (PDO)
 - `init.sql` / `questions.sql` - Database schema and seed data
 
+## Beginner Customization Guide
+
+Use this section to choose changes that match your comfort level.
+
+### 1. Safe first edits
+
+- **Visual tweaks in `assets/style.css`**
+  - Good for changing colors, spacing, fonts, and button styles.
+  - Low risk because these edits do not change app logic or database behavior.
+- **Simple text/content updates in `index.php`**
+  - Good for headings, labels, helper text, and static copy updates.
+  - Keep form field names/IDs untouched unless you also update matching JavaScript.
+
+### 2. Intermediate edits
+
+- **Frontend behavior in `assets/app.js`**
+  - Good for UI flow, validation messaging, and interaction behavior.
+  - ⚠️ **Warning:** keep existing API endpoint request/response contracts intact (`api/*.php`). If payload fields or response shapes change on the frontend, backend endpoints must be updated in sync.
+
+### 3. Advanced/risky edits
+
+- **`api/*.php`, `db.php`, `init.sql`, `questions.sql`**
+  - These files control persistence, endpoint behavior, and schema/data setup.
+  - Mistakes here can break saving answers, result calculation, bootstrap, or data integrity.
+  - Make these changes only after backing up files and testing end-to-end.
+
+### Before editing checklist
+
+1. Backup the file(s) you plan to change.
+2. Validate health endpoint: `http://localhost/personality/api/health.php`.
+3. Confirm the app still:
+   - Loads at `http://localhost/personality/`.
+   - Saves at least one answer successfully.
+
+### Example beginner task (concrete)
+
+- **Goal:** Change the page title text and primary button color.
+- **Files to edit:**
+  - `index.php` - update the visible page heading/title text.
+  - `assets/style.css` - update the button color rules (for example, `background-color` on the main action button class).
+- **Verify:** Reload the page, confirm new title appears, click an answer, and ensure it still saves.
+
 ## Notes
 
 - Visitor progress is stored per browser using a `visitor_id` cookie.
@@ -123,4 +165,3 @@ Example:
   "bootstrap_enabled": true
 }
 ```
-
