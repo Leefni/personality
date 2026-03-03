@@ -1,4 +1,6 @@
 const PAGE_SIZE = 10;
+const APP_ENV = window.APP_ENV || 'production';
+const IS_DEVELOPMENT = APP_ENV === 'development';
 const likertLabels = [
   'Helemaal oneens',
   'Oneens',
@@ -10,6 +12,7 @@ const likertLabels = [
 let questions = [];
 let answers = {};
 let page = 0;
+let hasQuestionChangeListener = false;
 const ANSWERS_STORAGE_KEY = 'personality.answers.v1';
 const RESULT_CONTENT = {
   dimensions: {
@@ -195,9 +198,10 @@ function showError(message, targetId = 'progress') {
 async function apiFetch(url, options = {}) {
   const response = await fetch(url, options);
   if (!response.ok) {
+    const fallbackText = await response.text();
     let payload = null;
     try {
-      payload = await response.json();
+      payload = fallbackText ? JSON.parse(fallbackText) : null;
     } catch (error) {
       try {
         payload = await response.clone().text();
@@ -209,14 +213,63 @@ async function apiFetch(url, options = {}) {
     const requestError = new Error('Request failed: ' + url);
     requestError.status = response.status;
     requestError.payload = payload;
+    requestError.text = fallbackText || null;
+    requestError.url = url;
     throw requestError;
   }
   return response.json();
 }
 
+function formatApiError(error, fallbackMessage) {
+  const statusMessages = {
+    400: 'Je verzoek is ongeldig. Controleer je invoer en probeer opnieuw.',
+    422: 'Niet alle gegevens zijn compleet of geldig. Vul ontbrekende velden in en probeer opnieuw.',
+    500: 'Er ging iets mis op de server. Probeer het later opnieuw.'
+  };
+
+  const message = statusMessages[error?.status] || fallbackMessage;
+
+  if (IS_DEVELOPMENT) {
+    console.error('API error:', {
+      message,
+      status: error?.status,
+      payload: error?.payload,
+      text: error?.text,
+      url: error?.url
+    });
+  }
+
+  return message;
+}
+
 async function loadData() {
   const dataEndpoint = 'api/get_questions.php';
   try {
+    if (!hasQuestionChangeListener) {
+      const questionsElement = document.getElementById('questions');
+      questionsElement?.addEventListener('change', async (event) => {
+        const target = event.target;
+        if (!(target instanceof HTMLInputElement)) {
+          return;
+        }
+
+        if (!target.matches('input[type="radio"][data-qid]')) {
+          return;
+        }
+
+        const qid = Number(target.dataset.qid);
+        const value = Number(target.dataset.value);
+
+        if (!Number.isInteger(qid) || !Number.isFinite(value)) {
+          return;
+        }
+
+        await answer(qid, value, target);
+      });
+
+      hasQuestionChangeListener = true;
+    }
+
     questions = await apiFetch(dataEndpoint);
     const saved = await apiFetch('api/get_progress.php');
     const localDraft = loadLocalDraft();
@@ -295,14 +348,6 @@ function render() {
     qDiv.appendChild(div);
   });
 
-  qDiv.querySelectorAll('input[type="radio"][data-qid]').forEach((input) => {
-    input.addEventListener('change', async () => {
-      const qid = Number(input.dataset.qid);
-      const value = Number(input.dataset.value);
-      await answer(qid, value, input);
-    });
-  });
-
   renderNav();
   updateProgress();
 }
@@ -377,7 +422,9 @@ async function answer(questionId, value, input) {
     saveLocalDraft(answers);
   } catch (error) {
     saveLocalDraft(answers);
-    showError('Opslaan mislukt. Probeer het opnieuw.', 'progress');
+    render();
+    const message = formatApiError(error, 'Opslaan mislukt. Probeer het opnieuw.');
+    showError(message, 'progress');
   } finally {
     const pendingWasRemoved = pendingQuestionIds.delete(questionId);
 
@@ -395,18 +442,20 @@ async function submitTest() {
   } catch (error) {
     const progress = document.getElementById('progress');
     const result = document.getElementById('result');
+    const message = formatApiError(error, 'Resultaat ophalen mislukt. Probeer het opnieuw.');
 
     if (error.status === 422 && error.payload?.error === 'Incomplete test') {
       const answered = Number(error.payload.answered);
       const total = Number(error.payload.total);
-      const message = `Test is nog niet compleet: ${answered} van ${total} vragen beantwoord.`;
+      const incompleteMessage = `Test is nog niet compleet: ${answered} van ${total} vragen beantwoord.`;
 
-      progress.textContent = message;
-      result.innerHTML = `<p class="error">${message}</p>`;
+      progress.textContent = incompleteMessage;
+      result.innerHTML = `<p class="error">${incompleteMessage}</p>`;
       return;
     }
 
-    result.innerHTML = '<p class="error">Resultaat ophalen mislukt. Probeer het opnieuw.</p>';
+    progress.textContent = message;
+    result.innerHTML = `<p class="error">${message}</p>`;
   }
 }
 
