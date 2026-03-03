@@ -2,6 +2,37 @@
 
 A lightweight PHP + MySQL personality test app with paginated questions, autosave, and a computed 4-letter result.
 
+## Quick Start (First Time Setup)
+
+Use this path if you want the shortest route from zero to a running app.
+
+### 2-minute route
+
+- **If you use USBWebserver default local credentials** (`root` with empty password): just follow steps 1-4 as-is.
+- **If you use a custom DB password**: before step 4, create `config.local.php` in the project root (example in the Setup section below) and set your real `db_pass` (plus any other custom DB values).
+
+### Minimal path from zero to running app
+
+1. **Start USBWebserver services (Apache + MySQL).**
+   - **Expected success signal:** both services show as running/green in USBWebserver.
+   - **If this step fails:** likely cause is a busy port (commonly 80 or 3306) or insufficient permissions to start the services.
+
+2. **Place this project folder inside your USBWebserver web root (`root`).**
+   - **Expected success signal:** the folder is visible at something like `.../USBWebserver/root/personality`.
+   - **If this step fails:** likely cause is copying into the wrong directory (for example, next to `root` instead of inside it).
+
+3. **Open the app URL:** `http://localhost/personality/`.
+   - **Expected success signal:** the personality test page loads (not a 404/500 page).
+   - **If this step fails:** likely cause is Apache not running, wrong folder name/path, or project not in web root.
+
+4. **Open health check URL:** `http://localhost/personality/api/health.php` and verify JSON contains `"status": "ok"`.
+   - **Expected success signal:** JSON response shows `status` as `ok` and DB/PDO checks are true.
+   - **If this step fails:** likely cause is incorrect DB credentials (especially custom `root` password), missing MySQL service, or PHP PDO MySQL extension not active.
+
+### You are ready
+
+When step 4 returns `status: ok`, open the app again and answer the first question. Your first click should persist immediately (autosave), so refreshing the page should keep that answer selected.
+
 ## Requirements
 
 - USBWebserver v8.6.6 (Apache + PHP + MySQL)
