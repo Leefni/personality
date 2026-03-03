@@ -10,20 +10,22 @@ import {
   apiFetch,
   formatApiError
 } from './js/utils.js';
-import { RESULT_CONTENT } from './js/result-content.js';
 
 let questions = [];
 let answers = {};
-let page = 0;
+let page = 1;
+let perPage = PAGE_SIZE;
+let totalQuestions = 0;
 let hasQuestionChangeListener = false;
 const pendingQuestionIds = new Set();
+const saveTimers = new Map();
 
 async function loadData() {
-  const dataEndpoint = 'api/get_questions.php';
+  const dataEndpoint = `api/v1/get_questions.php?page=${page}&per_page=${perPage}`;
   try {
     if (!hasQuestionChangeListener) {
       const questionsElement = document.getElementById('questions');
-      questionsElement?.addEventListener('change', async (event) => {
+      questionsElement?.addEventListener('change', (event) => {
         const target = event.target;
         if (!(target instanceof HTMLInputElement)) return;
         if (!target.matches('input[type="radio"][data-qid]')) return;
@@ -32,14 +34,20 @@ async function loadData() {
         const value = Number(target.dataset.value);
         if (!Number.isInteger(qid) || !Number.isFinite(value)) return;
 
-        await answer(qid, value);
+        queueAnswerSave(qid, value);
       });
 
       hasQuestionChangeListener = true;
     }
 
-    questions = await apiFetch(dataEndpoint);
-    const saved = await apiFetch('api/get_progress.php');
+    const questionPayload = await apiFetch(dataEndpoint);
+    const saved = await apiFetch('api/v1/get_progress.php');
+
+    questions = Array.isArray(questionPayload.questions) ? questionPayload.questions : [];
+    totalQuestions = Number(questionPayload.total ?? 0);
+    page = Number(questionPayload.page ?? 1);
+    perPage = Number(questionPayload.per_page ?? PAGE_SIZE);
+
     const localDraft = loadLocalDraft();
     const serverAnswers = {};
 
@@ -78,18 +86,15 @@ function render() {
   const qDiv = document.getElementById('questions');
   qDiv.innerHTML = '';
 
-  const start = page * PAGE_SIZE;
-  const slice = questions.slice(start, start + PAGE_SIZE);
-
-  slice.forEach((q, index) => {
+  questions.forEach((q, index) => {
     const div = document.createElement('article');
     div.className = 'question';
     const isPending = pendingQuestionIds.has(q.id);
 
     div.innerHTML = `
-      <p><strong>${start + index + 1}.</strong> ${q.text}</p>
+      <p><strong>${(page - 1) * perPage + index + 1}.</strong> ${q.text}</p>
       <fieldset class="likert" ${isPending ? 'disabled' : ''}>
-        <legend class="sr-only">Kies een antwoordoptie voor vraag ${start + index + 1}</legend>
+        <legend class="sr-only">Kies een antwoordoptie voor vraag ${(page - 1) * perPage + index + 1}</legend>
         ${[1, 2, 3, 4, 5].map((value) => `
           <div class="likert-option">
             <input
@@ -122,24 +127,25 @@ function renderNav() {
   const nav = document.getElementById('nav');
   nav.innerHTML = '';
 
-  if (page > 0) {
+  if (page > 1) {
     const prev = document.createElement('button');
     prev.className = 'prev';
-    prev.textContent = 'Vorige';
+    prev.textContent = 'Prev';
     prev.addEventListener('click', () => {
       page -= 1;
-      render();
+      loadData();
     });
     nav.appendChild(prev);
   }
 
-  if ((page + 1) * PAGE_SIZE < questions.length) {
+  const hasNext = page * perPage < totalQuestions;
+  if (hasNext) {
     const next = document.createElement('button');
     next.className = 'next';
-    next.textContent = 'Volgende';
+    next.textContent = 'Next';
     next.addEventListener('click', () => {
       page += 1;
-      render();
+      loadData();
     });
     nav.appendChild(next);
   } else {
@@ -147,7 +153,7 @@ function renderNav() {
     submit.className = 'submit';
     submit.textContent = 'Bekijk resultaat';
     const answeredCount = Object.keys(answers).length;
-    const isComplete = answeredCount === questions.length;
+    const isComplete = answeredCount === totalQuestions;
     submit.disabled = !isComplete;
     submit.title = isComplete ? '' : 'Beantwoord eerst alle vragen voordat je het resultaat bekijkt.';
     submit.addEventListener('click', submitTest);
@@ -156,44 +162,53 @@ function renderNav() {
 }
 
 function updateProgress() {
-  const totalPages = Math.max(1, Math.ceil(questions.length / PAGE_SIZE));
+  const totalPages = Math.max(1, Math.ceil(totalQuestions / perPage));
   document.getElementById('progress').textContent =
-    `Pagina ${page + 1} / ${totalPages} — ${Object.keys(answers).length} van ${questions.length} vragen ingevuld`;
+    `Pagina ${page} / ${totalPages} — ${Object.keys(answers).length} van ${totalQuestions} vragen ingevuld`;
 }
 
-async function answer(questionId, value) {
-  if (pendingQuestionIds.has(questionId)) return;
-
-  const answerChanged = answers[questionId] !== value;
-  const pendingChanged = !pendingQuestionIds.has(questionId);
-
+function queueAnswerSave(questionId, value) {
   answers[questionId] = value;
-  pendingQuestionIds.add(questionId);
+  saveLocalDraft(answers);
+  render();
 
-  if (answerChanged || pendingChanged) render();
+  const existingTimer = saveTimers.get(questionId);
+  if (existingTimer) {
+    window.clearTimeout(existingTimer);
+  }
+
+  const timerId = window.setTimeout(async () => {
+    saveTimers.delete(questionId);
+    await persistAnswer(questionId, value);
+  }, 300);
+
+  saveTimers.set(questionId, timerId);
+}
+
+async function persistAnswer(questionId, value) {
+  pendingQuestionIds.add(questionId);
+  render();
 
   try {
-    await apiFetch('api/save_answer.php', {
+    await apiFetch('api/v1/save_answer.php', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ question_id: questionId, value })
     });
-
     saveLocalDraft(answers);
   } catch (error) {
     saveLocalDraft(answers);
-    render();
     const message = formatApiError(error, 'Opslaan mislukt. Probeer het opnieuw.');
     showError(message, 'progress');
   } finally {
-    const pendingWasRemoved = pendingQuestionIds.delete(questionId);
-    if (pendingWasRemoved) render();
+    pendingQuestionIds.delete(questionId);
+    render();
   }
 }
 
 async function submitTest() {
   try {
-    const data = await apiFetch('api/submit_results.php');
+    const data = await apiFetch('api/v1/submit_results.php', { method: 'POST' });
     clearLocalDraft();
     showResult(data);
   } catch (error) {
@@ -201,7 +216,7 @@ async function submitTest() {
     const result = document.getElementById('result');
     const message = formatApiError(error, 'Resultaat ophalen mislukt. Probeer het opnieuw.');
 
-    if (error.status === 422 && error.payload?.error === 'Incomplete test') {
+    if (error.status === 422 && error.payload?.message === 'Incomplete test') {
       const answered = Number(error.payload.answered);
       const total = Number(error.payload.total);
       const incompleteMessage = `Test is nog niet compleet: ${answered} van ${total} vragen beantwoord.`;
@@ -216,34 +231,14 @@ async function submitTest() {
   }
 }
 
-function buildList(items) {
-  return `<ul>${items.map((item) => `<li>${item}</li>`).join('')}</ul>`;
-}
-
-function getDimensionInterpretation(score, config) {
-  const numericScore = Number(score);
-  const [leftPole, rightPole] = config.poles;
-  const [leftName, rightName] = config.names;
-
-  if (Math.abs(numericScore) < 1) {
-    return `Vrij gebalanceerd tussen ${leftName} (${leftPole}) en ${rightName} (${rightPole}).`;
-  }
-
-  const dominantPole = numericScore >= 0 ? leftPole : rightPole;
-  const dominantName = numericScore >= 0 ? leftName : rightName;
-  const intensity = Math.abs(numericScore) >= 4 ? 'sterke' : 'lichte';
-
-  return `${intensity.charAt(0).toUpperCase() + intensity.slice(1)} voorkeur voor ${dominantName} (${dominantPole}).`;
-}
-
 async function resetTest() {
   try {
-    await apiFetch('api/reset_progress.php', { method: 'POST' });
+    await apiFetch('api/v1/reset_progress.php', { method: 'POST' });
     answers = {};
-    page = 0;
+    page = 1;
     clearLocalDraft();
     document.getElementById('result').innerHTML = '';
-    render();
+    await loadData();
     window.scrollTo({ top: 0, behavior: 'smooth' });
   } catch (error) {
     showError('Resetten mislukt. Probeer het opnieuw.', 'progress');
@@ -251,43 +246,17 @@ async function resetTest() {
 }
 
 function showResult(data) {
-  const profile = RESULT_CONTENT.types[data.type];
-
   const res = document.getElementById('result');
-  res.innerHTML = `<h2>Resultaat: ${data.type}</h2>`;
+  const score = Number(data.score || 0);
+  const total = Number(data.total || 0);
+  const percentage = total > 0 ? ((score / total) * 100).toFixed(1) : '0.0';
 
-  if (profile) {
-    res.innerHTML += `
-      <p>${profile.shortDescription}</p>
-      <h3>Sterke punten</h3>
-      ${buildList(profile.strengths)}
-      <h3>Aandachtspunten</h3>
-      ${buildList(profile.attentionPoints)}
-      <h3>Praktische tips</h3>
-      ${buildList(profile.tips)}
-    `;
-  }
+  res.innerHTML = `
+    <h2>Resultaat</h2>
+    <p>Score: <strong>${score}</strong> van <strong>${total}</strong> (${percentage}%)</p>
+    <button type="button" class="restart">Opnieuw doen</button>
+  `;
 
-  res.innerHTML += '<h3>Dimensiescores</h3>';
-
-  Object.keys(data.scores).forEach((dimension) => {
-    const config = RESULT_CONTENT.dimensions[dimension];
-    if (!config) return;
-
-    const score = Number(data.scores[dimension]);
-    const percent = Math.max(0, Math.min(100, 50 + score * 10));
-    const interpretation = getDimensionInterpretation(score, config);
-
-    res.innerHTML += `
-      <div class="bar">
-        <div class="bar-label">${config.poles[0]} — ${config.poles[1]} (score: ${score.toFixed(1)})</div>
-        <div class="bar-track"><div class="bar-fill" style="width:${percent}%"></div></div>
-        <p>${interpretation}</p>
-      </div>
-    `;
-  });
-
-  res.innerHTML += '<button type="button" class="restart">Opnieuw doen</button>';
   res.querySelector('.restart')?.addEventListener('click', resetTest);
 
   window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
