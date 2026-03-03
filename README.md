@@ -121,10 +121,20 @@ Then run your web server/PHP runtime as usual.
 
 - `index.php` - Main page
 - `assets/style.css` - Styling
-- `assets/app.js` - Front-end app logic
+- `assets/js/app.js` - Front-end entrypoint (rendering + event wiring)
+- `assets/js/api-client.js` - API fetch/error helpers
+- `assets/js/storage.js` - Local draft persistence helpers
+- `assets/js/result-content.js` - Static personality metadata
 - `api/*.php` - JSON API endpoints
 - `db.php` - Database bootstrap (PDO)
 - `init.sql` / `questions.sql` - Database schema and seed data
+
+## Frontend module map
+
+- `assets/js/app.js`: main UI orchestration (question rendering, navigation, progress updates, result rendering, and DOM event wiring).
+- `assets/js/api-client.js`: wraps `fetch` for API calls and centralizes API error formatting/debug hints.
+- `assets/js/storage.js`: reads/writes/clears local draft answers in `localStorage`.
+- `assets/js/result-content.js`: contains static type descriptions and dimension metadata used during result rendering.
 
 ## Beginner Customization Guide
 
@@ -141,7 +151,7 @@ Use this section to choose changes that match your comfort level.
 
 ### 2. Intermediate edits
 
-- **Frontend behavior in `assets/app.js`**
+- **Frontend behavior in `assets/js/app.js`**
   - Good for UI flow, validation messaging, and interaction behavior.
   - ⚠️ **Warning:** keep existing API endpoint request/response contracts intact (`api/*.php`). If payload fields or response shapes change on the frontend, backend endpoints must be updated in sync.
 
@@ -172,7 +182,7 @@ Use this section to choose changes that match your comfort level.
 #### Lifecycle walkthrough
 
 1. The browser loads `index.php`, which renders the personality test shell (HTML/CSS/JS).
-2. The frontend script in `assets/app.js` starts the app and fetches questions from `api/get_questions.php`.
+2. The frontend script in `assets/js/app.js` starts the app and fetches questions from `api/get_questions.php`.
 3. Each answer click immediately sends the choice to `api/save_answer.php` so progress is autosaved.
 4. The frontend reads current completion state from `api/get_progress.php` to restore or update progress.
 5. When the test is finished, final submission is sent to `api/submit_results.php` to compute and persist the result.
@@ -195,7 +205,7 @@ The app stores a `visitor_id` cookie in the browser so the backend can associate
 If you are new to this codebase, read files in this order:
 
 1. `index.php` to see what gets rendered first.
-2. `assets/app.js` to understand frontend behavior and API calls.
+2. `assets/js/app.js` to understand frontend behavior and API calls.
 3. `api/*.php` to see how each endpoint validates, saves, and returns data.
 
 ## Notes
