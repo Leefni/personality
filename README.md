@@ -2,6 +2,37 @@
 
 A lightweight PHP + MySQL personality test app with paginated questions, autosave, and a computed 4-letter result.
 
+## Quick Start (First Time Setup)
+
+Use this path if you want the shortest route from zero to a running app.
+
+### 2-minute route
+
+- **If you use USBWebserver default local credentials** (`root` with empty password): just follow steps 1-4 as-is.
+- **If you use a custom DB password**: before step 4, create `config.local.php` in the project root (example in the Setup section below) and set your real `db_pass` (plus any other custom DB values).
+
+### Minimal path from zero to running app
+
+1. **Start USBWebserver services (Apache + MySQL).**
+   - **Expected success signal:** both services show as running/green in USBWebserver.
+   - **If this step fails:** likely cause is a busy port (commonly 80 or 3306) or insufficient permissions to start the services.
+
+2. **Place this project folder inside your USBWebserver web root (`root`).**
+   - **Expected success signal:** the folder is visible at something like `.../USBWebserver/root/personality`.
+   - **If this step fails:** likely cause is copying into the wrong directory (for example, next to `root` instead of inside it).
+
+3. **Open the app URL:** `http://localhost/personality/`.
+   - **Expected success signal:** the personality test page loads (not a 404/500 page).
+   - **If this step fails:** likely cause is Apache not running, wrong folder name/path, or project not in web root.
+
+4. **Open health check URL:** `http://localhost/personality/api/health.php` and verify JSON contains `"status": "ok"`.
+   - **Expected success signal:** JSON response shows `status` as `ok` and DB/PDO checks are true.
+   - **If this step fails:** likely cause is incorrect DB credentials (especially custom `root` password), missing MySQL service, or PHP PDO MySQL extension not active.
+
+### You are ready
+
+When step 4 returns `status: ok`, open the app again and answer the first question. Your first click should persist immediately (autosave), so refreshing the page should keep that answer selected.
+
 ## Requirements
 
 - USBWebserver v8.6.6 (Apache + PHP + MySQL)
@@ -136,6 +167,36 @@ Use this section to choose changes that match your comfort level.
   - `index.php` - update the visible page heading/title text.
   - `assets/style.css` - update the button color rules (for example, `background-color` on the main action button class).
 - **Verify:** Reload the page, confirm new title appears, click an answer, and ensure it still saves.
+### How the app works (beginner overview)
+
+#### Lifecycle walkthrough
+
+1. The browser loads `index.php`, which renders the personality test shell (HTML/CSS/JS).
+2. The frontend script in `assets/app.js` starts the app and fetches questions from `api/get_questions.php`.
+3. Each answer click immediately sends the choice to `api/save_answer.php` so progress is autosaved.
+4. The frontend reads current completion state from `api/get_progress.php` to restore or update progress.
+5. When the test is finished, final submission is sent to `api/submit_results.php` to compute and persist the result.
+
+#### API endpoints at a glance
+
+| Endpoint | Purpose | Input (high-level) | Output (high-level) |
+| --- | --- | --- | --- |
+| `api/get_questions.php` | Load the question set for the UI. | Usually no body; identifies visitor via cookie context. | Question list (IDs, text, answer options). |
+| `api/save_answer.php` | Save one answer as soon as the user clicks. | `question_id`, selected `choice`, and visitor context. | Success status and updated progress/acknowledgement. |
+| `api/get_progress.php` | Return what the current visitor has already answered. | Visitor context (from cookie). | Answered count, remaining/next question state, or saved answers snapshot. |
+| `api/submit_results.php` | Finalize test, compute type, and persist result. | Visitor context plus completion trigger/final answers. | Final personality result (for example 4-letter type) and save confirmation. |
+
+#### `visitor_id` cookie (what it is and why it exists)
+
+The app stores a `visitor_id` cookie in the browser so the backend can associate API requests with one anonymous visitor session. This allows answers and progress to persist across page reloads and lets the app resume where the same browser left off without requiring user accounts.
+
+#### Where to start reading the code
+
+If you are new to this codebase, read files in this order:
+
+1. `index.php` to see what gets rendered first.
+2. `assets/app.js` to understand frontend behavior and API calls.
+3. `api/*.php` to see how each endpoint validates, saves, and returns data.
 
 ## Notes
 

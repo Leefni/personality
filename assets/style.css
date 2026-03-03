@@ -65,10 +65,26 @@ h1 {
   grid-template-columns: repeat(5, 1fr);
   gap: 8px;
   margin-top: 12px;
+  border: 0;
+  padding: 0;
 }
 
-.likert button,
+.likert-option {
+  position: relative;
+}
+
+.likert-option input[type="radio"] {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  margin: 0;
+  opacity: 0;
+}
+
+.likert-option label,
 .nav button {
+  display: block;
+  text-align: center;
   padding: 10px 8px;
   border-radius: 8px;
   border: 1px solid #cfd8e3;
@@ -78,24 +94,33 @@ h1 {
   transition: transform 0.15s ease, box-shadow 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
 }
 
-.likert button:hover,
+.likert-option label:hover,
 .nav button:hover {
   transform: translateY(-1px);
   box-shadow: 0 4px 10px rgba(15, 23, 42, 0.12);
 }
 
-.likert button:focus-visible,
+.likert-option input[type="radio"]:focus-visible + label,
 .nav button:focus-visible,
 .result .restart:focus-visible {
   outline: 2px solid var(--primary);
   outline-offset: 2px;
 }
 
-.likert button.selected {
+.likert-option input[type="radio"]:checked + label {
   background: var(--primary);
   color: #fff;
   border-color: var(--primary);
   font-weight: 700;
+}
+
+fieldset[disabled] .likert-option label {
+  opacity: 0.7;
+  cursor: progress;
+  background: #f8fafc;
+  border-style: dashed;
+  transform: none;
+  box-shadow: none;
 }
 
 .likert-labels {
