@@ -27,27 +27,24 @@ if ($answeredCount < $totalQuestions) {
     exit;
 }
 
-$questions = [];
-foreach ($pdo->query('SELECT id, dimension, direction, weight FROM questions') as $question) {
-    $questions[(int) $question['id']] = $question;
-}
-
 $sums = ['EI' => 0.0, 'SN' => 0.0, 'TF' => 0.0, 'JP' => 0.0];
 
-$stmt = $pdo->prepare('SELECT question_id, value FROM answers WHERE visitor_id = ?');
+$stmt = $pdo->prepare(
+    'SELECT q.dimension, SUM((a.value - 3) * q.direction * q.weight) AS score
+     FROM answers a
+     JOIN questions q ON a.question_id = q.id
+     WHERE a.visitor_id = ?
+     GROUP BY q.dimension'
+);
 $stmt->execute([$visitor]);
 
-foreach ($stmt as $answer) {
-    $questionId = (int) $answer['question_id'];
-    if (!isset($questions[$questionId])) {
+foreach ($stmt as $row) {
+    $dimension = (string) $row['dimension'];
+    if (!array_key_exists($dimension, $sums)) {
         continue;
     }
 
-    $question = $questions[$questionId];
-    $delta = ((int) $answer['value']) - 3;
-    $dimension = $question['dimension'];
-
-    $sums[$dimension] += $delta * (int) $question['direction'] * (float) $question['weight'];
+    $sums[$dimension] = (float) $row['score'];
 }
 
 $type = '';
