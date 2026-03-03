@@ -1,6 +1,6 @@
 const PAGE_SIZE = 10;
-const APP_ENV = window.APP_ENV || 'production';
-const IS_DEVELOPMENT = APP_ENV === 'development';
+const APP_ENV = (window.APP_ENV || 'production').toLowerCase(); // Expected: development, local, production (see config.php/db.php semantics).
+const IS_DEVELOPMENT_ENV = APP_ENV === 'development' || APP_ENV === 'local';
 const likertLabels = [
   'Helemaal oneens',
   'Oneens',
@@ -168,7 +168,6 @@ function clearLocalDraft() {
   localStorage.removeItem(ANSWERS_STORAGE_KEY);
 }
 const pendingQuestionIds = new Set();
-const isDevelopmentEnvironment = window.APP_ENV === 'development';
 
 function buildDebugHint(endpoint, status) {
   const statusLabel = Number.isFinite(status) ? status : 'onbekend';
@@ -229,7 +228,7 @@ function formatApiError(error, fallbackMessage) {
 
   const message = statusMessages[error?.status] || fallbackMessage;
 
-  if (IS_DEVELOPMENT) {
+  if (IS_DEVELOPMENT_ENV) {
     console.error('API error:', {
       message,
       status: error?.status,
@@ -299,7 +298,7 @@ async function loadData() {
     console.error('loadData mislukte.', error.status, error.payload);
 
     const baseMessage = 'Fout bij laden. Controleer database en API-configuratie.';
-    if (isDevelopmentEnvironment) {
+    if (IS_DEVELOPMENT_ENV) {
       showError(`${baseMessage} ${buildDebugHint(dataEndpoint, error.status)}`, 'progress');
       return;
     }
