@@ -126,6 +126,84 @@ Then run your web server/PHP runtime as usual.
 - `db.php` - Database bootstrap (PDO)
 - `init.sql` / `questions.sql` - Database schema and seed data
 
+## Maintainer reference
+
+### Runtime flow (page load to result)
+
+#### 1) `index.php` boot
+
+1. Browser requests `index.php` and receives the base HTML shell (`#questions`, `#nav`, `#progress`, `#result`) plus linked assets.
+2. `assets/app.js` executes immediately and calls `loadData()` at file end.
+
+#### 2) `loadData()` sequence
+
+1. Registers a one-time delegated `change` listener on `#questions` (guarded by `hasQuestionChangeListener`).
+2. Fetches `api/get_questions.php` and stores full question list in `questions`.
+3. Fetches `api/get_progress.php` and maps saved rows into `serverAnswers` (`question_id -> value`).
+4. Loads browser draft from `localStorage` key `personality.answers.v1`.
+5. Merges state as `answers = { ...serverAnswers, ...localDraft }` (local draft wins on conflicts).
+6. Keeps only unresolved draft entries in localStorage, then calls `render()`.
+
+#### 3) Autosave event path
+
+1. User changes a radio input (`input[type="radio"][data-qid]`) inside `#questions`.
+2. Listener parses `question_id` and `value`, then calls `answer(questionId, value, target)`.
+3. `answer()` optimistically updates in-memory `answers`, marks question pending, and re-renders.
+4. `answer()` POSTs JSON to `api/save_answer.php` (`{ question_id, value }`).
+5. Backend validates method/payload/question existence, creates `visitor_id` cookie when missing, then upserts row into `answers`.
+6. Frontend persists local draft and clears pending state; on failure it shows an error notice and keeps draft.
+
+#### 4) Submit/scoring path
+
+1. On last page, "Bekijk resultaat" enables only when answered count equals total questions.
+2. `submitTest()` calls `api/submit_results.php`.
+3. Backend requires `visitor_id`, checks completion (`COUNT(DISTINCT question_id)` vs total questions), and returns `422` if incomplete.
+4. For complete tests, backend computes dimension sums from joined `answers` + `questions`, builds 4-letter type, upserts into `results`, and returns `{ type, scores }`.
+5. Frontend clears local draft and renders type description + dimension bars via `showResult()`.
+
+#### 5) Reset path
+
+1. User clicks "Opnieuw doen" in result view.
+2. `resetTest()` POSTs to `api/reset_progress.php`.
+3. Backend deletes visitor rows in `answers` and `results` (no-op success when cookie absent).
+4. Frontend clears in-memory answers, resets pagination (`page = 0`), clears local draft + result panel, then re-renders.
+
+### API contract reference
+
+| Endpoint | Method | Request payload | Success response | Key error responses / statuses |
+| --- | --- | --- | --- | --- |
+| `api/get_questions.php` | `GET` | none | `200` JSON array of `{ id, text }` ordered by `id` | no explicit app-level error mapping (DB/bootstrap failures bubble as server errors) |
+| `api/get_progress.php` | `GET` | none (uses `visitor_id` cookie) | `200` JSON array of `{ question_id, value }`; returns `[]` when no cookie | no explicit app-level error mapping (DB/bootstrap failures bubble as server errors) |
+| `api/save_answer.php` | `POST` | JSON `{ "question_id": <int>, "value": <1-5> }` | `200` `{ "ok": true }` (also sets `visitor_id` cookie if missing) | `405` method not allowed; `422` invalid payload; `422` unknown `question_id` |
+| `api/submit_results.php` | `GET` | none (uses `visitor_id` cookie and persisted answers) | `200` `{ "type": "<4 letters>", "scores": { "EI": n, "SN": n, "TF": n, "JP": n } }` | `400` no visitor session; `422` incomplete test with `{ error, answered, total }` |
+| `api/reset_progress.php` | `POST` | none (uses `visitor_id` cookie) | `200` `{ "ok": true }` after deleting visitor answers/results (or immediate ok when no cookie) | `405` method not allowed |
+
+### Scoring algorithm
+
+- Per answered question, score contribution is exactly: `(value - 3) * direction * weight`.
+- `value` is the Likert answer in range `1..5`, where `3` is neutral.
+- `direction` and `weight` come from the `questions` table and allow reverse-keying and weighted items.
+- Per-dimension totals are summed for `EI`, `SN`, `TF`, `JP`.
+- Type-letter mapping rules from final sums:
+  - `EI`: `>= 0 => E`, `< 0 => I`
+  - `SN`: `>= 0 => S`, `< 0 => N`
+  - `TF`: `>= 0 => T`, `< 0 => F`
+  - `JP`: `>= 0 => J`, `< 0 => P`
+
+### Data model summary
+
+- `questions` core columns:
+  - `id` (PK), `text`, `dimension` (`EI|SN|TF|JP`), `direction`, `weight`.
+- `answers` core columns:
+  - `id` (PK), `question_id` (FK -> `questions.id`), `visitor_id`, `value`, `created_at`, `updated_at`.
+  - Unique key `(question_id, visitor_id)` guarantees one active answer per visitor per question.
+- `results` core columns:
+  - `id` (PK), `visitor_id`, `type_code`, `detail_json`, `created_at`, `updated_at`.
+  - Unique key on `visitor_id` guarantees one current persisted result per visitor.
+- `visitor_id` relationship model:
+  - Browser cookie `visitor_id` is generated in `save_answer` if absent.
+  - The same `visitor_id` links all rows in `answers` and `results` for that browser session, enabling restore (`get_progress`), scoring (`submit_results`), and cleanup (`reset_progress`).
+
 ## Beginner Customization Guide
 
 Use this section to choose changes that match your comfort level.
