@@ -357,10 +357,15 @@ async function answer(questionId, value, input) {
     return;
   }
 
-  const previousValue = answers[questionId];
+  const answerChanged = answers[questionId] !== value;
+  const pendingChanged = !pendingQuestionIds.has(questionId);
+
   answers[questionId] = value;
   pendingQuestionIds.add(questionId);
-  render();
+
+  if (answerChanged || pendingChanged) {
+    render();
+  }
 
   try {
     await apiFetch('api/save_answer.php', {
@@ -370,14 +375,15 @@ async function answer(questionId, value, input) {
     });
 
     saveLocalDraft(answers);
-    render();
   } catch (error) {
     saveLocalDraft(answers);
-    render();
     showError('Opslaan mislukt. Probeer het opnieuw.', 'progress');
   } finally {
-    pendingQuestionIds.delete(questionId);
-    render();
+    const pendingWasRemoved = pendingQuestionIds.delete(questionId);
+
+    if (pendingWasRemoved) {
+      render();
+    }
   }
 }
 
