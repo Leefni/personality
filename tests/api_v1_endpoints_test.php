@@ -97,10 +97,20 @@ function test_reset_progress(string $baseUrl, string $visitor): void
     assert_true(($response['json']['ok'] ?? false) === true, 'reset_progress ok');
 }
 
+function test_legacy_wrapper_get_progress(string $baseUrl, string $visitor): void
+{
+    $legacy = request_json('GET', $baseUrl . '/api/get_progress.php', null, $visitor);
+    $v1 = request_json('GET', $baseUrl . '/api/v1/get_progress.php', null, $visitor);
+
+    assert_true($legacy['status'] === $v1['status'], 'legacy get_progress status matches v1');
+    assert_true($legacy['json'] === $v1['json'], 'legacy get_progress payload matches v1');
+}
+
 try {
     test_get_questions($baseUrl);
     test_get_progress($baseUrl, $visitor);
     test_save_answer($baseUrl, $visitor);
+    test_legacy_wrapper_get_progress($baseUrl, $visitor);
     test_submit_results_incomplete($baseUrl, $visitor);
     test_reset_progress($baseUrl, $visitor);
 

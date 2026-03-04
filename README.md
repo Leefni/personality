@@ -13,6 +13,21 @@ All active endpoints are now under `api/v1/`:
 - `POST /api/v1/reset_progress.php`
 - `GET /api/v1/health.php`
 
+## Legacy endpoints (`/api/*.php`)
+
+Legacy paths under `/api/*.php` are **deprecated compatibility wrappers**.
+They now forward directly to the corresponding `/api/v1/*.php` handlers, so behavior matches v1.
+
+- `GET /api/get_questions.php` -> `/api/v1/get_questions.php`
+- `GET /api/get_progress.php` -> `/api/v1/get_progress.php`
+- `POST /api/save_answer.php` -> `/api/v1/save_answer.php`
+- `POST /api/submit_results.php` -> `/api/v1/submit_results.php`
+- `POST /api/reset_progress.php` -> `/api/v1/reset_progress.php`
+- `GET /api/health.php` -> `/api/v1/health.php`
+
+Sunset policy: these wrappers are scheduled for removal after **2026-12-31**.
+New integrations should use only `/api/v1/*` endpoints.
+
 ## JSON error format
 
 All API errors use the same structure:
@@ -80,7 +95,7 @@ Success response:
 
 ### `POST /api/v1/submit_results.php`
 
-Calculates the 4-letter personality type from saved answers, stores/updates the DB result row, and caches the type in `cache/results.json`.
+Calculates the 4-letter personality type from saved answers and caches it in the `results` table (`visitor_id` -> `type_code` + `detail_json`).
 
 Success response:
 
@@ -91,11 +106,11 @@ Success response:
 }
 ```
 
-If cached data exists for the visitor, the endpoint returns the cached type without recalculation.
+If a cached DB result already exists for the visitor, the endpoint returns it without recalculation.
 
 ### `POST /api/v1/reset_progress.php`
 
-Deletes visitor answers + results and clears the cache entry.
+Deletes visitor answers and invalidates the visitor's cached result entry.
 
 Response:
 
@@ -114,14 +129,24 @@ The frontend (`assets/app.js`) now:
 
 ## Result cache
 
-Results are cached in:
+Result caching is database-backed and stored in the existing `results` table:
 
-- `cache/results.json`
+- cache key: `visitor_id`
+- cached payload: `type_code` and `detail_json`
 
-Cache is invalidated when:
+### Cache read/write behavior
 
-- an answer is updated (`save_answer`)
+- `submit_results` checks `results` first. If a row exists, it returns that cached result immediately.
+- If no row exists, `submit_results` computes scores from `answers` and upserts the cache row in `results`.
+
+### Cache invalidation
+
+The cache entry for a visitor is deleted when:
+
+- an answer is created/updated (`save_answer`)
 - progress is reset (`reset_progress`)
+
+This keeps cached types aligned with the latest answers.
 
 ## Test files
 

@@ -11,15 +11,12 @@ if ($visitor === '') {
     json_error('No visitor session', 400);
 }
 
-$cache = read_results_cache();
-if (isset($cache[$visitor]) && is_array($cache[$visitor])) {
-    $cached = $cache[$visitor];
-    if (isset($cached['type']) && is_string($cached['type'])) {
-        json_success([
-            'type' => $cached['type'],
-            'scores' => is_array($cached['scores'] ?? null) ? $cached['scores'] : new stdClass(),
-        ]);
-    }
+$cached = get_cached_result($pdo, $visitor);
+if ($cached !== null) {
+    json_success([
+        'type' => $cached['type'],
+        'scores' => is_array($cached['scores']) ? $cached['scores'] : new stdClass(),
+    ]);
 }
 
 $totalQuestions = $quizRepository->getTotalQuestionCount();

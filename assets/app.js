@@ -20,58 +20,61 @@ let totalQuestions = 0;
 let hasQuestionChangeListener = false;
 const pendingQuestionIds = new Set();
 const saveTimers = new Map();
+let renderCount = 0;
 
-async function loadData() {
+function setupQuestionChangeListener() {
+  if (hasQuestionChangeListener) return;
+
+  const questionsElement = document.getElementById('questions');
+  questionsElement?.addEventListener('change', (event) => {
+    const target = event.target;
+    if (!(target instanceof HTMLInputElement)) return;
+    if (!target.matches('input[type="radio"][data-qid]')) return;
+
+    const qid = Number(target.dataset.qid);
+    const value = Number(target.dataset.value);
+    if (!Number.isInteger(qid) || !Number.isFinite(value)) return;
+
+    queueAnswerSave(qid, value);
+  });
+
+  hasQuestionChangeListener = true;
+}
+
+function mergeProgress(saved) {
+  const localDraft = loadLocalDraft();
+  const serverAnswers = {};
+
+  saved.forEach((item) => {
+    serverAnswers[item.question_id] = Number(item.value);
+  });
+
+  answers = { ...serverAnswers, ...localDraft };
+
+  const unresolvedDraft = {};
+  Object.entries(localDraft).forEach(([questionId, value]) => {
+    if (serverAnswers[questionId] !== value) unresolvedDraft[questionId] = value;
+  });
+
+  if (Object.keys(unresolvedDraft).length === 0) {
+    clearLocalDraft();
+  } else {
+    saveLocalDraft(unresolvedDraft);
+  }
+}
+
+async function loadQuestions() {
   const dataEndpoint = `api/v1/get_questions.php?page=${page}&per_page=${perPage}`;
+
   try {
-    if (!hasQuestionChangeListener) {
-      const questionsElement = document.getElementById('questions');
-      questionsElement?.addEventListener('change', (event) => {
-        const target = event.target;
-        if (!(target instanceof HTMLInputElement)) return;
-        if (!target.matches('input[type="radio"][data-qid]')) return;
-
-        const qid = Number(target.dataset.qid);
-        const value = Number(target.dataset.value);
-        if (!Number.isInteger(qid) || !Number.isFinite(value)) return;
-
-        queueAnswerSave(qid, value);
-      });
-
-      hasQuestionChangeListener = true;
-    }
-
     const questionPayload = await apiFetch(dataEndpoint);
-    const saved = await apiFetch('api/v1/get_progress.php');
-
     questions = Array.isArray(questionPayload.questions) ? questionPayload.questions : [];
     totalQuestions = Number(questionPayload.total ?? 0);
     page = Number(questionPayload.page ?? 1);
     perPage = Number(questionPayload.per_page ?? PAGE_SIZE);
-
-    const localDraft = loadLocalDraft();
-    const serverAnswers = {};
-
-    saved.forEach((item) => {
-      serverAnswers[item.question_id] = Number(item.value);
-    });
-
-    answers = { ...serverAnswers, ...localDraft };
-
-    const unresolvedDraft = {};
-    Object.entries(localDraft).forEach(([questionId, value]) => {
-      if (serverAnswers[questionId] !== value) unresolvedDraft[questionId] = value;
-    });
-
-    if (Object.keys(unresolvedDraft).length === 0) {
-      clearLocalDraft();
-    } else {
-      saveLocalDraft(unresolvedDraft);
-    }
-
     render();
   } catch (error) {
-    console.error('loadData mislukte.', error.status, error.payload);
+    console.error('loadQuestions mislukte.', error.status, error.payload);
 
     const baseMessage = 'Fout bij laden. Controleer database en API-configuratie.';
     if (IS_DEVELOPMENT_ENV) {
@@ -83,41 +86,109 @@ async function loadData() {
   }
 }
 
+function createQuestionRow(question, index) {
+  const div = document.createElement('article');
+  div.className = 'question';
+  div.dataset.questionId = String(question.id);
+  const isPending = pendingQuestionIds.has(question.id);
+
+  div.innerHTML = `
+    <p><strong>${(page - 1) * perPage + index + 1}.</strong> ${question.text}</p>
+    <fieldset class="likert" ${isPending ? 'disabled' : ''}>
+      <legend class="sr-only">Kies een antwoordoptie voor vraag ${(page - 1) * perPage + index + 1}</legend>
+      ${[1, 2, 3, 4, 5].map((value) => `
+        <div class="likert-option">
+          <input
+            type="radio"
+            id="q-${question.id}-v-${value}"
+            name="q-${question.id}"
+            data-qid="${question.id}"
+            data-value="${value}"
+            value="${value}"
+            ${answers[question.id] === value ? 'checked' : ''}
+          >
+          <label for="q-${question.id}-v-${value}">${value} <span class="sr-only">(${likertLabels[value - 1]})</span></label>
+        </div>
+      `).join('')}
+    </fieldset>
+    <div class="likert-labels">
+      <span>${likertLabels[0]}</span>
+      <span>${likertLabels[4]}</span>
+    </div>
+  `;
+
+  return div;
+}
+
+function getRenderedQuestionElement(questionId) {
+  return document.querySelector(`[data-question-id="${questionId}"]`);
+}
+
+function updateQuestionPendingState(questionId) {
+  const questionElement = getRenderedQuestionElement(questionId);
+  if (!questionElement) return;
+
+  const fieldset = questionElement.querySelector('fieldset');
+  if (!fieldset) return;
+
+  fieldset.disabled = pendingQuestionIds.has(questionId);
+}
+
+function updateQuestionRow(questionId) {
+  const questionIndex = questions.findIndex((question) => question.id === questionId);
+  if (questionIndex < 0) return;
+
+  const existingElement = getRenderedQuestionElement(questionId);
+  if (!existingElement) return;
+
+  const nextElement = createQuestionRow(questions[questionIndex], questionIndex);
+  existingElement.replaceWith(nextElement);
+}
+
+function updateNavState() {
+  const submitButton = document.querySelector('#nav .submit');
+  if (!submitButton) return;
+
+  const answeredCount = Object.keys(answers).length;
+  const isComplete = answeredCount === totalQuestions;
+  submitButton.disabled = !isComplete;
+  submitButton.title = isComplete ? '' : 'Beantwoord eerst alle vragen voordat je het resultaat bekijkt.';
+async function bootstrap() {
+  try {
+    setupQuestionChangeListener();
+    const saved = await apiFetch('api/v1/get_progress.php');
+    mergeProgress(saved);
+    await loadQuestions();
+  } catch (error) {
+    console.error('bootstrap mislukte.', error.status, error.payload);
+
+    const baseMessage = 'Fout bij laden. Controleer database en API-configuratie.';
+    if (IS_DEVELOPMENT_ENV) {
+      showError(`${baseMessage} ${buildDebugHint('api/v1/get_progress.php', error.status)}`, 'progress');
+      return;
+    }
+
+    showError(baseMessage, 'progress');
+  }
+}
+
 function render() {
+  renderCount += 1;
+  if (IS_DEVELOPMENT_ENV) {
+    window.__appRenderStats = {
+      fullRenderCount: renderCount,
+      page,
+      perPage,
+      totalQuestions
+    };
+    console.debug(`[render] full render #${renderCount} (page ${page})`);
+  }
+
   const qDiv = document.getElementById('questions');
   qDiv.innerHTML = '';
 
   questions.forEach((q, index) => {
-    const div = document.createElement('article');
-    div.className = 'question';
-    const isPending = pendingQuestionIds.has(q.id);
-
-    div.innerHTML = `
-      <p><strong>${(page - 1) * perPage + index + 1}.</strong> ${q.text}</p>
-      <fieldset class="likert" ${isPending ? 'disabled' : ''}>
-        <legend class="sr-only">Kies een antwoordoptie voor vraag ${(page - 1) * perPage + index + 1}</legend>
-        ${[1, 2, 3, 4, 5].map((value) => `
-          <div class="likert-option">
-            <input
-              type="radio"
-              id="q-${q.id}-v-${value}"
-              name="q-${q.id}"
-              data-qid="${q.id}"
-              data-value="${value}"
-              value="${value}"
-              ${answers[q.id] === value ? 'checked' : ''}
-            >
-            <label for="q-${q.id}-v-${value}">${value} <span class="sr-only">(${likertLabels[value - 1]})</span></label>
-          </div>
-        `).join('')}
-      </fieldset>
-      <div class="likert-labels">
-        <span>${likertLabels[0]}</span>
-        <span>${likertLabels[4]}</span>
-      </div>
-    `;
-
-    qDiv.appendChild(div);
+    qDiv.appendChild(createQuestionRow(q, index));
   });
 
   renderNav();
@@ -134,7 +205,7 @@ function renderNav() {
     prev.textContent = 'Prev';
     prev.addEventListener('click', () => {
       page -= 1;
-      loadData();
+      loadQuestions();
     });
     nav.appendChild(prev);
   }
@@ -146,7 +217,7 @@ function renderNav() {
     next.textContent = 'Next';
     next.addEventListener('click', () => {
       page += 1;
-      loadData();
+      loadQuestions();
     });
     nav.appendChild(next);
   } else {
@@ -171,7 +242,9 @@ function updateProgress() {
 function queueAnswerSave(questionId, value) {
   answers[questionId] = value;
   saveLocalDraft(answers);
-  render();
+  updateQuestionRow(questionId);
+  updateProgress();
+  updateNavState();
 
   const existingTimer = saveTimers.get(questionId);
   if (existingTimer) {
@@ -188,7 +261,8 @@ function queueAnswerSave(questionId, value) {
 
 async function persistAnswer(questionId, value) {
   pendingQuestionIds.add(questionId);
-  render();
+  updateQuestionPendingState(questionId);
+  updateProgress();
 
   try {
     await apiFetch('api/v1/save_answer.php', {
@@ -203,7 +277,8 @@ async function persistAnswer(questionId, value) {
     showError(message, 'progress');
   } finally {
     pendingQuestionIds.delete(questionId);
-    render();
+    updateQuestionPendingState(questionId);
+    updateProgress();
   }
 }
 
@@ -239,7 +314,7 @@ async function resetTest() {
     page = 1;
     clearLocalDraft();
     document.getElementById('result').innerHTML = '';
-    await loadData();
+    await bootstrap();
     window.scrollTo({ top: 0, behavior: 'smooth' });
   } catch (error) {
     showError('Resetten mislukt. Probeer het opnieuw.', 'progress');
@@ -264,4 +339,4 @@ function showResult(data) {
   window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
 }
 
-loadData();
+bootstrap();
