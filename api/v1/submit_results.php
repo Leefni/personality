@@ -11,15 +11,12 @@ if ($visitor === '') {
     json_error('No visitor session', 400);
 }
 
-$cache = read_results_cache();
-if (isset($cache[$visitor]) && is_array($cache[$visitor])) {
-    $cached = $cache[$visitor];
-    if (isset($cached['type']) && is_string($cached['type'])) {
-        json_success([
-            'type' => $cached['type'],
-            'scores' => is_array($cached['scores'] ?? null) ? $cached['scores'] : new stdClass(),
-        ]);
-    }
+$cached = get_cached_result($pdo, $visitor);
+if ($cached !== null) {
+    json_success([
+        'type' => $cached['type'],
+        'scores' => is_array($cached['scores']) ? $cached['scores'] : new stdClass(),
+    ]);
 }
 
 $totalQuestions = (int) $pdo->query('SELECT COUNT(*) FROM questions')->fetchColumn();
@@ -60,14 +57,6 @@ $type .= $sums['SN'] >= 0 ? 'S' : 'N';
 $type .= $sums['TF'] >= 0 ? 'T' : 'F';
 $type .= $sums['JP'] >= 0 ? 'J' : 'P';
 
-$persist = $pdo->prepare(
-    'INSERT INTO results (visitor_id, type_code, detail_json)
-     VALUES (?, ?, ?)
-     ON DUPLICATE KEY UPDATE type_code = VALUES(type_code), detail_json = VALUES(detail_json)'
-);
-$persist->execute([$visitor, $type, json_encode($sums)]);
-
-$cache[$visitor] = ['type' => $type, 'scores' => $sums];
-write_results_cache($cache);
+cache_result($pdo, $visitor, $type, $sums);
 
 json_success(['type' => $type, 'scores' => $sums]);

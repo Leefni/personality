@@ -14,9 +14,6 @@ if ($visitor === '') {
 $deleteAnswers = $pdo->prepare('DELETE FROM answers WHERE visitor_id = ?');
 $deleteAnswers->execute([$visitor]);
 
-$deleteResults = $pdo->prepare('DELETE FROM results WHERE visitor_id = ?');
-$deleteResults->execute([$visitor]);
-
-clear_visitor_cache($visitor);
+invalidate_cached_result($pdo, $visitor);
 
 json_success(['ok' => true]);
