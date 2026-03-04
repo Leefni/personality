@@ -10,6 +10,7 @@ import {
   apiFetch,
   formatApiError
 } from './js/utils.js';
+import { RESULT_CONTENT } from './js/result-content.js';
 
 let questions = [];
 let answers = {};
@@ -247,13 +248,14 @@ async function resetTest() {
 
 function showResult(data) {
   const res = document.getElementById('result');
-  const score = Number(data.score || 0);
-  const total = Number(data.total || 0);
-  const percentage = total > 0 ? ((score / total) * 100).toFixed(1) : '0.0';
+  const type = typeof data.type === 'string' ? data.type : '----';
+  const details = RESULT_CONTENT.types[type];
+  const description = details?.shortDescription ?? 'Geen beschrijving beschikbaar voor dit type.';
 
   res.innerHTML = `
     <h2>Resultaat</h2>
-    <p>Score: <strong>${score}</strong> van <strong>${total}</strong> (${percentage}%)</p>
+    <p>Persoonlijkheidstype: <strong>${type}</strong></p>
+    <p>${description}</p>
     <button type="button" class="restart">Opnieuw doen</button>
   `;
 

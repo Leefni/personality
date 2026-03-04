@@ -85,8 +85,8 @@ function test_submit_results_incomplete(string $baseUrl, string $visitor): void
         assert_true(($response['json']['error'] ?? false) === true, 'submit_results error shape');
         assert_true(isset($response['json']['message']), 'submit_results message');
     } else {
-        assert_true(isset($response['json']['score']), 'submit_results score');
-        assert_true(isset($response['json']['total']), 'submit_results total');
+        assert_true(isset($response['json']['type']), 'submit_results type');
+        assert_true(isset($response['json']['scores']) && is_array($response['json']['scores']), 'submit_results scores');
     }
 }
 

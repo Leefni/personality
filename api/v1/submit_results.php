@@ -14,10 +14,10 @@ if ($visitor === '') {
 $cache = read_results_cache();
 if (isset($cache[$visitor]) && is_array($cache[$visitor])) {
     $cached = $cache[$visitor];
-    if (isset($cached['score'], $cached['total'])) {
+    if (isset($cached['type']) && is_string($cached['type'])) {
         json_success([
-            'score' => (int) $cached['score'],
-            'total' => (int) $cached['total'],
+            'type' => $cached['type'],
+            'scores' => is_array($cached['scores'] ?? null) ? $cached['scores'] : new stdClass(),
         ]);
     }
 }
@@ -34,19 +34,40 @@ if ($answeredCount < $totalQuestions) {
     ]);
 }
 
-$scoreStmt = $pdo->prepare('SELECT COALESCE(SUM(value), 0) FROM answers WHERE visitor_id = ?');
+$sums = ['EI' => 0.0, 'SN' => 0.0, 'TF' => 0.0, 'JP' => 0.0];
+
+$scoreStmt = $pdo->prepare(
+    'SELECT q.dimension, SUM((a.value - 3) * q.direction * q.weight) AS score
+     FROM answers a
+     JOIN questions q ON a.question_id = q.id
+     WHERE a.visitor_id = ?
+     GROUP BY q.dimension'
+);
 $scoreStmt->execute([$visitor]);
-$score = (int) $scoreStmt->fetchColumn();
-$totalScore = $totalQuestions * 5;
+
+foreach ($scoreStmt as $row) {
+    $dimension = (string) $row['dimension'];
+    if (!array_key_exists($dimension, $sums)) {
+        continue;
+    }
+
+    $sums[$dimension] = (float) $row['score'];
+}
+
+$type = '';
+$type .= $sums['EI'] >= 0 ? 'E' : 'I';
+$type .= $sums['SN'] >= 0 ? 'S' : 'N';
+$type .= $sums['TF'] >= 0 ? 'T' : 'F';
+$type .= $sums['JP'] >= 0 ? 'J' : 'P';
 
 $persist = $pdo->prepare(
     'INSERT INTO results (visitor_id, type_code, detail_json)
      VALUES (?, ?, ?)
      ON DUPLICATE KEY UPDATE type_code = VALUES(type_code), detail_json = VALUES(detail_json)'
 );
-$persist->execute([$visitor, 'SCOR', json_encode(['score' => $score, 'total' => $totalScore])]);
+$persist->execute([$visitor, $type, json_encode($sums)]);
 
-$cache[$visitor] = ['score' => $score, 'total' => $totalScore];
+$cache[$visitor] = ['type' => $type, 'scores' => $sums];
 write_results_cache($cache);
 
-json_success(['score' => $score, 'total' => $totalScore]);
+json_success(['type' => $type, 'scores' => $sums]);
