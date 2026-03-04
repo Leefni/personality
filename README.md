@@ -13,6 +13,21 @@ All active endpoints are now under `api/v1/`:
 - `POST /api/v1/reset_progress.php`
 - `GET /api/v1/health.php`
 
+## Legacy endpoints (`/api/*.php`)
+
+Legacy paths under `/api/*.php` are **deprecated compatibility wrappers**.
+They now forward directly to the corresponding `/api/v1/*.php` handlers, so behavior matches v1.
+
+- `GET /api/get_questions.php` -> `/api/v1/get_questions.php`
+- `GET /api/get_progress.php` -> `/api/v1/get_progress.php`
+- `POST /api/save_answer.php` -> `/api/v1/save_answer.php`
+- `POST /api/submit_results.php` -> `/api/v1/submit_results.php`
+- `POST /api/reset_progress.php` -> `/api/v1/reset_progress.php`
+- `GET /api/health.php` -> `/api/v1/health.php`
+
+Sunset policy: these wrappers are scheduled for removal after **2026-12-31**.
+New integrations should use only `/api/v1/*` endpoints.
+
 ## JSON error format
 
 All API errors use the same structure:
