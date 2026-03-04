@@ -80,18 +80,18 @@ Success response:
 
 ### `POST /api/v1/submit_results.php`
 
-Calculates quiz score from saved answers, stores/updates DB result row, and caches score in `cache/results.json`.
+Calculates the 4-letter personality type from saved answers, stores/updates the DB result row, and caches the type in `cache/results.json`.
 
 Success response:
 
 ```json
 {
-  "score": 124,
-  "total": 250
+  "type": "ENTJ",
+  "scores": { "EI": 6, "SN": -2, "TF": 1, "JP": 8 }
 }
 ```
 
-If cached data exists for the visitor, the endpoint returns the cached score without recalculation.
+If cached data exists for the visitor, the endpoint returns the cached type without recalculation.
 
 ### `POST /api/v1/reset_progress.php`
 
