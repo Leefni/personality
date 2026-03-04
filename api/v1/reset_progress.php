@@ -11,9 +11,7 @@ if ($visitor === '') {
     json_success(['ok' => true]);
 }
 
-$deleteAnswers = $pdo->prepare('DELETE FROM answers WHERE visitor_id = ?');
-$deleteAnswers->execute([$visitor]);
-
-invalidate_cached_result($pdo, $visitor);
+$quizRepository->clearProgress($visitor);
+clear_visitor_cache($visitor);
 
 json_success(['ok' => true]);
