@@ -28,6 +28,6 @@ $stmt = $pdo->prepare(
 );
 $stmt->execute([$questionId, $visitor, $value]);
 
-clear_visitor_cache($visitor);
+invalidate_cached_result($pdo, $visitor);
 
 json_success(['ok' => true, 'visitor_id' => $visitor]);

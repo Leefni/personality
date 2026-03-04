@@ -4,8 +4,7 @@ declare(strict_types=1);
 header('Content-Type: application/json; charset=utf-8');
 
 require __DIR__ . '/../../db.php';
-
-const RESULTS_CACHE_FILE = __DIR__ . '/../../cache/results.json';
+require_once __DIR__ . '/cache.php';
 
 function json_success(array $payload, int $status = 200): void
 {
@@ -78,42 +77,3 @@ function ensure_visitor_id(?array $payload = null): string
     return $visitor;
 }
 
-function read_results_cache(): array
-{
-    if (!is_file(RESULTS_CACHE_FILE)) {
-        return [];
-    }
-
-    $raw = file_get_contents(RESULTS_CACHE_FILE);
-    if ($raw === false || $raw === '') {
-        return [];
-    }
-
-    $decoded = json_decode($raw, true);
-    return is_array($decoded) ? $decoded : [];
-}
-
-function write_results_cache(array $cache): void
-{
-    $cacheDir = dirname(RESULTS_CACHE_FILE);
-    if (!is_dir($cacheDir)) {
-        mkdir($cacheDir, 0777, true);
-    }
-
-    file_put_contents(RESULTS_CACHE_FILE, json_encode($cache, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
-}
-
-function clear_visitor_cache(string $visitor): void
-{
-    if ($visitor === '') {
-        return;
-    }
-
-    $cache = read_results_cache();
-    if (!array_key_exists($visitor, $cache)) {
-        return;
-    }
-
-    unset($cache[$visitor]);
-    write_results_cache($cache);
-}
