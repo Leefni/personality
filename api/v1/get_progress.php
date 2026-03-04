@@ -8,7 +8,4 @@ if ($visitor === '') {
     json_success([]);
 }
 
-$stmt = $pdo->prepare('SELECT question_id, value FROM answers WHERE visitor_id = ?');
-$stmt->execute([$visitor]);
-
-json_success($stmt->fetchAll());
+json_success($quizRepository->getVisitorAnswers($visitor));
