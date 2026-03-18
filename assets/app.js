@@ -22,6 +22,12 @@ const pendingQuestionIds = new Set();
 const saveTimers = new Map();
 let renderCount = 0;
 
+function setProgressMessage(message) {
+  const progress = document.getElementById('progress');
+  if (!progress) return;
+  progress.textContent = message;
+}
+
 function setupQuestionChangeListener() {
   if (hasQuestionChangeListener) return;
 
@@ -93,6 +99,7 @@ async function loadQuestions() {
     console.error('loadQuestions mislukte.', error.status, error.payload);
 
     const baseMessage = 'Fout bij laden. Controleer database en API-configuratie.';
+    setProgressMessage(baseMessage);
     if (IS_DEVELOPMENT_ENV) {
       const endpoint = error?.url || dataEndpoint;
       const status = error?.status;
@@ -214,6 +221,7 @@ async function bootstrap() {
     console.error('bootstrap mislukte.', error.status, error.payload);
 
     const baseMessage = 'Fout bij laden. Controleer database en API-configuratie.';
+    setProgressMessage(baseMessage);
     if (IS_DEVELOPMENT_ENV) {
       showError(`${baseMessage} ${buildDebugHint('api/v1/get_progress.php', error.status)}`, 'progress');
       return;

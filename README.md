@@ -157,8 +157,16 @@ Run API checks through the shared test entrypoint:
 This command now runs both:
 
 1. `tests/frontend_syntax_check.sh` to validate JavaScript syntax for `assets/app.js` and `assets/js/*.js` before deploy.
-2. `tests/api_v1_endpoints_test.php` to exercise API endpoint behavior.
+2. `tests/frontend_runtime_check.sh` to verify frontend load/error runtime behavior (including timeout handling).
+3. `tests/api_v1_endpoints_test.php` to exercise API endpoint behavior.
 
 You can still run the API-only test directly if needed:
 
 - `BASE_URL="http://localhost/personality" php tests/api_v1_endpoints_test.php`
+
+### Windows (PowerShell) debugging helpers
+
+For local debugging on Windows, use the PowerShell equivalents:
+
+- `pwsh tests/frontend_syntax_check.ps1`
+- `pwsh tests/frontend_runtime_check.ps1`
