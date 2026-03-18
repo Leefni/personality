@@ -148,10 +148,17 @@ The cache entry for a visitor is deleted when:
 
 This keeps cached types aligned with the latest answers.
 
-## Test files
+## Testing
 
-Example API tests are available in:
+Run API checks through the shared test entrypoint:
 
-- `tests/api_v1_endpoints_test.php`
+- `BASE_URL="http://localhost/personality" bash tests/run_api_checks.sh`
 
-These tests exercise each endpoint and expected response shape.
+This command now runs both:
+
+1. `tests/frontend_syntax_check.sh` to validate JavaScript syntax for `assets/app.js` and `assets/js/*.js` before deploy.
+2. `tests/api_v1_endpoints_test.php` to exercise API endpoint behavior.
+
+You can still run the API-only test directly if needed:
+
+- `BASE_URL="http://localhost/personality" php tests/api_v1_endpoints_test.php`
