@@ -155,6 +155,31 @@ function updateNavState() {
   submitButton.title = isComplete ? '' : 'Beantwoord eerst alle vragen voordat je het resultaat bekijkt.';
 }
 
+function renderEmptyState(dataEndpoint) {
+  const progress = document.getElementById('progress');
+  const questionsElement = document.getElementById('questions');
+  const nav = document.getElementById('nav');
+
+  const baseMessage = 'Geen vragen gevonden. Controleer database-seeding.';
+  progress.textContent = baseMessage;
+
+  if (IS_DEVELOPMENT_ENV) {
+    const debugHint = `Debug: controleer response van ${dataEndpoint} en verwacht dat db_bootstrap/seed ten minste 1 vraag aanmaakt.`;
+    questionsElement.innerHTML = `
+      <p class="error">${baseMessage}</p>
+      <p class="error">${debugHint}</p>
+    `;
+  } else {
+    questionsElement.innerHTML = `<p class="error">${baseMessage}</p>`;
+  }
+
+  nav.querySelectorAll('button').forEach((button) => {
+    button.disabled = true;
+  });
+  nav.innerHTML = '';
+  nav.hidden = true;
+}
+
 async function bootstrap() {
   try {
     setupQuestionChangeListener();
@@ -187,6 +212,12 @@ function render() {
   }
 
   const qDiv = document.getElementById('questions');
+  const isFirstPageEmpty = page === 1 && (totalQuestions === 0 || questions.length === 0);
+  if (isFirstPageEmpty) {
+    renderEmptyState(`api/v1/get_questions.php?page=${page}&per_page=${perPage}`);
+    return;
+  }
+
   qDiv.innerHTML = '';
 
   questions.forEach((q, index) => {
@@ -199,6 +230,7 @@ function render() {
 
 function renderNav() {
   const nav = document.getElementById('nav');
+  nav.hidden = false;
   nav.innerHTML = '';
 
   if (page > 1) {
