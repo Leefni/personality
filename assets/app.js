@@ -127,7 +127,7 @@ function createQuestionRow(question, index) {
     <p><strong>${(page - 1) * perPage + index + 1}.</strong> ${question.text}</p>
     <fieldset class="likert" ${isPending ? 'disabled' : ''}>
       <legend class="sr-only">Kies een antwoordoptie voor vraag ${(page - 1) * perPage + index + 1}</legend>
-      ${[1, 2, 3, 4, 5].map((value) => `
+      ${[1, 2, 3, 4, 5, 6].map((value) => `
         <div class="likert-option">
           <input
             type="radio"
@@ -144,7 +144,7 @@ function createQuestionRow(question, index) {
     </fieldset>
     <div class="likert-labels">
       <span>${likertLabels[0]}</span>
-      <span>${likertLabels[4]}</span>
+      <span>${likertLabels[5]}</span>
     </div>
   `;
 

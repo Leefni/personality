@@ -78,7 +78,7 @@ final class QuizRepository
         $sums = ['EI' => 0.0, 'SN' => 0.0, 'TF' => 0.0, 'JP' => 0.0];
 
         $stmt = $this->pdo->prepare(
-            'SELECT q.dimension, SUM((a.value - 3) * q.direction * q.weight) AS score
+            'SELECT q.dimension, SUM((a.value - 3.5) * q.direction * q.weight) AS score
              FROM answers a
              JOIN questions q ON a.question_id = q.id
              WHERE a.visitor_id = ?
