@@ -68,17 +68,41 @@ async function loadQuestions() {
 
   try {
     const questionPayload = await apiFetch(dataEndpoint);
-    questions = Array.isArray(questionPayload.questions) ? questionPayload.questions : [];
-    totalQuestions = Number(questionPayload.total ?? 0);
-    page = Number(questionPayload.page ?? 1);
-    perPage = Number(questionPayload.per_page ?? PAGE_SIZE);
+    const hasValidSchema = questionPayload
+      && typeof questionPayload === 'object'
+      && !Array.isArray(questionPayload)
+      && Array.isArray(questionPayload.questions)
+      && Number.isFinite(Number(questionPayload.total))
+      && Number.isFinite(Number(questionPayload.page))
+      && Number.isFinite(Number(questionPayload.per_page));
+
+    if (!hasValidSchema) {
+      const schemaError = new Error('Invalid questions payload schema: expected questions[] and numeric total/page/per_page.');
+      schemaError.url = dataEndpoint;
+      schemaError.status = 200;
+      schemaError.payload = questionPayload;
+      throw schemaError;
+    }
+
+    questions = questionPayload.questions;
+    totalQuestions = Number(questionPayload.total);
+    page = Number(questionPayload.page);
+    perPage = Number(questionPayload.per_page);
     render();
   } catch (error) {
     console.error('loadQuestions mislukte.', error.status, error.payload);
 
     const baseMessage = 'Fout bij laden. Controleer database en API-configuratie.';
     if (IS_DEVELOPMENT_ENV) {
-      showError(`${baseMessage} ${buildDebugHint(dataEndpoint, error.status)}`, 'progress');
+      const endpoint = error?.url || dataEndpoint;
+      const status = error?.status;
+      const debugParts = [
+        buildDebugHint(endpoint, status),
+        error?.isJsonParseError ? 'Hint: API-body is geen geldige JSON.' : null,
+        error?.parseErrorMessage ? `JSON parse: ${error.parseErrorMessage}` : null
+      ].filter(Boolean);
+
+      showError(`${baseMessage} ${debugParts.join(' ')}`, 'progress');
       return;
     }
 
