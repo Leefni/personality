@@ -10,7 +10,14 @@ declare(strict_types=1);
 
 $baseUrl = rtrim((string) getenv('BASE_URL'), '/');
 if ($baseUrl === '') {
-    fwrite(STDERR, "Set BASE_URL first, e.g. BASE_URL=http://localhost/personality\n");
+    $message = "Set BASE_URL first, e.g. BASE_URL=http://localhost/personality\n";
+
+    if (defined('STDERR')) {
+        fwrite(STDERR, $message);
+    } else {
+        echo $message;
+    }
+
     exit(1);
 }
 
@@ -116,6 +123,13 @@ try {
 
     echo "All example API tests passed.\n";
 } catch (Throwable $error) {
-    fwrite(STDERR, 'Test failed: ' . $error->getMessage() . "\n");
+    $message = 'Test failed: ' . $error->getMessage() . "\n";
+
+    if (defined('STDERR')) {
+        fwrite(STDERR, $message);
+    } else {
+        echo $message;
+    }
+
     exit(1);
 }
