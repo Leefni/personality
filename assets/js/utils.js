@@ -2,6 +2,7 @@ export const PAGE_SIZE = 10;
 export const APP_ENV = (window.APP_ENV || 'production').toLowerCase();
 export const IS_DEVELOPMENT_ENV = APP_ENV === 'development' || APP_ENV === 'local';
 export const ANSWERS_STORAGE_KEY = 'personality.answers.v1';
+export const API_TIMEOUT_MS = 12000;
 export const likertLabels = [
   'Helemaal oneens',
   'Oneens',
@@ -63,7 +64,30 @@ export function showError(message, targetId = 'progress') {
 }
 
 export async function apiFetch(url, options = {}) {
-  const response = await fetch(url, options);
+  const timeoutMs = Number.isFinite(options.timeoutMs) ? Number(options.timeoutMs) : API_TIMEOUT_MS;
+  const { timeoutMs: _timeoutMs, ...requestOptions } = options;
+  const controller = new AbortController();
+  const abortTimerId = window.setTimeout(() => {
+    controller.abort();
+  }, timeoutMs);
+
+  let response;
+  try {
+    response = await fetch(url, { ...requestOptions, signal: controller.signal });
+  } catch (error) {
+    if (error?.name === 'AbortError') {
+      const timeoutError = new Error('Request timed out: ' + url);
+      timeoutError.status = 408;
+      timeoutError.url = url;
+      timeoutError.isTimeout = true;
+      timeoutError.timeoutMs = timeoutMs;
+      throw timeoutError;
+    }
+    throw error;
+  } finally {
+    window.clearTimeout(abortTimerId);
+  }
+
   const text = await response.text();
   const hasBody = text.trim().length > 0;
   const bodyPreview = text.slice(0, 180);
@@ -108,7 +132,8 @@ export function formatApiError(error, fallbackMessage) {
   const statusMessages = {
     400: 'Je verzoek is ongeldig. Controleer je invoer en probeer opnieuw.',
     422: 'Niet alle gegevens zijn compleet of geldig. Vul ontbrekende velden in en probeer opnieuw.',
-    500: 'Er ging iets mis op de server. Probeer het later opnieuw.'
+    500: 'Er ging iets mis op de server. Probeer het later opnieuw.',
+    408: 'Verbinding met de server duurde te lang. Controleer je netwerk en probeer opnieuw.'
   };
 
   const message = statusMessages[error?.status] || fallbackMessage;

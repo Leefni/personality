@@ -145,6 +145,16 @@ function response(body, status = 200) {
   };
 }
 
+function delayedAbortResponse(signal) {
+  return new Promise((_, reject) => {
+    signal.addEventListener('abort', () => {
+      const abortError = new Error('The operation was aborted.');
+      abortError.name = 'AbortError';
+      reject(abortError);
+    }, { once: true });
+  });
+}
+
 function assertDebugHintIncludes(message, { endpoint, status, bodyHint = false }) {
   assert.ok(message.includes(endpoint), `Expected endpoint hint \"${endpoint}\" in: ${message}`);
   assert.ok(message.includes(`status: ${status}`), `Expected status hint ${status} in: ${message}`);
@@ -185,7 +195,7 @@ async function runScenario(name) {
   };
   globalThis.document = document;
   globalThis.localStorage = localStorage;
-  globalThis.fetch = async (url) => {
+  globalThis.fetch = async (url, options = {}) => {
     if (url === 'api/v1/get_progress.php') {
       return response('[]');
     }
@@ -206,6 +216,10 @@ async function runScenario(name) {
 
       if (name === 'case_c') {
         return response(JSON.stringify({ page: 1, per_page: 10, total: 1 }));
+      }
+
+      if (name === 'case_timeout') {
+        return delayedAbortResponse(options.signal);
       }
     }
 
@@ -228,6 +242,13 @@ async function runScenario(name) {
   const appModulePath = pathToFileURL(path.resolve('assets/app.js')).href;
   await import(appModulePath + `?scenario=${name}&ts=${Date.now()}`);
   await new Promise((resolve) => setImmediate(resolve));
+  if (name === 'case_timeout') {
+    while (timeouts.length > 0) {
+      const timeoutFn = timeouts.shift();
+      if (typeof timeoutFn === 'function') timeoutFn();
+      await new Promise((resolve) => setImmediate(resolve));
+    }
+  }
 
   console.error = originalConsoleError;
 
@@ -260,11 +281,19 @@ async function runScenario(name) {
       bodyHint: false
     });
   }
+
+  if (name === 'case_timeout') {
+    assertDebugHintIncludes(finalMessage, {
+      endpoint: 'api/v1/get_questions.php?page=1&per_page=10',
+      status: 408,
+      bodyHint: false
+    });
+  }
 }
 
 const scenario = process.argv[2];
-if (!scenario || !['case_a', 'case_b', 'case_c'].includes(scenario)) {
-  throw new Error('Usage: node tests/frontend_runtime_flow_test.mjs <case_a|case_b|case_c>');
+if (!scenario || !['case_a', 'case_b', 'case_c', 'case_timeout'].includes(scenario)) {
+  throw new Error('Usage: node tests/frontend_runtime_flow_test.mjs <case_a|case_b|case_c|case_timeout>');
 }
 
 await runScenario(scenario);

@@ -11,5 +11,6 @@ fi
 node "$ROOT_DIR/tests/frontend_runtime_flow_test.mjs" case_a
 node "$ROOT_DIR/tests/frontend_runtime_flow_test.mjs" case_b
 node "$ROOT_DIR/tests/frontend_runtime_flow_test.mjs" case_c
+node "$ROOT_DIR/tests/frontend_runtime_flow_test.mjs" case_timeout
 
 echo "Frontend runtime behavior checks passed for load flow edge cases"
