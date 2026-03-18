@@ -144,13 +144,21 @@ function test_get_progress(string $baseUrl, string $visitor): void
 
 function test_save_answer(string $baseUrl, string $visitor, int $questionId): void
 {
-    $response = request_json('POST', $baseUrl . '/api/v1/save_answer.php', [
+    $validMaxResponse = request_json('POST', $baseUrl . '/api/v1/save_answer.php', [
         'question_id' => $questionId,
-        'value' => 3,
+        'value' => 6,
     ], $visitor);
 
-    assert_true($response['status'] === 200, 'save_answer status' . debug_response($response));
-    assert_true(($response['json']['ok'] ?? false) === true, 'save_answer ok');
+    assert_true($validMaxResponse['status'] === 200, 'save_answer status for value=6' . debug_response($validMaxResponse));
+    assert_true(($validMaxResponse['json']['ok'] ?? false) === true, 'save_answer ok for value=6');
+
+    $invalidResponse = request_json('POST', $baseUrl . '/api/v1/save_answer.php', [
+        'question_id' => $questionId,
+        'value' => 7,
+    ], $visitor);
+
+    assert_true($invalidResponse['status'] === 422, 'save_answer rejects value=7' . debug_response($invalidResponse));
+    assert_true(($invalidResponse['json']['error'] ?? false) === true, 'save_answer error payload for value=7' . debug_response($invalidResponse));
 }
 
 function test_submit_results_incomplete(string $baseUrl, string $visitor): void
