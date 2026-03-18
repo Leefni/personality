@@ -77,7 +77,13 @@ function request_json(string $method, string $url, ?array $payload = null, ?stri
     $status = (int) ($matches[1] ?? 500);
 
     $decoded = json_decode((string) $body, true);
-    return ['status' => $status, 'json' => $decoded];
+    return [
+        'status' => $status,
+        'status_line' => $statusLine,
+        'json' => $decoded,
+        'body' => (string) $body,
+        'url' => $url,
+    ];
 }
 
 function assert_true(bool $condition, string $message): void
@@ -87,10 +93,35 @@ function assert_true(bool $condition, string $message): void
     }
 }
 
+function debug_response(array $response): string
+{
+    $json = json_encode($response['json'], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+    if ($json === false) {
+        $json = 'null';
+    }
+
+    $bodyPreview = trim((string) ($response['body'] ?? ''));
+    if ($bodyPreview === '') {
+        $bodyPreview = '<empty body>';
+    }
+
+    if (strlen($bodyPreview) > 220) {
+        $bodyPreview = substr($bodyPreview, 0, 220) . '...';
+    }
+
+    return sprintf(
+        ' (url: %s, status: %s, json: %s, body: %s)',
+        (string) ($response['url'] ?? '<unknown>'),
+        (string) ($response['status_line'] ?? '<unknown>'),
+        $json,
+        $bodyPreview
+    );
+}
+
 function test_get_questions(string $baseUrl): void
 {
     $response = request_json('GET', $baseUrl . '/api/v1/get_questions.php?page=1&per_page=10');
-    assert_true($response['status'] === 200, 'get_questions status');
+    assert_true($response['status'] === 200, 'get_questions status' . debug_response($response));
     assert_true(isset($response['json']['questions']) && is_array($response['json']['questions']), 'get_questions questions array');
     assert_true(isset($response['json']['page']), 'get_questions page');
     assert_true(isset($response['json']['per_page']), 'get_questions per_page');
@@ -100,7 +131,7 @@ function test_get_questions(string $baseUrl): void
 function test_get_progress(string $baseUrl, string $visitor): void
 {
     $response = request_json('GET', $baseUrl . '/api/v1/get_progress.php', null, $visitor);
-    assert_true($response['status'] === 200, 'get_progress status');
+    assert_true($response['status'] === 200, 'get_progress status' . debug_response($response));
     assert_true(is_array($response['json']), 'get_progress array');
 }
 
@@ -111,14 +142,14 @@ function test_save_answer(string $baseUrl, string $visitor): void
         'value' => 3,
     ], $visitor);
 
-    assert_true($response['status'] === 200, 'save_answer status');
+    assert_true($response['status'] === 200, 'save_answer status' . debug_response($response));
     assert_true(($response['json']['ok'] ?? false) === true, 'save_answer ok');
 }
 
 function test_submit_results_incomplete(string $baseUrl, string $visitor): void
 {
     $response = request_json('POST', $baseUrl . '/api/v1/submit_results.php', [], $visitor);
-    assert_true(in_array($response['status'], [200, 422], true), 'submit_results status should be 200 or 422');
+    assert_true(in_array($response['status'], [200, 422], true), 'submit_results status should be 200 or 422' . debug_response($response));
 
     if ($response['status'] === 422) {
         assert_true(($response['json']['error'] ?? false) === true, 'submit_results error shape');
@@ -132,7 +163,7 @@ function test_submit_results_incomplete(string $baseUrl, string $visitor): void
 function test_reset_progress(string $baseUrl, string $visitor): void
 {
     $response = request_json('POST', $baseUrl . '/api/v1/reset_progress.php', [], $visitor);
-    assert_true($response['status'] === 200, 'reset_progress status');
+    assert_true($response['status'] === 200, 'reset_progress status' . debug_response($response));
     assert_true(($response['json']['ok'] ?? false) === true, 'reset_progress ok');
 }
 
