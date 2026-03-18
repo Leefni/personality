@@ -6,11 +6,50 @@ declare(strict_types=1);
  *
  * Run with:
  *   BASE_URL="http://localhost/personality" php tests/api_v1_endpoints_test.php
+ *   php tests/api_v1_endpoints_test.php http://localhost/personality
  */
 
-$baseUrl = rtrim((string) getenv('BASE_URL'), '/');
+function resolve_base_url(array $argv): string
+{
+    $baseUrlFromEnv = getenv('BASE_URL');
+    if ($baseUrlFromEnv !== false && trim((string) $baseUrlFromEnv) !== '') {
+        return rtrim((string) $baseUrlFromEnv, '/');
+    }
+
+    $argumentCount = count($argv);
+    for ($i = 1; $i < $argumentCount; $i++) {
+        $arg = (string) $argv[$i];
+
+        if ($arg === '--base-url' && isset($argv[$i + 1])) {
+            return rtrim((string) $argv[$i + 1], '/');
+        }
+
+        if (str_starts_with($arg, '--base-url=')) {
+            return rtrim(substr($arg, strlen('--base-url=')), '/');
+        }
+
+        if ($arg !== '' && $arg[0] !== '-') {
+            return rtrim($arg, '/');
+        }
+    }
+
+    return '';
+}
+
+$baseUrl = resolve_base_url($argv ?? []);
 if ($baseUrl === '') {
-    fwrite(STDERR, "Set BASE_URL first, e.g. BASE_URL=http://localhost/personality\n");
+    $message = "Set BASE_URL first or pass it as an argument.\n"
+        . "Examples:\n"
+        . "  BASE_URL=http://localhost/personality php tests/api_v1_endpoints_test.php\n"
+        . "  php tests/api_v1_endpoints_test.php http://localhost/personality\n"
+        . "  php tests/api_v1_endpoints_test.php --base-url=http://localhost/personality\n";
+
+    if (defined('STDERR')) {
+        fwrite(STDERR, $message);
+    } else {
+        echo $message;
+    }
+
     exit(1);
 }
 
@@ -116,6 +155,13 @@ try {
 
     echo "All example API tests passed.\n";
 } catch (Throwable $error) {
-    fwrite(STDERR, 'Test failed: ' . $error->getMessage() . "\n");
+    $message = 'Test failed: ' . $error->getMessage() . "\n";
+
+    if (defined('STDERR')) {
+        fwrite(STDERR, $message);
+    } else {
+        echo $message;
+    }
+
     exit(1);
 }
