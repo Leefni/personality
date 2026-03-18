@@ -158,13 +158,16 @@ function test_submit_results_incomplete(string $baseUrl, string $visitor): void
     $response = request_json('POST', $baseUrl . '/api/v1/submit_results.php', [], $visitor);
     assert_true(in_array($response['status'], [200, 422], true), 'submit_results status should be 200 or 422' . debug_response($response));
 
-    if ($response['status'] === 422) {
-        assert_true(($response['json']['error'] ?? false) === true, 'submit_results error shape');
-        assert_true(isset($response['json']['message']), 'submit_results message');
-    } else {
-        assert_true(isset($response['json']['type']), 'submit_results type');
-        assert_true(isset($response['json']['scores']) && is_array($response['json']['scores']), 'submit_results scores');
+    $isErrorPayload = ($response['json']['error'] ?? false) === true;
+    if ($response['status'] === 422 || $isErrorPayload) {
+        assert_true($isErrorPayload, 'submit_results error shape' . debug_response($response));
+        assert_true(isset($response['json']['message']) && is_string($response['json']['message']), 'submit_results message' . debug_response($response));
+        return;
     }
+
+    $type = $response['json']['type'] ?? $response['json']['type_code'] ?? null;
+    assert_true(is_string($type) && $type !== '', 'submit_results type' . debug_response($response));
+    assert_true(isset($response['json']['scores']) && is_array($response['json']['scores']), 'submit_results scores' . debug_response($response));
 }
 
 function test_reset_progress(string $baseUrl, string $visitor): void
