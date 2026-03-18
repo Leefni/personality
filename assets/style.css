@@ -345,3 +345,71 @@ fieldset[disabled] .likert-option label {
    order: -1;
  }
 }
+
+.test-meta {
+  text-align: center;
+  color: var(--text-muted);
+  margin: -8px 0 18px;
+  font-size: 14px;
+}
+
+.privacy-note,
+.about-test {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: #f8fafc;
+  padding: 14px 16px;
+  margin-bottom: 18px;
+}
+
+.privacy-note p {
+  margin: 0 0 10px;
+  color: #334155;
+  font-size: 14px;
+}
+
+.about-test h2 {
+  margin: 0 0 8px;
+  font-size: 20px;
+}
+
+.about-test ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.about-test li {
+  margin-bottom: 6px;
+}
+
+button.danger,
+.result button.danger {
+  background: #b91c1c;
+  color: #fff;
+  border: 1px solid #b91c1c;
+  border-radius: 8px;
+  padding: 10px 12px;
+  cursor: pointer;
+}
+
+.result-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.result-actions button {
+  background: #fff;
+  color: #1f2937;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 10px 12px;
+  cursor: pointer;
+}
+
+.result-meta {
+  color: var(--text-muted);
+  font-size: 14px;
+  margin-top: 8px;
+}

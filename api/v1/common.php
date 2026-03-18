@@ -13,3 +13,25 @@ require __DIR__ . '/results_cache.php';
 
 $quizRepository = new QuizRepository($pdo);
 $quizService = new QuizService();
+
+/** @return array{version:string,date:string,question_count:int} */
+function get_test_metadata(QuizRepository $quizRepository): array
+{
+    global $config;
+
+    $version = isset($config['test_version']) ? trim((string) $config['test_version']) : '';
+    if ($version === '') {
+        $version = '2026.03';
+    }
+
+    $date = isset($config['test_release_date']) ? trim((string) $config['test_release_date']) : '';
+    if ($date === '') {
+        $date = '2026-03-18';
+    }
+
+    return [
+        'version' => $version,
+        'date' => $date,
+        'question_count' => $quizRepository->getTotalQuestionCount(),
+    ];
+}
