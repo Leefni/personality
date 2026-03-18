@@ -6,7 +6,8 @@ export const API_TIMEOUT_MS = 12000;
 export const likertLabels = [
   'Helemaal oneens',
   'Oneens',
-  'Neutraal',
+  'Licht oneens',
+  'Licht eens',
   'Eens',
   'Helemaal eens'
 ];
