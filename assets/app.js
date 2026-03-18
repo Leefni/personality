@@ -266,6 +266,43 @@ async function submitTest() {
   }
 }
 
+
+function clamp(value, min, max) {
+  return Math.min(max, Math.max(min, value));
+}
+
+function toFiniteNumber(value, fallback = 0) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function normalizeDimensionScore(rawScore) {
+  return clamp(toFiniteNumber(rawScore), -100, 100);
+}
+
+function getScoreboardEntries(rawScores = {}) {
+  return Object.entries(RESULT_CONTENT.dimensions).map(([dimension, config]) => {
+    const normalizedScore = normalizeDimensionScore(rawScores?.[dimension]);
+    const strengthPercent = Math.round(Math.abs(normalizedScore));
+    const sideIndex = normalizedScore >= 0 ? 0 : 1;
+    const sideLetter = config.poles[sideIndex] ?? '?';
+    const sideName = config.names[sideIndex] ?? 'Onbekend';
+
+    return {
+      dimension,
+      normalizedScore,
+      strengthPercent,
+      sideLetter,
+      sideName,
+      oppositeName: config.names[sideIndex === 0 ? 1 : 0] ?? 'Onbekend'
+    };
+  });
+}
+
+function formatTrendLabel(entry) {
+  return `${entry.sideName} (${entry.sideLetter})`;
+}
+
 async function resetTest() {
   try {
     await resetProgress();
@@ -280,6 +317,60 @@ async function resetTest() {
   }
 }
 
+function showResult(data) {
+  const res = document.getElementById('result');
+  const type = typeof data.type === 'string' ? data.type : '----';
+  const details = RESULT_CONTENT.types[type];
+  const rawScores = data?.scores && typeof data.scores === 'object' ? data.scores : {};
+  const scoreboardEntries = getScoreboardEntries(rawScores);
+  const strongestTendencies = [...scoreboardEntries]
+    .sort((a, b) => b.strengthPercent - a.strengthPercent)
+    .slice(0, 2);
+  const possibleBlindSpot = [...scoreboardEntries]
+    .sort((a, b) => a.strengthPercent - b.strengthPercent)[0];
+
+  const longDescription = details?.longDescriptionNl ?? details?.shortDescription ?? 'Geen beschrijving beschikbaar voor dit type.';
+  const werkstijl = details?.werkstijlNl ?? details?.shortDescription ?? 'Geen beschrijving beschikbaar voor werkstijl.';
+  const valkuilen = details?.valkuilenNl ?? details?.shortDescription ?? 'Geen valkuilen beschikbaar voor dit type.';
+  const groeitips = details?.groeitipsNl ?? details?.shortDescription ?? 'Geen groeitips beschikbaar voor dit type.';
+
+  res.innerHTML = `
+    <h2>Resultaat</h2>
+    <p>Persoonlijkheidstype: <strong>${type}</strong></p>
+    <p>${longDescription}</p>
+
+    <h3>Scoreboard</h3>
+    ${scoreboardEntries.map((entry) => `
+      <div class="bar">
+        <div class="bar-label">
+          <strong>${entry.dimension}</strong> — ${entry.sideName} vs ${entry.oppositeName}
+          <span> (${entry.normalizedScore >= 0 ? '+' : ''}${entry.normalizedScore.toFixed(1)})</span>
+        </div>
+        <div class="bar-track" role="img" aria-label="${entry.dimension} ${entry.strengthPercent}% ${entry.sideName}">
+          <div class="bar-fill" style="width: ${entry.strengthPercent}%;"></div>
+        </div>
+      </div>
+    `).join('')}
+
+    <h3>Sterkste tendensen</h3>
+    <ul>
+      ${strongestTendencies.map((entry) => `<li>${formatTrendLabel(entry)} (${entry.strengthPercent}%)</li>`).join('')}
+    </ul>
+
+    <h3>Mogelijke blinde vlek</h3>
+    <p>${possibleBlindSpot ? `${formatTrendLabel(possibleBlindSpot)} krijgt nu relatief weinig nadruk (${possibleBlindSpot.strengthPercent}%).` : 'Geen blinde vlek beschikbaar.'}</p>
+
+    <h3>Werkstijl</h3>
+    <p>${werkstijl}</p>
+
+    <h3>Valkuilen</h3>
+    <p>${valkuilen}</p>
+
+    <h3>Groeitips</h3>
+    <p>${groeitips}</p>
+
+    <button type="button" class="restart">Opnieuw doen</button>
+  `;
 function render() {
   const state = getState();
   const renderCount = incrementRenderCount();
