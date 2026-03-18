@@ -234,9 +234,85 @@ async function bootstrap() {
       showError(`${baseMessage} ${buildDebugHint('api/v1/get_progress.php', error.status)}`, 'progress');
       return;
     }
+  const bars = renderDimensionBars(data?.scores);
+  res.querySelector('p:last-of-type')?.insertAdjacentElement('afterend', bars);
+
+  res.querySelector('.restart')?.addEventListener('click', resetTest);
 
     showError(baseMessage, 'progress');
   }
+}
+
+function renderDimensionBars(scores) {
+  const section = document.createElement('section');
+  section.className = 'dimension-bars';
+  section.innerHTML = '<h3>Scores per dimensie</h3>';
+
+  const dimensions = RESULT_CONTENT?.dimensions;
+  if (!dimensions || typeof dimensions !== 'object' || Array.isArray(dimensions)) {
+    const fallback = document.createElement('p');
+    fallback.textContent = 'Dimensie-inhoud ontbreekt; scorebalken kunnen niet worden getoond.';
+    section.appendChild(fallback);
+    return section;
+  }
+
+  // We normaliseren invoer naar een voorspelbaar object met vier dimensies.
+  // Zo is de render-flow eenvoudig te volgen, ook wanneer scores ontbreken.
+  const normalizedScores = {
+    EI: 0,
+    SN: 0,
+    TF: 0,
+    JP: 0
+  };
+  let hadMalformedScore = false;
+
+  if (scores && typeof scores === 'object' && !Array.isArray(scores)) {
+    Object.keys(normalizedScores).forEach((dimensionKey) => {
+      const numericValue = Number(scores[dimensionKey]);
+      if (Number.isFinite(numericValue)) {
+        normalizedScores[dimensionKey] = numericValue;
+      } else if (scores[dimensionKey] != null) {
+        hadMalformedScore = true;
+      }
+    });
+  } else if (scores != null) {
+    hadMalformedScore = true;
+  }
+
+  Object.entries(dimensions).forEach(([dimensionKey, config]) => {
+    const poles = Array.isArray(config?.poles) ? config.poles : [dimensionKey[0], dimensionKey[1] ?? '?'];
+    const names = Array.isArray(config?.names) ? config.names : poles;
+    const score = normalizedScores[dimensionKey] ?? 0;
+    const dominantIndex = score >= 0 ? 0 : 1;
+
+    // Scores hebben geen vaste bovengrens. Voor UI-doeleinden schalen we
+    // de absolute waarde licht op en begrenzen op 100%.
+    const fillWidth = Math.min(100, 50 + (Math.abs(score) * 12.5));
+
+    const bar = document.createElement('div');
+    bar.className = 'bar';
+    bar.innerHTML = `
+      <div class="bar-label">
+        <strong>${dimensionKey}</strong> — ${names[0]} (${poles[0]}) ↔ ${names[1]} (${poles[1]})
+      </div>
+      <div class="bar-track">
+        <div class="bar-fill" style="width: ${fillWidth}%"></div>
+      </div>
+      <small>
+        Dominant: ${names[dominantIndex]} (${poles[dominantIndex]}) · ruwe score: ${score.toFixed(2)}
+      </small>
+    `;
+    section.appendChild(bar);
+  });
+
+  if (hadMalformedScore) {
+    const warning = document.createElement('p');
+    warning.className = 'error-notice';
+    warning.textContent = 'Sommige scorewaarden waren ongeldig; ontbrekende of onleesbare waarden zijn als 0.00 verwerkt.';
+    section.appendChild(warning);
+  }
+
+  return section;
 }
 
 bootstrap();
