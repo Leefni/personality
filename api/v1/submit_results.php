@@ -16,6 +16,7 @@ if ($cached !== null) {
     json_success([
         'type' => $cached['type'],
         'scores' => is_array($cached['scores']) ? $cached['scores'] : new stdClass(),
+        'metadata' => get_test_metadata($quizRepository),
     ]);
 }
 
@@ -37,4 +38,8 @@ $quizRepository->saveResult($visitor, $type, $scores);
 $cache[$visitor] = ['type' => $type, 'scores' => $scores];
 write_results_cache($cache);
 
-json_success(['type' => $type, 'scores' => $scores]);
+json_success([
+    'type' => $type,
+    'scores' => $scores,
+    'metadata' => get_test_metadata($quizRepository),
+]);

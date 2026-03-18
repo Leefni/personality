@@ -200,6 +200,10 @@ async function runScenario(name) {
       return response('[]');
     }
 
+    if (url === 'api/v1/test_metadata.php') {
+      return response(JSON.stringify({ version: '2026.03', date: '2026-03-18', question_count: 1 }));
+    }
+
     if (url.startsWith('api/v1/get_questions.php')) {
       if (name === 'case_a') {
         return response(JSON.stringify({

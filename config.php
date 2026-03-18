@@ -43,6 +43,8 @@ $baseConfig = [
     'db_pass' => (string) env_or_default('DB_PASS', ''),
     'db_auto_bootstrap' => env_bool_or_default('DB_AUTO_BOOTSTRAP', true),
     'app_env' => (string) env_non_empty_or_default('APP_ENV', 'production'),
+    'test_version' => (string) env_non_empty_or_default('TEST_VERSION', '2026.03'),
+    'test_release_date' => (string) env_non_empty_or_default('TEST_RELEASE_DATE', '2026-03-18'),
 ];
 
 // Optional local, non-env override for setups where editing a local file is easier.
