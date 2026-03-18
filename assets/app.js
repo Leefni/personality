@@ -153,6 +153,8 @@ function updateNavState() {
   const isComplete = answeredCount === totalQuestions;
   submitButton.disabled = !isComplete;
   submitButton.title = isComplete ? '' : 'Beantwoord eerst alle vragen voordat je het resultaat bekijkt.';
+}
+
 async function bootstrap() {
   try {
     setupQuestionChangeListener();
