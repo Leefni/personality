@@ -118,7 +118,7 @@ function debug_response(array $response): string
     );
 }
 
-function test_get_questions(string $baseUrl): void
+function test_get_questions(string $baseUrl): int
 {
     $response = request_json('GET', $baseUrl . '/api/v1/get_questions.php?page=1&per_page=10');
     assert_true($response['status'] === 200, 'get_questions status' . debug_response($response));
@@ -126,6 +126,13 @@ function test_get_questions(string $baseUrl): void
     assert_true(isset($response['json']['page']), 'get_questions page');
     assert_true(isset($response['json']['per_page']), 'get_questions per_page');
     assert_true(isset($response['json']['total']), 'get_questions total');
+
+    $questions = $response['json']['questions'];
+    assert_true(count($questions) > 0, 'get_questions should return at least one question for integration tests');
+    $questionId = (int) ($questions[0]['id'] ?? 0);
+    assert_true($questionId > 0, 'get_questions first question id should be a positive integer');
+
+    return $questionId;
 }
 
 function test_get_progress(string $baseUrl, string $visitor): void
@@ -135,10 +142,10 @@ function test_get_progress(string $baseUrl, string $visitor): void
     assert_true(is_array($response['json']), 'get_progress array');
 }
 
-function test_save_answer(string $baseUrl, string $visitor): void
+function test_save_answer(string $baseUrl, string $visitor, int $questionId): void
 {
     $response = request_json('POST', $baseUrl . '/api/v1/save_answer.php', [
-        'question_id' => 1,
+        'question_id' => $questionId,
         'value' => 3,
     ], $visitor);
 
@@ -177,9 +184,9 @@ function test_legacy_wrapper_get_progress(string $baseUrl, string $visitor): voi
 }
 
 try {
-    test_get_questions($baseUrl);
+    $questionId = test_get_questions($baseUrl);
     test_get_progress($baseUrl, $visitor);
-    test_save_answer($baseUrl, $visitor);
+    test_save_answer($baseUrl, $visitor, $questionId);
     test_legacy_wrapper_get_progress($baseUrl, $visitor);
     test_submit_results_incomplete($baseUrl, $visitor);
     test_reset_progress($baseUrl, $visitor);
