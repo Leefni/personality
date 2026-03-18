@@ -112,6 +112,99 @@ async function persistAnswer(questionId, value) {
   state.pendingQuestionIds.add(questionId);
   updateQuestionPendingState(questionId, state.pendingQuestionIds);
   updateProgress(getViewModel());
+function createQuestionRow(question, index) {
+  const div = document.createElement('article');
+  div.className = 'question';
+  div.dataset.questionId = String(question.id);
+  const isPending = pendingQuestionIds.has(question.id);
+
+  div.innerHTML = `
+    <p><strong>${(page - 1) * perPage + index + 1}.</strong> ${question.text}</p>
+    <fieldset class="likert" ${isPending ? 'disabled' : ''}>
+      <legend class="sr-only">Kies een antwoordoptie voor vraag ${(page - 1) * perPage + index + 1}</legend>
+      ${[1, 2, 3, 4, 5, 6].map((value) => `
+        <div class="likert-option">
+          <input
+            type="radio"
+            id="q-${question.id}-v-${value}"
+            name="q-${question.id}"
+            data-qid="${question.id}"
+            data-value="${value}"
+            value="${value}"
+            ${answers[question.id] === value ? 'checked' : ''}
+          >
+          <label for="q-${question.id}-v-${value}">${value} <span class="sr-only">(${likertLabels[value - 1]})</span></label>
+        </div>
+      `).join('')}
+    </fieldset>
+    <div class="likert-labels">
+      <span>${likertLabels[0]}</span>
+      <span>${likertLabels[5]}</span>
+    </div>
+  `;
+
+  return div;
+}
+
+function getRenderedQuestionElement(questionId) {
+  return document.querySelector(`[data-question-id="${questionId}"]`);
+}
+
+function updateQuestionPendingState(questionId) {
+  const questionElement = getRenderedQuestionElement(questionId);
+  if (!questionElement) return;
+
+  const fieldset = questionElement.querySelector('fieldset');
+  if (!fieldset) return;
+
+  fieldset.disabled = pendingQuestionIds.has(questionId);
+}
+
+function updateQuestionRow(questionId) {
+  const questionIndex = questions.findIndex((question) => question.id === questionId);
+  if (questionIndex < 0) return;
+
+  const existingElement = getRenderedQuestionElement(questionId);
+  if (!existingElement) return;
+
+  const nextElement = createQuestionRow(questions[questionIndex], questionIndex);
+  existingElement.replaceWith(nextElement);
+}
+
+function updateNavState() {
+  const submitButton = document.querySelector('#nav .submit');
+  if (!submitButton) return;
+
+  const answeredCount = Object.keys(answers).length;
+  const isComplete = answeredCount === totalQuestions;
+  submitButton.disabled = !isComplete;
+  submitButton.title = isComplete ? '' : 'Beantwoord eerst alle vragen voordat je het resultaat bekijkt.';
+}
+
+function renderEmptyState(dataEndpoint) {
+  const progress = document.getElementById('progress');
+  const questionsElement = document.getElementById('questions');
+  const nav = document.getElementById('nav');
+
+  const baseMessage = 'Geen vragen gevonden. Controleer database-seeding.';
+  progress.textContent = baseMessage;
+
+  if (IS_DEVELOPMENT_ENV) {
+    const debugHint = `Debug: controleer response van ${dataEndpoint} en verwacht dat db_bootstrap/seed ten minste 1 vraag aanmaakt.`;
+    questionsElement.innerHTML = `
+      <p class="error">${baseMessage}</p>
+      <p class="error">${debugHint}</p>
+    `;
+  } else {
+    questionsElement.innerHTML = `<p class="error">${baseMessage}</p>`;
+  }
+
+  nav.querySelectorAll('button').forEach((button) => {
+    button.disabled = true;
+  });
+  nav.innerHTML = '';
+  nav.hidden = true;
+}
 
   try {
     await saveAnswer(questionId, value);
