@@ -64,28 +64,44 @@ export function showError(message, targetId = 'progress') {
 
 export async function apiFetch(url, options = {}) {
   const response = await fetch(url, options);
-  if (!response.ok) {
-    const fallbackText = await response.text();
-    let payload = null;
-    try {
-      payload = fallbackText ? JSON.parse(fallbackText) : null;
-    } catch (error) {
-      try {
-        payload = await response.clone().text();
-      } catch (fallbackError) {
-        payload = null;
-      }
-    }
+  const text = await response.text();
+  const hasBody = text.trim().length > 0;
+  const bodyPreview = text.slice(0, 180);
 
+  let payload = null;
+  let jsonParseError = null;
+  if (hasBody) {
+    try {
+      payload = JSON.parse(text);
+    } catch (error) {
+      jsonParseError = error;
+    }
+  }
+
+  if (!response.ok) {
     const requestError = new Error('Request failed: ' + url);
     requestError.status = response.status;
     requestError.payload = payload;
-    requestError.text = fallbackText || null;
+    requestError.text = text || null;
+    requestError.bodyPreview = bodyPreview || null;
+    requestError.isJsonParseError = Boolean(jsonParseError);
+    requestError.parseErrorMessage = jsonParseError?.message || null;
     requestError.url = url;
     throw requestError;
   }
 
-  return response.json();
+  if (jsonParseError) {
+    const parseError = new Error('Response JSON parse failed');
+    parseError.status = response.status;
+    parseError.url = url;
+    parseError.text = text || null;
+    parseError.bodyPreview = bodyPreview || null;
+    parseError.isJsonParseError = true;
+    parseError.parseErrorMessage = jsonParseError.message;
+    throw parseError;
+  }
+
+  return payload;
 }
 
 export function formatApiError(error, fallbackMessage) {
