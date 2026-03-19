@@ -223,7 +223,12 @@ function setupRecoveryHandler() {
 }
 
 async function maybeRedeemRecoveryFromUrl() {
-  const params = new URLSearchParams(window.location.search);
+  const location = window.location;
+  if (!location || typeof location.search !== 'string') {
+    return;
+  }
+
+  const params = new URLSearchParams(location.search);
   const token = params.get('recovery_token');
   if (!token) {
     return;
@@ -233,9 +238,14 @@ async function maybeRedeemRecoveryFromUrl() {
     await redeemRecovery(token);
     setRecoveryStatus('Herstel-link geaccepteerd. Je voortgang is geladen.');
     params.delete('recovery_token');
-    const nextQuery = params.toString();
-    const nextUrl = `${window.location.pathname}${nextQuery ? `?${nextQuery}` : ''}${window.location.hash}`;
-    window.history.replaceState({}, document.title, nextUrl);
+
+    if (window.history?.replaceState) {
+      const nextQuery = params.toString();
+      const pathname = typeof location.pathname === 'string' ? location.pathname : '';
+      const hash = typeof location.hash === 'string' ? location.hash : '';
+      const nextUrl = `${pathname}${nextQuery ? `?${nextQuery}` : ''}${hash}`;
+      window.history.replaceState({}, document.title, nextUrl);
+    }
   } catch (error) {
     setRecoveryStatus(formatApiError(error, 'Herstel-link is ongeldig of verlopen.'), true);
   }
