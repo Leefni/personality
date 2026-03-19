@@ -5,9 +5,9 @@ const MODULE_COUNTERS_STORAGE_KEY = 'pp_result_module_event_counters_v1';
 const SCORE_DIMENSIONS = Object.entries(RESULT_CONTENT.dimensions);
 
 const PERSONA_OPTIONS = [
-  { key: 'individual_contributor', label: 'as individual contributor' },
-  { key: 'manager', label: 'as manager' },
-  { key: 'student', label: 'as student' }
+  { key: 'individual_contributor', label: 'als individuele bijdrager' },
+  { key: 'manager', label: 'als manager' },
+  { key: 'student', label: 'als student' }
 ];
 
 const MODULES = [

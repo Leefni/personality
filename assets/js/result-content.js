@@ -199,15 +199,15 @@ function buildStructuredFields(type, details) {
     work_env: {
       base: `${details.werkstijlNl} ${energy} ${structure}`,
       personas: {
-        individual_contributor: 'Als individual contributor helpt het om je week te beschermen met focusblokken en expliciete deliverables.',
+        individual_contributor: 'Als individuele bijdrager helpt het om je week te beschermen met focusblokken en expliciete opleverpunten.',
         manager: 'Als manager helpt het om teamritme en beslisregels expliciet te maken zodat iedereen weet waar hij aan toe is.',
-        student: 'Als student werkt een vaste leerstructuur met korte evaluaties meestal beter dan ad-hoc studeren.'
+        student: 'Als student werkt een vaste leerstructuur met korte evaluaties meestal beter dan spontaan studeren.'
       }
     },
     communication: {
       base: `${decisionStyle} ${processing}`,
       personas: {
-        individual_contributor: 'Als individual contributor: stem verwachtingen vroeg af en deel tussentijdse updates voordat je afrondt.',
+        individual_contributor: 'Als individuele bijdrager: stem verwachtingen vroeg af en deel tussentijdse voortgang voordat je afrondt.',
         manager: 'Als manager: benoem naast het wat ook het waarom, zodat verschillende werkstijlen aangehaakt blijven.',
         student: 'Als student: vat na colleges of groepswerk de afspraken kort samen om misverstanden te voorkomen.'
       }
@@ -215,17 +215,17 @@ function buildStructuredFields(type, details) {
     team_risks: {
       base: `${details.valkuilenNl} Let op wanneer tempo of druk oploopt; dan worden natuurlijke voorkeuren vaak scherper.`,
       personas: {
-        individual_contributor: 'Als individual contributor is het risico dat je te lang zelfstandig oplost en te laat afstemt.',
+        individual_contributor: 'Als individuele bijdrager is het risico dat je te lang zelfstandig oplost en te laat afstemt.',
         manager: 'Als manager is het risico dat teamleden jouw voorkeursstijl gaan kopiëren en alternatieve perspectieven wegvallen.',
-        student: 'Als student is het risico dat je onder deadlines terugvalt op bekende patronen en minder experimenteert.'
+        student: 'Als student is het risico dat je onder tijdsdruk terugvalt op bekende patronen en minder experimenteert.'
       }
     },
     collab_tips: {
       base: `${details.groeitipsNl}`,
       personas: {
-        individual_contributor: 'Als individual contributor: plan één vast feedbackmoment per sprint of week en vertaal feedback naar één concrete actie.',
-        manager: 'Als manager: combineer resultaatmeting met teamgezondheid, zodat samenwerking net zo zichtbaar wordt als output.',
-        student: 'Als student: werk met een accountability-partner om doelen klein te maken en voortgang vol te houden.'
+        individual_contributor: 'Als individuele bijdrager: plan één vast terugkoppelingsmoment per werkperiode of week en vertaal terugkoppeling naar één concrete actie.',
+        manager: 'Als manager: combineer resultaatmeting met teamgezondheid, zodat samenwerking net zo zichtbaar wordt als resultaat.',
+        student: 'Als student: werk met een verantwoordingspartner om doelen klein te maken en voortgang vol te houden.'
       }
     }
   };
