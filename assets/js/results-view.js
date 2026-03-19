@@ -184,6 +184,19 @@ function buildSummaryText(payload, details) {
   ].join('\n');
 }
 
+function buildShareText(payload, details) {
+  const type = toSafeText(payload?.type, '----');
+  const shortDescription = toSafeText(details?.shortDescription, 'Geen beschrijving beschikbaar.');
+  const shareUrl = toSafeText(window.location.href, `${window.location.origin}${window.location.pathname}`);
+
+  return [
+    `Mijn persoonlijkheidstype: ${type}`,
+    shortDescription,
+    '',
+    `🔍 Doe de test op: ${shareUrl}`
+  ].join('\n');
+}
+
 async function copySummary(text, statusElement) {
   try {
     await navigator.clipboard.writeText(text);
@@ -223,6 +236,7 @@ export function renderResult(data, onRestart) {
   const attentionPoints = asStringList(details?.attentionPoints);
   const tips = asStringList(details?.tips);
   const summaryText = buildSummaryText(data, details);
+  const shareText = buildShareText(data, details);
 
   const personaToggleHtml = PERSONA_OPTIONS.map(
     (option) => `
@@ -300,6 +314,7 @@ export function renderResult(data, onRestart) {
         <h3>Download / deel samenvatting</h3>
         <div class="result-actions">
           <button type="button" class="copy-summary">Kopieer samenvatting</button>
+          <button type="button" class="share-result">Kopieer deelbare tekst</button>
           <button type="button" class="download-summary">Download als .txt</button>
           <button type="button" class="restart">Opnieuw doen</button>
         </div>
@@ -319,6 +334,17 @@ export function renderResult(data, onRestart) {
       statusElement.textContent = 'Samenvatting gedownload als tekstbestand.';
     }
     downloadSummary(summaryText);
+  });
+
+  res.querySelector('.share-result')?.addEventListener('click', async () => {
+    if (!statusElement) return;
+
+    try {
+      await window.navigator.clipboard.writeText(shareText);
+      statusElement.textContent = 'Deelbare tekst gekopieerd naar klembord.';
+    } catch (error) {
+      statusElement.textContent = 'Kopiëren mislukt. Probeer het opnieuw.';
+    }
   });
 
   res.querySelector('.restart')?.addEventListener('click', onRestart);
