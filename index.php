@@ -17,6 +17,14 @@ $appEnv = (string) ($config['app_env'] ?? 'production');
   <main class="container">
     <h1>Personality Test</h1>
     <p class="progress" id="progress">Laden...</p>
+    <section class="recovery-prompt" aria-label="Voortgang herstellen">
+      <label for="recovery-email"><strong>Save my progress via email</strong></label>
+      <div class="recovery-controls">
+        <input type="email" id="recovery-email" placeholder="jij@example.com" autocomplete="email">
+        <button type="button" id="recovery-request">Stuur herstel-link</button>
+      </div>
+      <p class="recovery-status" id="recovery-status" aria-live="polite"></p>
+    </section>
     <p class="test-meta" id="test-meta">Testversie laden...</p>
 
     <section class="privacy-note" aria-label="Privacy">

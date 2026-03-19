@@ -133,6 +133,8 @@ export function formatApiError(error, fallbackMessage) {
   const statusMessages = {
     400: 'Je verzoek is ongeldig. Controleer je invoer en probeer opnieuw.',
     422: 'Niet alle gegevens zijn compleet of geldig. Vul ontbrekende velden in en probeer opnieuw.',
+    429: 'Te veel verzoeken in korte tijd. Wacht even en probeer opnieuw.',
+    410: 'Deze herstel-link is verlopen of al gebruikt.',
     500: 'Er ging iets mis op de server. Probeer het later opnieuw.',
     408: 'Verbinding met de server duurde te lang. Controleer je netwerk en probeer opnieuw.'
   };

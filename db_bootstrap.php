@@ -10,13 +10,6 @@ function bootstrap_database(PDO $pdo, array $config): void
         return;
     }
 
-    $requiredTables = ['questions', 'answers', 'results'];
-
-    if (has_required_tables($pdo, $requiredTables)) {
-        seed_questions_if_empty($pdo);
-        return;
-    }
-
     $inTransaction = false;
 
     try {
@@ -25,6 +18,7 @@ function bootstrap_database(PDO $pdo, array $config): void
             $inTransaction = true;
         }
 
+        // Keep additive schema changes in sync, even when DB already existed.
         execute_sql_file($pdo, __DIR__ . '/init.sql');
         seed_questions_if_empty($pdo);
 
