@@ -62,7 +62,9 @@ function mergeProgress(saved) {
 
   const unresolvedDraft = {};
   Object.entries(localDraft).forEach(([questionId, value]) => {
-    if (serverAnswers[questionId] !== value) unresolvedDraft[questionId] = value;
+    if (serverAnswers[questionId] !== value) {
+      unresolvedDraft[questionId] = value;
+    }
   });
 
   if (Object.keys(unresolvedDraft).length === 0) {
@@ -189,51 +191,22 @@ async function submitTest() {
       const total = Number(error.payload.total);
       const incompleteMessage = `Test is nog niet compleet: ${answered} van ${total} vragen beantwoord.`;
 
-      if (progress) progress.textContent = incompleteMessage;
-      if (result) result.innerHTML = `<p class="error">${incompleteMessage}</p>`;
+      if (progress) {
+        progress.textContent = incompleteMessage;
+      }
+      if (result) {
+        result.innerHTML = `<p class="error">${incompleteMessage}</p>`;
+      }
       return;
     }
 
-    if (progress) progress.textContent = message;
-    if (result) result.innerHTML = `<p class="error">${message}</p>`;
+    if (progress) {
+      progress.textContent = message;
+    }
+    if (result) {
+      result.innerHTML = `<p class="error">${message}</p>`;
+    }
   }
-}
-
-
-function clamp(value, min, max) {
-  return Math.min(max, Math.max(min, value));
-}
-
-function toFiniteNumber(value, fallback = 0) {
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : fallback;
-}
-
-function normalizeDimensionScore(rawScore) {
-  return clamp(toFiniteNumber(rawScore), -100, 100);
-}
-
-function getScoreboardEntries(rawScores = {}) {
-  return Object.entries(RESULT_CONTENT.dimensions).map(([dimension, config]) => {
-    const normalizedScore = normalizeDimensionScore(rawScores?.[dimension]);
-    const strengthPercent = Math.round(Math.abs(normalizedScore));
-    const sideIndex = normalizedScore >= 0 ? 0 : 1;
-    const sideLetter = config.poles[sideIndex] ?? '?';
-    const sideName = config.names[sideIndex] ?? 'Onbekend';
-
-    return {
-      dimension,
-      normalizedScore,
-      strengthPercent,
-      sideLetter,
-      sideName,
-      oppositeName: config.names[sideIndex === 0 ? 1 : 0] ?? 'Onbekend'
-    };
-  });
-}
-
-function formatTrendLabel(entry) {
-  return `${entry.sideName} (${entry.sideLetter})`;
 }
 
 async function resetTest() {
@@ -243,7 +216,9 @@ async function resetTest() {
     setPagination({ page: 1 });
     clearLocalDraft();
     const result = document.getElementById('result');
-    if (result) result.innerHTML = '';
+    if (result) {
+      result.innerHTML = '';
+    }
     await bootstrap();
     window.scrollTo({ top: 0, behavior: 'smooth' });
   } catch (error) {
@@ -251,60 +226,6 @@ async function resetTest() {
   }
 }
 
-function showResult(data) {
-  const res = document.getElementById('result');
-  const type = typeof data.type === 'string' ? data.type : '----';
-  const details = RESULT_CONTENT.types[type];
-  const rawScores = data?.scores && typeof data.scores === 'object' ? data.scores : {};
-  const scoreboardEntries = getScoreboardEntries(rawScores);
-  const strongestTendencies = [...scoreboardEntries]
-    .sort((a, b) => b.strengthPercent - a.strengthPercent)
-    .slice(0, 2);
-  const possibleBlindSpot = [...scoreboardEntries]
-    .sort((a, b) => a.strengthPercent - b.strengthPercent)[0];
-
-  const longDescription = details?.longDescriptionNl ?? details?.shortDescription ?? 'Geen beschrijving beschikbaar voor dit type.';
-  const werkstijl = details?.werkstijlNl ?? details?.shortDescription ?? 'Geen beschrijving beschikbaar voor werkstijl.';
-  const valkuilen = details?.valkuilenNl ?? details?.shortDescription ?? 'Geen valkuilen beschikbaar voor dit type.';
-  const groeitips = details?.groeitipsNl ?? details?.shortDescription ?? 'Geen groeitips beschikbaar voor dit type.';
-
-  res.innerHTML = `
-    <h2>Resultaat</h2>
-    <p>Persoonlijkheidstype: <strong>${type}</strong></p>
-    <p>${longDescription}</p>
-
-    <h3>Scoreboard</h3>
-    ${scoreboardEntries.map((entry) => `
-      <div class="bar">
-        <div class="bar-label">
-          <strong>${entry.dimension}</strong> — ${entry.sideName} vs ${entry.oppositeName}
-          <span> (${entry.normalizedScore >= 0 ? '+' : ''}${entry.normalizedScore.toFixed(1)})</span>
-        </div>
-        <div class="bar-track" role="img" aria-label="${entry.dimension} ${entry.strengthPercent}% ${entry.sideName}">
-          <div class="bar-fill" style="width: ${entry.strengthPercent}%;"></div>
-        </div>
-      </div>
-    `).join('')}
-
-    <h3>Sterkste tendensen</h3>
-    <ul>
-      ${strongestTendencies.map((entry) => `<li>${formatTrendLabel(entry)} (${entry.strengthPercent}%)</li>`).join('')}
-    </ul>
-
-    <h3>Mogelijke blinde vlek</h3>
-    <p>${possibleBlindSpot ? `${formatTrendLabel(possibleBlindSpot)} krijgt nu relatief weinig nadruk (${possibleBlindSpot.strengthPercent}%).` : 'Geen blinde vlek beschikbaar.'}</p>
-
-    <h3>Werkstijl</h3>
-    <p>${werkstijl}</p>
-
-    <h3>Valkuilen</h3>
-    <p>${valkuilen}</p>
-
-    <h3>Groeitips</h3>
-    <p>${groeitips}</p>
-
-    <button type="button" class="restart">Opnieuw doen</button>
-  `;
 async function bootstrap() {
   try {
     setupQuestionChangeListener(
@@ -313,10 +234,6 @@ async function bootstrap() {
       queueAnswerSave
     );
 
-  const bars = renderDimensionBars(data?.scores);
-  res.querySelector('p:last-of-type')?.insertAdjacentElement('afterend', bars);
-
-  res.querySelector('.restart')?.addEventListener('click', resetTest);
     const saved = await fetchProgress();
     mergeProgress(saved);
     await loadQuestionsPage();
@@ -324,10 +241,6 @@ async function bootstrap() {
     const baseMessage = 'Fout bij laden. Controleer database en API-configuratie.';
     setProgressMessage(baseMessage);
 
-  const bars = renderDimensionBars(data?.scores);
-  res.querySelector('p:last-of-type')?.insertAdjacentElement('afterend', bars);
-
-  res.querySelector('.restart')?.addEventListener('click', resetTest);
     if (IS_DEVELOPMENT_ENV) {
       showError(`${baseMessage} ${buildDebugHint('api/v1/get_progress.php', error?.status)}`, 'progress');
       return;
@@ -335,78 +248,6 @@ async function bootstrap() {
 
     showError(baseMessage, 'progress');
   }
-}
-
-function renderDimensionBars(scores) {
-  const section = document.createElement('section');
-  section.className = 'dimension-bars';
-  section.innerHTML = '<h3>Scores per dimensie</h3>';
-
-  const dimensions = RESULT_CONTENT?.dimensions;
-  if (!dimensions || typeof dimensions !== 'object' || Array.isArray(dimensions)) {
-    const fallback = document.createElement('p');
-    fallback.textContent = 'Dimensie-inhoud ontbreekt; scorebalken kunnen niet worden getoond.';
-    section.appendChild(fallback);
-    return section;
-  }
-
-  // We normaliseren invoer naar een voorspelbaar object met vier dimensies.
-  // Zo is de render-flow eenvoudig te volgen, ook wanneer scores ontbreken.
-  const normalizedScores = {
-    EI: 0,
-    SN: 0,
-    TF: 0,
-    JP: 0
-  };
-  let hadMalformedScore = false;
-
-  if (scores && typeof scores === 'object' && !Array.isArray(scores)) {
-    Object.keys(normalizedScores).forEach((dimensionKey) => {
-      const numericValue = Number(scores[dimensionKey]);
-      if (Number.isFinite(numericValue)) {
-        normalizedScores[dimensionKey] = numericValue;
-      } else if (scores[dimensionKey] != null) {
-        hadMalformedScore = true;
-      }
-    });
-  } else if (scores != null) {
-    hadMalformedScore = true;
-  }
-
-  Object.entries(dimensions).forEach(([dimensionKey, config]) => {
-    const poles = Array.isArray(config?.poles) ? config.poles : [dimensionKey[0], dimensionKey[1] ?? '?'];
-    const names = Array.isArray(config?.names) ? config.names : poles;
-    const score = normalizedScores[dimensionKey] ?? 0;
-    const dominantIndex = score >= 0 ? 0 : 1;
-
-    // Scores hebben geen vaste bovengrens. Voor UI-doeleinden schalen we
-    // de absolute waarde licht op en begrenzen op 100%.
-    const fillWidth = Math.min(100, 50 + (Math.abs(score) * 12.5));
-
-    const bar = document.createElement('div');
-    bar.className = 'bar';
-    bar.innerHTML = `
-      <div class="bar-label">
-        <strong>${dimensionKey}</strong> — ${names[0]} (${poles[0]}) ↔ ${names[1]} (${poles[1]})
-      </div>
-      <div class="bar-track">
-        <div class="bar-fill" style="width: ${fillWidth}%"></div>
-      </div>
-      <small>
-        Dominant: ${names[dominantIndex]} (${poles[dominantIndex]}) · ruwe score: ${score.toFixed(2)}
-      </small>
-    `;
-    section.appendChild(bar);
-  });
-
-  if (hadMalformedScore) {
-    const warning = document.createElement('p');
-    warning.className = 'error-notice';
-    warning.textContent = 'Sommige scorewaarden waren ongeldig; ontbrekende of onleesbare waarden zijn als 0.00 verwerkt.';
-    section.appendChild(warning);
-  }
-
-  return section;
 }
 
 bootstrap();
