@@ -120,25 +120,124 @@ function scoreToPercent(score) {
   return Math.round(50 + bounded);
 }
 
+const STRENGTH_LABELS = {
+  veryLight: 'zeer licht / bijna in balans',
+  light: 'licht',
+  moderate: 'gematigd',
+  strong: 'sterk'
+};
+
+const BEHAVIOR_BY_DIMENSION = {
+  EI: {
+    E: {
+      veryLight: 'Je balanceert rond extraversie: je denkt graag hardop, maar solitaire verwerking werkt net zo goed.',
+      light: 'Je neigt naar extraversie: je denkt graag hardop, maar hebt geregeld solo-herstel nodig.',
+      moderate: 'Je hebt een duidelijke extraversievoorkeur: interactie versnelt je denken en besluitvorming.',
+      strong: 'Je bent sterk extravert: energie en helderheid ontstaan vooral in contact en actie met anderen.'
+    },
+    I: {
+      veryLight: 'Je balanceert rond introversie: je verwerkt eerst intern, maar schakelt makkelijk naar interactie.',
+      light: 'Je neigt naar introversie: je verwerkt eerst intern, maar kunt vlot schakelen naar overleg.',
+      moderate: 'Je hebt een duidelijke introversievoorkeur: je kwaliteit stijgt met ongestoorde denktijd.',
+      strong: 'Je bent sterk introvert: diepe focus en autonomie zijn essentieel om op je best te zijn.'
+    }
+  },
+  SN: {
+    S: {
+      veryLight: 'Je balanceert rond sensing: je werkt graag met feiten, terwijl je ook openstaat voor nieuwe invalshoeken.',
+      light: 'Je neigt naar sensing: je vertrouwt op feiten en praktijk, met ruimte voor nieuwe invalshoeken.',
+      moderate: 'Je hebt een duidelijke sensingvoorkeur: je denkt concreet, stapsgewijs en uitvoergericht.',
+      strong: 'Je bent sterk sensing-georiënteerd: tastbare data en realisme sturen je keuzes.'
+    },
+    N: {
+      veryLight: 'Je balanceert rond intuïtie: je ziet patronen, met blijvende aandacht voor wat praktisch werkt.',
+      light: 'Je neigt naar intuïtie: je ziet snel patronen, maar verliest de praktijk niet uit het oog.',
+      moderate: 'Je hebt een duidelijke intuïtieve voorkeur: je denkt in verbanden, concepten en toekomstscenario’s.',
+      strong: 'Je bent sterk intuïtief: je richt je primair op betekenis, patronen en mogelijkheden op lange termijn.'
+    }
+  },
+  TF: {
+    T: {
+      veryLight: 'Je balanceert rond thinking: je zoekt logica en weegt tegelijk relationele impact mee.',
+      light: 'Je neigt naar thinking: je zoekt logische consistentie, met oog voor relationele impact.',
+      moderate: 'Je hebt een duidelijke thinkingvoorkeur: heldere criteria en objectiviteit sturen je besluiten.',
+      strong: 'Je bent sterk thinking-georiënteerd: je prioriteert rationaliteit, ook onder sociale druk.'
+    },
+    F: {
+      veryLight: 'Je balanceert rond feeling: je weegt menselijke impact mee en houdt tegelijk logische samenhang vast.',
+      light: 'Je neigt naar feeling: je weegt menselijke impact mee zonder logica los te laten.',
+      moderate: 'Je hebt een duidelijke feelingvoorkeur: waarden en context bepalen sterk hoe je kiest.',
+      strong: 'Je bent sterk feeling-georiënteerd: relationele en ethische consequenties wegen zwaar in je besluitvorming.'
+    }
+  },
+  JP: {
+    J: {
+      veryLight: 'Je balanceert rond judging: je houdt van richting en kunt tegelijk soepel improviseren.',
+      light: 'Je neigt naar judging: je werkt graag met richting, maar kunt improviseren als dat nodig is.',
+      moderate: 'Je hebt een duidelijke judgingvoorkeur: planning en afronding geven je rust en kwaliteit.',
+      strong: 'Je bent sterk judging-georiënteerd: voorspelbaarheid, structuur en besluitvastheid zijn je anker.'
+    },
+    P: {
+      veryLight: 'Je balanceert rond perceiving: je houdt opties open, terwijl je ook op tijd kunt afhechten.',
+      light: 'Je neigt naar perceiving: je houdt opties open, maar kunt op tijd beslissen.',
+      moderate: 'Je hebt een duidelijke perceivingvoorkeur: flexibiliteit en aanpasbaarheid verbeteren je prestaties.',
+      strong: 'Je bent sterk perceiving-georiënteerd: je floreert bij vrijheid, iteratie en ruimte om bij te sturen.'
+    }
+  }
+};
+
+function classifyStrength(dominancePercent) {
+  if (dominancePercent >= 80) return 'strong';
+  if (dominancePercent >= 65) return 'moderate';
+  if (dominancePercent >= 55) return 'light';
+  return 'veryLight';
+}
+
+function buildDimensionInsight(dimension, config, scoreValue) {
+  const percent = scoreToPercent(scoreValue);
+  const leftPole = config.poles[0];
+  const rightPole = config.poles[1];
+  const dominantPole = percent >= 50 ? leftPole : rightPole;
+  const nonDominantPole = dominantPole === leftPole ? rightPole : leftPole;
+  const dominantPercent = dominantPole === leftPole ? percent : 100 - percent;
+  const strengthKey = classifyStrength(dominantPercent);
+  const behaviorText = BEHAVIOR_BY_DIMENSION?.[dimension]?.[dominantPole]?.[strengthKey]
+    || 'Je profiel toont een genuanceerde mix binnen deze dimensie.';
+  const nuanceText = strengthKey === 'veryLight'
+    ? `In verschillende contexten blijven ${dominantPole} en ${nonDominantPole} bijna even zichtbaar.`
+    : `Wanneer de context verandert, kan ook je ${nonDominantPole}-kant duidelijk naar voren komen.`;
+
+  return {
+    percent,
+    dominantPole,
+    nonDominantPole,
+    dominantPercent,
+    strengthLabel: STRENGTH_LABELS[strengthKey],
+    behaviorText,
+    nuanceText,
+    leftPole,
+    rightPole
+  };
+}
+
 function renderScoreBars(scores) {
   const scorePayload = scores && typeof scores === 'object' ? scores : {};
 
   return SCORE_DIMENSIONS.map(([dimension, config]) => {
     const rawScore = Number(scorePayload[dimension]);
-    const percent = scoreToPercent(rawScore);
-    const leftPole = config.poles[0];
-    const rightPole = config.poles[1];
+    const insight = buildDimensionInsight(dimension, config, rawScore);
+    const percent = insight.percent;
+    const leftPole = insight.leftPole;
+    const rightPole = insight.rightPole;
     const leftName = config.names[0];
     const rightName = config.names[1];
-
-    const dominantPole = percent >= 50 ? leftPole : rightPole;
-    const strength = Math.abs(percent - 50) * 2;
 
     return `
       <article class="result-score-card">
         <div class="result-score-header">
           <h4>${escapeHtml(leftPole)}/${escapeHtml(rightPole)} · ${escapeHtml(leftName)} ↔ ${escapeHtml(rightName)}</h4>
-          <p>${escapeHtml(dominantPole)} dominant (${strength}%)</p>
+          <p><strong>${insight.dominantPercent}% ${escapeHtml(insight.dominantPole)} (${escapeHtml(insight.strengthLabel)})</strong> — ${escapeHtml(insight.behaviorText)}</p>
+          <p>${escapeHtml(insight.nuanceText)}</p>
         </div>
         <div class="result-score-track" role="img" aria-label="Score ${escapeHtml(leftPole)} tegen ${escapeHtml(rightPole)}: ${percent}% ${escapeHtml(leftPole)}">
           <span class="result-score-fill" style="width:${percent}%;"></span>
@@ -162,8 +261,8 @@ function buildSummaryText(payload, details) {
   const tips = asStringList(details?.tips);
 
   const scoreLines = SCORE_DIMENSIONS.map(([dimension, config]) => {
-    const percent = scoreToPercent(payload?.scores?.[dimension]);
-    return `${config.poles[0]}-${config.poles[1]}: ${percent}% / ${100 - percent}%`;
+    const insight = buildDimensionInsight(dimension, config, payload?.scores?.[dimension]);
+    return `${config.poles[0]}-${config.poles[1]}: ${insight.dominantPercent}% ${insight.dominantPole} (${insight.strengthLabel}) — ${insight.behaviorText} ${insight.nuanceText}`;
   });
 
   return [
