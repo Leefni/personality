@@ -34,9 +34,7 @@ $scores = $quizRepository->getDimensionScores($visitor);
 $type = $quizService->deriveType($scores);
 
 $quizRepository->saveResult($visitor, $type, $scores);
-
-$cache[$visitor] = ['type' => $type, 'scores' => $scores];
-write_results_cache($cache);
+cache_result($pdo, $visitor, $type, $scores);
 
 json_success([
     'type' => $type,

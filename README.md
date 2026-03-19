@@ -186,24 +186,28 @@ The frontend (`assets/app.js`) now:
 
 ## Result cache
 
-Result caching is database-backed and stored in the existing `results` table:
+Result caching is canonicalized to the database `results` table only:
 
 - cache key: `visitor_id`
 - cached payload: `type_code` and `detail_json`
+- cache helpers: `api/v1/cache.php` (`get_cached_result`, `cache_result`, `invalidate_cached_result`)
 
 ### Cache read/write behavior
 
 - `submit_results` checks `results` first. If a row exists, it returns that cached result immediately.
-- If no row exists, `submit_results` computes scores from `answers` and upserts the cache row in `results`.
+- If no row exists, `submit_results` computes scores from `answers`, saves the canonical result, and upserts the `results` cache row.
 
 ### Cache invalidation
 
-The cache entry for a visitor is deleted when:
+The DB cache entry for a visitor is deleted when:
 
 - an answer is created/updated (`save_answer`)
 - progress is reset (`reset_progress`)
+- privacy delete is requested (`delete_data`)
 
-This keeps cached types aligned with the latest answers.
+### Deprecated file cache
+
+Legacy file cache helpers in `api/v1/results_cache.php` are behind `ENABLE_FILE_RESULTS_CACHE=false` and are deprecated. They are kept temporarily for backward compatibility and are scheduled for removal after **2026-12-31**.
 
 ## Testing
 
