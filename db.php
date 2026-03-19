@@ -16,6 +16,49 @@ $options = [
     PDO::ATTR_EMULATE_PREPARES => false,
 ];
 
+function is_api_request(): bool
+{
+    $requestUri = (string) ($_SERVER['REQUEST_URI'] ?? '');
+    $scriptName = (string) ($_SERVER['SCRIPT_NAME'] ?? '');
+
+    return str_contains($requestUri, '/api/') || str_contains($scriptName, '/api/');
+}
+
+function respond_database_bootstrap_error(
+    PDOException $exception,
+    array $config,
+    bool $isDevelopment,
+    bool $isAuthError
+): void {
+    if ($isDevelopment && $isAuthError) {
+        $message = sprintf(
+            'Database authentication failed. Check DB_USER/DB_PASS for %s:%d and update env vars or config.local.php.',
+            $config['db_host'],
+            $config['db_port']
+        );
+    } else {
+        $message = 'Database connection failed. Verify database host/port credentials and that MySQL is running.';
+    }
+
+    if (!is_api_request()) {
+        throw $exception;
+    }
+
+    http_response_code(500);
+    if (!headers_sent()) {
+        header('Content-Type: application/json; charset=utf-8');
+    }
+
+    $payload = ['error' => true, 'message' => $message];
+    if ($isDevelopment) {
+        $payload['code'] = (string) ($exception->errorInfo[0] ?? $exception->getCode());
+        $payload['detail'] = $exception->getMessage();
+    }
+
+    echo json_encode($payload, JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
 function quote_mysql_identifier(string $identifier): string
 {
     return '`' . str_replace('`', '``', $identifier) . '`';
@@ -56,24 +99,8 @@ try {
         }
     }
 
-    if (!isset($pdo) && $isDevelopment && $isAuthError) {
-        http_response_code(500);
-
-        $message = sprintf(
-            'Database authentication failed. Check DB_USER/DB_PASS for %s:%d and update env vars or config.local.php.',
-            $config['db_host'],
-            $config['db_port']
-        );
-
-        if (PHP_SAPI !== 'cli') {
-            header('Content-Type: text/plain; charset=utf-8');
-        }
-
-        exit($message);
-    }
-
     if (!isset($pdo)) {
-        throw $exception;
+        respond_database_bootstrap_error($exception, $config, $isDevelopment, $isAuthError);
     }
 }
 
