@@ -261,6 +261,9 @@ function ensureProgressBarElements() {
 
   let progressBar = document.getElementById('progress-bar');
   if (!progressBar) {
+    if (typeof progress.insertAdjacentElement !== 'function') {
+      return null;
+    }
     progressBar = document.createElement('div');
     progressBar.id = 'progress-bar';
     progressBar.className = 'progress-bar';

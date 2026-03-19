@@ -109,6 +109,31 @@ h1 {
  gap: var(--space-2);
 }
 
+.recovery-prompt.is-hidden {
+ display: none;
+}
+
+.recovery-trigger {
+ border: 0;
+ background: transparent;
+ padding: 0;
+ text-align: left;
+ font-size: 15px;
+ font-weight: 600;
+ color: var(--primary);
+ cursor: pointer;
+}
+
+.recovery-subtext {
+ margin: 0;
+ font-size: 13px;
+ color: var(--text-muted);
+}
+
+.recovery-panel[hidden] {
+ display: none;
+}
+
 .recovery-controls {
  display: flex;
  gap: var(--space-2);

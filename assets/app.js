@@ -52,6 +52,7 @@ import {
 import { renderResult } from './js/results-view.js';
 
 const pageScrollPositions = new Map();
+const RECOVERY_MIN_ANSWER_COUNT = 5;
 
 function getViewModel() {
   const state = getState();
@@ -182,6 +183,33 @@ function setRecoveryStatus(message, isError = false) {
   status.classList.toggle('error', isError);
 }
 
+function toggleRecoveryPanel(isExpanded) {
+  const toggle = document.getElementById('recovery-toggle');
+  const panel = document.getElementById('recovery-panel');
+  if (!toggle || !panel || typeof toggle.setAttribute !== 'function') {
+    return;
+  }
+
+  toggle.setAttribute('aria-expanded', isExpanded ? 'true' : 'false');
+  panel.hidden = !isExpanded;
+}
+
+function shouldShowRecoveryPrompt() {
+  const state = getState();
+  const answeredCount = Object.keys(state.answers).length;
+  const status = document.getElementById('recovery-status');
+  const hasStatusText = Boolean(status?.textContent?.trim());
+  return state.page > 1 || answeredCount >= RECOVERY_MIN_ANSWER_COUNT || hasStatusText;
+}
+
+function updateRecoveryVisibility() {
+  const prompt = document.getElementById('recovery-prompt');
+  if (!prompt) return;
+
+  const isVisible = shouldShowRecoveryPrompt();
+  prompt.classList.toggle('is-hidden', !isVisible);
+}
+
 async function handleRecoveryRequest() {
   const input = document.getElementById('recovery-email');
   const button = document.getElementById('recovery-request');
@@ -213,6 +241,15 @@ async function handleRecoveryRequest() {
 }
 
 function setupRecoveryHandler() {
+  const toggle = document.getElementById('recovery-toggle');
+  if (toggle && toggle.dataset.handlerAttached !== 'true') {
+    toggle.dataset.handlerAttached = 'true';
+    toggle.addEventListener('click', () => {
+      const isExpanded = toggle.getAttribute('aria-expanded') === 'true';
+      toggleRecoveryPanel(!isExpanded);
+    });
+  }
+
   const button = document.getElementById('recovery-request');
   if (!button || button.dataset.handlerAttached === 'true') {
     return;
@@ -238,6 +275,8 @@ async function maybeRedeemRecoveryFromUrl() {
 
   try {
     await redeemRecovery(token);
+    updateRecoveryVisibility();
+    toggleRecoveryPanel(true);
     setRecoveryStatus('Herstel-link geaccepteerd. Je voortgang is geladen.');
     params.delete('recovery_token');
 
@@ -249,6 +288,8 @@ async function maybeRedeemRecoveryFromUrl() {
       window.history.replaceState({}, document.title, nextUrl);
     }
   } catch (error) {
+    updateRecoveryVisibility();
+    toggleRecoveryPanel(true);
     setRecoveryStatus(formatApiError(error, 'Herstel-link is ongeldig of verlopen.'), true);
   }
 }
@@ -289,6 +330,8 @@ function render(scrollToTop = false) {
   if (scrollToTop) {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
+
+  updateRecoveryVisibility();
 }
 
 async function loadQuestionsPage() {
@@ -366,6 +409,7 @@ function queueAnswerSave(questionId, value) {
   updateQuestionRow(questionId, getViewModel());
   updateProgress(getViewModel());
   updatePendingActionState();
+  updateRecoveryVisibility();
 
   const existingTimer = state.saveTimers.get(questionId);
   if (existingTimer) {
@@ -494,6 +538,8 @@ async function bootstrap() {
     );
     setupDeleteDataHandler();
     setupRecoveryHandler();
+    toggleRecoveryPanel(false);
+    updateRecoveryVisibility();
     await maybeRedeemRecoveryFromUrl();
 
     await loadTestMetadata();
