@@ -173,7 +173,7 @@ export function renderNav(viewModel, handlers) {
   if (viewModel.page > 1) {
     const prev = document.createElement('button');
     prev.className = 'prev';
-    prev.textContent = 'Prev';
+    prev.textContent = '← Vorige';
     prev.addEventListener('click', handlers.onPrev);
     nav.appendChild(prev);
   }
@@ -182,7 +182,7 @@ export function renderNav(viewModel, handlers) {
   if (hasNext) {
     const next = document.createElement('button');
     next.className = 'next';
-    next.textContent = 'Next';
+    next.textContent = 'Volgende →';
     next.addEventListener('click', handlers.onNext);
     nav.appendChild(next);
     return;
