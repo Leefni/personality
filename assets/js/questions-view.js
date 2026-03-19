@@ -45,7 +45,7 @@ function createQuestionRow(question, index, viewModel) {
     <p><strong>${(viewModel.page - 1) * viewModel.perPage + index + 1}.</strong> ${question.text}</p>
     <fieldset class="likert" ${isPending ? 'disabled' : ''}>
       <legend class="sr-only">Kies een antwoordoptie voor vraag ${(viewModel.page - 1) * viewModel.perPage + index + 1}</legend>
-      ${[1, 2, 3, 4, 5].map((value) => `
+      ${[1, 2, 3, 4, 5, 6].map((value) => `
         <div class="likert-option">
           <input
             type="radio"
@@ -62,7 +62,7 @@ function createQuestionRow(question, index, viewModel) {
     </fieldset>
     <div class="likert-labels">
       <span>${viewModel.likertLabels[0]}</span>
-      <span>${viewModel.likertLabels[4]}</span>
+      <span>${viewModel.likertLabels[5]}</span>
     </div>
   `;
 
