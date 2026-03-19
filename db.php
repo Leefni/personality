@@ -59,6 +59,31 @@ function respond_database_bootstrap_error(
     exit;
 }
 
+function respond_database_runtime_error(Throwable $exception, bool $isDevelopment): void
+{
+    if (!is_api_request()) {
+        throw $exception;
+    }
+
+    http_response_code(500);
+    if (!headers_sent()) {
+        header('Content-Type: application/json; charset=utf-8');
+    }
+
+    $payload = [
+        'error' => true,
+        'message' => 'Database initialisatie mislukt. Controleer schema/migraties en database-rechten.'
+    ];
+
+    if ($isDevelopment) {
+        $payload['detail'] = $exception->getMessage();
+        $payload['exception'] = get_class($exception);
+    }
+
+    echo json_encode($payload, JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
 function quote_mysql_identifier(string $identifier): string
 {
     return '`' . str_replace('`', '``', $identifier) . '`';
@@ -105,4 +130,9 @@ try {
 }
 
 require_once __DIR__ . '/db_bootstrap.php';
-bootstrap_database($pdo, $config);
+
+try {
+    bootstrap_database($pdo, $config);
+} catch (Throwable $exception) {
+    respond_database_runtime_error($exception, $isDevelopment);
+}
