@@ -324,6 +324,10 @@ async function bootstrap() {
     const baseMessage = 'Fout bij laden. Controleer database en API-configuratie.';
     setProgressMessage(baseMessage);
 
+  const bars = renderDimensionBars(data?.scores);
+  res.querySelector('p:last-of-type')?.insertAdjacentElement('afterend', bars);
+
+  res.querySelector('.restart')?.addEventListener('click', resetTest);
     if (IS_DEVELOPMENT_ENV) {
       showError(`${baseMessage} ${buildDebugHint('api/v1/get_progress.php', error?.status)}`, 'progress');
       return;
