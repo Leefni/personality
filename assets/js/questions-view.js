@@ -259,19 +259,35 @@ function ensureProgressBarElements() {
   const progress = document.getElementById('progress');
   if (!progress || !progress.parentElement) return null;
 
-  let progressBar = document.getElementById('progress-bar');
-  if (!progressBar) {
+  let progressWrap = document.getElementById('progress-wrap');
+  if (!progressWrap) {
     if (typeof progress.insertAdjacentElement !== 'function') {
       return null;
     }
-    progressBar = document.createElement('div');
-    progressBar.id = 'progress-bar';
-    progressBar.className = 'progress-bar';
-    progressBar.innerHTML = '<div id="progress-bar-fill" class="progress-bar-fill"></div>';
-    progress.insertAdjacentElement('afterend', progressBar);
+    progressWrap = document.createElement('section');
+    progressWrap.id = 'progress-wrap';
+    progressWrap.className = 'progress-wrap';
+    progressWrap.setAttribute('aria-label', 'Voortgang');
+    progressWrap.innerHTML = `
+      <div id="progress-bar" class="progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+        <div id="progress-bar-fill" class="progress-bar-fill"></div>
+      </div>
+      <p class="progress-meta">
+        <span id="progress-percentage">0%</span> afgerond
+      </p>
+    `;
+    progress.insertAdjacentElement('afterend', progressWrap);
   }
 
-  return progressBar.querySelector('#progress-bar-fill');
+  const progressBar = progressWrap.querySelector('#progress-bar');
+  const progressFill = progressWrap.querySelector('#progress-bar-fill');
+  const progressPercentage = progressWrap.querySelector('#progress-percentage');
+
+  if (!(progressBar instanceof HTMLElement) || !(progressFill instanceof HTMLElement) || !(progressPercentage instanceof HTMLElement)) {
+    return null;
+  }
+
+  return { progressBar, progressFill, progressPercentage };
 }
 
 /**
@@ -285,13 +301,16 @@ export function updateProgress(viewModel) {
   document.getElementById('progress').textContent =
     `Pagina ${viewModel.page} / ${totalPages} — ${answeredCount} van ${viewModel.totalQuestions} vragen ingevuld`;
 
-  const progressFill = ensureProgressBarElements();
-  if (!progressFill) return;
+  const progressElements = ensureProgressBarElements();
+  if (!progressElements) return;
 
   const completionPercent = viewModel.totalQuestions > 0
     ? (answeredCount / viewModel.totalQuestions) * 100
     : 0;
-  progressFill.style.width = `${completionPercent}%`;
+  const roundedCompletionPercent = Math.round(completionPercent);
+  progressElements.progressFill.style.width = `${completionPercent}%`;
+  progressElements.progressBar.setAttribute('aria-valuenow', String(roundedCompletionPercent));
+  progressElements.progressPercentage.textContent = `${roundedCompletionPercent}%`;
 }
 
 /**
