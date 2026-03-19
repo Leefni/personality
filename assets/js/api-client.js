@@ -81,3 +81,29 @@ export function deleteData() {
 export function resetProgress() {
   return apiFetch('api/v1/reset_progress.php', { method: 'POST' });
 }
+
+/**
+ * Requests an email recovery link for the current visitor progress.
+ * @param {string} email - Email address to send recovery link to.
+ * @returns {Promise<{ok: boolean, expires_at: string, delivery: string, recovery_link?: string}>}
+ */
+export function requestRecovery(email) {
+  return apiFetch('api/v1/request_recovery.php', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email })
+  });
+}
+
+/**
+ * Redeems a one-time recovery token and binds server-side visitor state.
+ * @param {string} token - One-time token from recovery email link.
+ * @returns {Promise<{ok: boolean, visitor_id: string}>}
+ */
+export function redeemRecovery(token) {
+  return apiFetch('api/v1/redeem_recovery.php', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token })
+  });
+}

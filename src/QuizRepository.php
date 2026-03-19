@@ -106,4 +106,129 @@ final class QuizRepository
         );
         $stmt->execute([$visitor, $type, json_encode($scores)]);
     }
+
+    public function createRecoveryToken(
+        string $tokenHash,
+        string $visitorId,
+        string $email,
+        DateTimeImmutable $expiresAt,
+        ?string $ipAddress
+    ): void {
+        $stmt = $this->pdo->prepare(
+            'INSERT INTO recovery_tokens (token_hash, visitor_id, email, expires_at, requested_ip)
+             VALUES (?, ?, ?, ?, ?)'
+        );
+        $stmt->execute([
+            $tokenHash,
+            $visitorId,
+            mb_strtolower(trim($email)),
+            $expiresAt->format('Y-m-d H:i:s'),
+            $ipAddress,
+        ]);
+    }
+
+    public function countRecoveryRequestsForVisitorSince(string $visitorId, DateTimeImmutable $since): int
+    {
+        $stmt = $this->pdo->prepare(
+            "SELECT COUNT(*) FROM recovery_audit_log
+             WHERE event_type = 'recovery_request'
+               AND status IN ('accepted', 'sent')
+               AND visitor_id = ?
+               AND created_at >= ?"
+        );
+        $stmt->execute([$visitorId, $since->format('Y-m-d H:i:s')]);
+
+        return (int) $stmt->fetchColumn();
+    }
+
+    public function countRecoveryRequestsForEmailSince(string $email, DateTimeImmutable $since): int
+    {
+        $stmt = $this->pdo->prepare(
+            "SELECT COUNT(*) FROM recovery_audit_log
+             WHERE event_type = 'recovery_request'
+               AND status IN ('accepted', 'sent')
+               AND email = ?
+               AND created_at >= ?"
+        );
+        $stmt->execute([mb_strtolower(trim($email)), $since->format('Y-m-d H:i:s')]);
+
+        return (int) $stmt->fetchColumn();
+    }
+
+    public function writeRecoveryAudit(
+        string $eventType,
+        string $status,
+        ?string $visitorId,
+        ?string $email,
+        ?string $ipAddress,
+        array $details = []
+    ): void {
+        $encodedDetails = empty($details) ? null : json_encode($details, JSON_UNESCAPED_UNICODE);
+        $stmt = $this->pdo->prepare(
+            'INSERT INTO recovery_audit_log (event_type, status, visitor_id, email, ip_address, detail_json)
+             VALUES (?, ?, ?, ?, ?, ?)'
+        );
+        $stmt->execute([
+            $eventType,
+            $status,
+            $visitorId,
+            $email !== null ? mb_strtolower(trim($email)) : null,
+            $ipAddress,
+            $encodedDetails,
+        ]);
+    }
+
+    /** @return array{id:int,visitor_id:string,email:string}|null */
+    public function redeemRecoveryToken(string $tokenHash, ?string $ipAddress): ?array
+    {
+        $ownsTransaction = !$this->pdo->inTransaction();
+        if ($ownsTransaction) {
+            $this->pdo->beginTransaction();
+        }
+
+        try {
+            $stmt = $this->pdo->prepare(
+                'SELECT id, visitor_id, email
+                 FROM recovery_tokens
+                 WHERE token_hash = ?
+                   AND redeemed_at IS NULL
+                   AND expires_at > UTC_TIMESTAMP()
+                 LIMIT 1
+                 FOR UPDATE'
+            );
+            $stmt->execute([$tokenHash]);
+            $tokenRow = $stmt->fetch();
+
+            if (!$tokenRow) {
+                if ($ownsTransaction && $this->pdo->inTransaction()) {
+                    $this->pdo->commit();
+                }
+
+                return null;
+            }
+
+            $update = $this->pdo->prepare(
+                'UPDATE recovery_tokens
+                 SET redeemed_at = UTC_TIMESTAMP(), redeemed_ip = ?
+                 WHERE id = ?'
+            );
+            $update->execute([$ipAddress, (int) $tokenRow['id']]);
+
+            if ($ownsTransaction && $this->pdo->inTransaction()) {
+                $this->pdo->commit();
+            }
+
+            return [
+                'id' => (int) $tokenRow['id'],
+                'visitor_id' => (string) $tokenRow['visitor_id'],
+                'email' => (string) $tokenRow['email'],
+            ];
+        } catch (Throwable $e) {
+            if ($ownsTransaction && $this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
+
+            throw $e;
+        }
+    }
 }

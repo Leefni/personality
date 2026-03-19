@@ -36,7 +36,9 @@ import {
   saveAnswer,
   submitResults,
   deleteData,
-  resetProgress
+  resetProgress,
+  requestRecovery,
+  redeemRecovery
 } from './js/api-client.js';
 import {
   setProgressMessage,
@@ -169,6 +171,74 @@ function setupDeleteDataHandler() {
   deleteButton.addEventListener('click', () => {
     handleDeleteData();
   });
+}
+
+function setRecoveryStatus(message, isError = false) {
+  const status = document.getElementById('recovery-status');
+  if (!status) return;
+  status.textContent = message;
+  status.classList.toggle('error', isError);
+}
+
+async function handleRecoveryRequest() {
+  const input = document.getElementById('recovery-email');
+  const button = document.getElementById('recovery-request');
+  if (!(input instanceof HTMLInputElement) || !(button instanceof HTMLButtonElement)) {
+    return;
+  }
+
+  const email = input.value.trim();
+  if (!email) {
+    setRecoveryStatus('Vul een geldig e-mailadres in.', true);
+    return;
+  }
+
+  button.disabled = true;
+  setRecoveryStatus('Herstel-link aanvragen...');
+
+  try {
+    const response = await requestRecovery(email);
+    if (response.delivery === 'mock' && response.recovery_link) {
+      setRecoveryStatus(`Dev mock-link: ${response.recovery_link}`);
+    } else {
+      setRecoveryStatus('Als dit e-mailadres bekend is, is er een herstel-link verstuurd.');
+    }
+  } catch (error) {
+    setRecoveryStatus(formatApiError(error, 'Herstel-link aanvragen mislukt.'), true);
+  } finally {
+    button.disabled = false;
+  }
+}
+
+function setupRecoveryHandler() {
+  const button = document.getElementById('recovery-request');
+  if (!button || button.dataset.handlerAttached === 'true') {
+    return;
+  }
+
+  button.dataset.handlerAttached = 'true';
+  button.addEventListener('click', () => {
+    handleRecoveryRequest();
+  });
+}
+
+async function maybeRedeemRecoveryFromUrl() {
+  const params = new URLSearchParams(window.location.search);
+  const token = params.get('recovery_token');
+  if (!token) {
+    return;
+  }
+
+  try {
+    await redeemRecovery(token);
+    setRecoveryStatus('Herstel-link geaccepteerd. Je voortgang is geladen.');
+    params.delete('recovery_token');
+    const nextQuery = params.toString();
+    const nextUrl = `${window.location.pathname}${nextQuery ? `?${nextQuery}` : ''}${window.location.hash}`;
+    window.history.replaceState({}, document.title, nextUrl);
+  } catch (error) {
+    setRecoveryStatus(formatApiError(error, 'Herstel-link is ongeldig of verlopen.'), true);
+  }
 }
 
 function render() {
@@ -389,6 +459,8 @@ async function bootstrap() {
       queueAnswerSave
     );
     setupDeleteDataHandler();
+    setupRecoveryHandler();
+    await maybeRedeemRecoveryFromUrl();
 
     await loadTestMetadata();
     const saved = await fetchProgress();

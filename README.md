@@ -21,6 +21,12 @@ Runtime configuration comes from environment variables in `config.php`:
 - `DB_PASS` (default: empty string)
 - `DB_AUTO_BOOTSTRAP` (default: `true`)
 - `APP_ENV` (default: `production`)
+- `RECOVERY_TOKEN_TTL_SECONDS` (default: `900`)
+- `RECOVERY_RATE_LIMIT_WINDOW_SECONDS` (default: `3600`)
+- `RECOVERY_RATE_LIMIT_MAX_PER_VISITOR` (default: `3`)
+- `RECOVERY_RATE_LIMIT_MAX_PER_EMAIL` (default: `5`)
+- `RECOVERY_EMAIL_FROM` (default: `no-reply@example.test`)
+- `RECOVERY_BASE_URL` (default: auto-derived from current request)
 - `RETENTION_DAYS` (default: `90`) for maintenance cleanup window
 - `RETENTION_MAX_DELETE_PER_TABLE` (default: `5000`) max rows deleted per table per run
 - `RETENTION_DRY_RUN` (default: `false`) report candidate rows without deleting
@@ -114,6 +120,8 @@ All active endpoints are now under `api/v1/`:
 - `POST /api/v1/delete_data.php`
 - `GET /api/v1/test_metadata.php`
 - `GET /api/v1/health.php`
+- `POST /api/v1/request_recovery.php`
+- `POST /api/v1/redeem_recovery.php`
 
 ## Legacy endpoints (`/api/*.php`)
 
