@@ -14,4 +14,5 @@ json_success([
     'page' => $page,
     'per_page' => $perPage,
     'total' => $result['total'],
+    'metadata' => get_test_metadata($quizRepository),
 ]);

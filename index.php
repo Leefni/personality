@@ -10,6 +10,21 @@
   <main class="container">
     <h1>Personality Test</h1>
     <p class="progress" id="progress">Laden...</p>
+    <p class="test-meta" id="test-meta">Testversie laden...</p>
+
+    <section class="privacy-note" aria-label="Privacy">
+      <p><strong>Privacy:</strong> Je antwoorden worden tijdelijk opgeslagen zodat je later kunt doorgaan. Gegevens worden uiterlijk na 30 dagen verwijderd of direct wanneer je op ‘Verwijder mijn gegevens’ klikt.</p>
+      <button type="button" class="danger" id="delete-data-start">Verwijder mijn gegevens</button>
+    </section>
+
+    <section class="about-test" aria-labelledby="about-test-title">
+      <h2 id="about-test-title">Over deze test</h2>
+      <ul>
+        <li><strong>Gemeten dimensies:</strong> Extraversie/Introversie (EI), Sensing/Intuïtie (SN), Thinking/Feeling (TF) en Judging/Perceiving (JP).</li>
+        <li><strong>Scoreberekening:</strong> Per vraag wordt je antwoord (1 t/m 5) omgerekend naar een dimensiescore met richting en weging. De som per dimensie bepaalt naar welke pool je type neigt.</li>
+        <li><strong>Interpretatie:</strong> De uitkomst is indicatief en bedoeld voor zelfreflectie; het is geen klinische diagnose of medisch advies.</li>
+      </ul>
+    </section>
 
     <section id="questions"></section>
     <nav class="nav" id="nav"></nav>
