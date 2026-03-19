@@ -1,6 +1,14 @@
 import { apiFetch } from './utils.js';
 
 /**
+ * Loads test metadata such as version and release date.
+ * @returns {Promise<{version: string, date: string, question_count: number}>} Metadata payload from the API.
+ */
+export function fetchTestMetadata() {
+  return apiFetch('api/v1/test_metadata.php');
+}
+
+/**
  * Loads saved progress from the backend.
  * @returns {Promise<Array>} Saved answer rows from the API.
  */
@@ -56,6 +64,14 @@ export function saveAnswer(questionId, value) {
  */
 export function submitResults() {
   return apiFetch('api/v1/submit_results.php', { method: 'POST' });
+}
+
+/**
+ * Deletes all persisted quiz data for the current visitor.
+ * @returns {Promise<{ok: boolean}>} API payload confirming data deletion.
+ */
+export function deleteData() {
+  return apiFetch('api/v1/delete_data.php', { method: 'POST' });
 }
 
 /**
