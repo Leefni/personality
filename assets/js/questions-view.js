@@ -43,7 +43,7 @@ function createQuestionRow(question, index, viewModel) {
 
   div.innerHTML = `
     <p><strong>${(viewModel.page - 1) * viewModel.perPage + index + 1}.</strong> ${question.text}</p>
-    <fieldset class="likert" ${isPending ? 'disabled' : ''}>
+    <fieldset class="likert" aria-describedby="likert-scale-hint" ${isPending ? 'disabled' : ''}>
       <legend class="sr-only">Kies een antwoordoptie voor vraag ${(viewModel.page - 1) * viewModel.perPage + index + 1}</legend>
       ${[1, 2, 3, 4, 5, 6].map((value) => `
         <div class="likert-option">
@@ -54,6 +54,8 @@ function createQuestionRow(question, index, viewModel) {
             data-qid="${question.id}"
             data-value="${value}"
             value="${value}"
+            title="${viewModel.likertLabels[value - 1]}"
+            tabindex="${(viewModel.answers[question.id] ?? 1) === value ? '0' : '-1'}"
             ${viewModel.answers[question.id] === value ? 'checked' : ''}
           >
           <label for="q-${question.id}-v-${value}">${value} <span class="sr-only">(${viewModel.likertLabels[value - 1]})</span></label>
@@ -229,7 +231,7 @@ export function renderQuestions(viewModel, handlers) {
     return;
   }
 
-  qDiv.innerHTML = '';
+  qDiv.innerHTML = '<p id="likert-scale-hint" class="sr-only">Schaal van 1 (Helemaal oneens) tot 6 (Helemaal eens).</p>';
   viewModel.questions.forEach((q, index) => {
     qDiv.appendChild(createQuestionRow(q, index, viewModel));
   });
