@@ -5,25 +5,6 @@ declare(strict_types=1);
 require __DIR__ . '/../db.php';
 
 /**
- * @param string $name
- * @param int $default
- */
-function env_positive_int(string $name, int $default): int
-{
-    $raw = getenv($name);
-    if ($raw === false) {
-        return $default;
-    }
-
-    $value = filter_var($raw, FILTER_VALIDATE_INT);
-    if ($value === false || $value < 1) {
-        return $default;
-    }
-
-    return $value;
-}
-
-/**
  * @param PDO $pdo
  * @param string $table
  * @param string $cutoff
@@ -44,9 +25,9 @@ function cleanup_table(PDO $pdo, string $table, string $cutoff, int $batchSize):
     return $stmt->rowCount();
 }
 
-$retentionDays = env_positive_int('RETENTION_DAYS', 90);
-$batchSize = env_positive_int('RETENTION_MAX_DELETE_PER_TABLE', 5000);
-$dryRun = filter_var(getenv('RETENTION_DRY_RUN') ?: 'false', FILTER_VALIDATE_BOOLEAN);
+$retentionDays = max(1, (int) ($config['retention_days'] ?? 90));
+$batchSize = max(1, (int) ($config['retention_max_delete_per_table'] ?? 5000));
+$dryRun = (bool) ($config['retention_dry_run'] ?? false);
 
 $cutoff = (new DateTimeImmutable('now', new DateTimeZone('UTC')))
     ->sub(new DateInterval(sprintf('P%dD', $retentionDays)))

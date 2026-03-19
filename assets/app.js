@@ -215,6 +215,7 @@ async function loadQuestionsPage() {
     render();
   } catch (error) {
     const baseMessage = 'Fout bij laden. Controleer database en API-configuratie.';
+    console.error('Vraaglijst laden mislukt:', error);
     setProgressMessage(baseMessage);
 
     if (IS_DEVELOPMENT_ENV) {
