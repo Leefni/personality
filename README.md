@@ -2,6 +2,59 @@
 
 This project is a PHP-based personality quiz with a JavaScript frontend.
 
+## Getting Started
+
+### Prerequisites
+
+- **PHP**: 8.0+ with `pdo_mysql` enabled.
+- **MySQL**: 5.7+ (8.x recommended).
+- **Web server**: Any server that can serve PHP (Apache, Nginx + PHP-FPM, or built-in PHP dev server) with this repo as the web root (or mapped subdirectory).
+
+### Local configuration
+
+Runtime configuration comes from environment variables in `config.php`:
+
+- `DB_HOST` (default: `127.0.0.1`)
+- `DB_PORT` (default: `3306`)
+- `DB_NAME` (default: `personality`)
+- `DB_USER` (default: `root`)
+- `DB_PASS` (default: empty string)
+- `DB_AUTO_BOOTSTRAP` (default: `true`)
+- `APP_ENV` (default: `production`)
+
+For local-only overrides, you can optionally create `config.local.php` at the repository root. If present and it returns an array, its values override env-derived defaults.
+
+### Database bootstrap (`db_auto_bootstrap`)
+
+When `DB_AUTO_BOOTSTRAP=true` (default), startup bootstrap will:
+
+1. Ensure required tables exist (`questions`, `answers`, `results`) by running `init.sql` if needed.
+2. Seed `questions` from `questions.sql` when the table is empty.
+
+When `DB_AUTO_BOOTSTRAP=false`, bootstrap is skipped, so schema and seed data must already exist.
+
+### First run
+
+1. Start MySQL and create/login credentials matching your `DB_*` settings.
+2. Serve this folder via your web server.
+3. Open the app entrypoint in a browser: `http://<host>/<path>/index.php`.
+4. The frontend will call `/api/v1/*` endpoints from there.
+
+#### Smoke test (curl)
+
+```bash
+# Health check
+curl -sS "http://localhost/personality/api/v1/health.php"
+
+# Fetch first page of questions
+curl -sS "http://localhost/personality/api/v1/get_questions.php?page=1&per_page=5"
+```
+
+### Troubleshooting
+
+- **DB auth failure (dev/local)**: if you see `Database authentication failed. Check DB_USER/DB_PASS ... update env vars or config.local.php.`, verify `DB_USER`/`DB_PASS` (or `config.local.php`) and that the MySQL user is allowed from your `DB_HOST`.
+- **Missing tables / schema errors**: if requests fail with missing table errors (for example `questions`, `answers`, or `results`), either enable `DB_AUTO_BOOTSTRAP=true` or run `init.sql` (and `questions.sql` if needed) manually against `DB_NAME`.
+
 ## API versioning
 
 All active endpoints are now under `api/v1/`:
