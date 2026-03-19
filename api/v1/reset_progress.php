@@ -12,6 +12,6 @@ if ($visitor === '') {
 }
 
 $quizRepository->clearProgress($visitor);
-clear_visitor_cache($visitor);
+invalidate_cached_result($pdo, $visitor);
 
 json_success(['ok' => true]);

@@ -19,6 +19,6 @@ if (!$quizRepository->questionExists($questionId)) {
 
 $visitor = ensure_visitor_id($payload);
 $quizRepository->saveAnswer($questionId, $visitor, $value);
-clear_visitor_cache($visitor);
+invalidate_cached_result($pdo, $visitor);
 
 json_success(['ok' => true, 'visitor_id' => $visitor]);
