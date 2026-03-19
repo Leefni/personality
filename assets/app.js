@@ -54,6 +54,21 @@ import { renderResult } from './js/results-view.js';
 const pageScrollPositions = new Map();
 const RECOVERY_MIN_ANSWER_COUNT = 5;
 
+function updateIntroSectionsVisibility() {
+  const state = getState();
+  const shouldShowIntro = state.page === 1;
+  const privacySection = document.querySelector('.privacy-note');
+  const aboutSection = document.querySelector('.about-test');
+
+  if (privacySection instanceof HTMLElement) {
+    privacySection.hidden = !shouldShowIntro;
+  }
+
+  if (aboutSection instanceof HTMLElement) {
+    aboutSection.hidden = !shouldShowIntro;
+  }
+}
+
 function getViewModel() {
   const state = getState();
   return {
@@ -332,6 +347,7 @@ function render(scrollToTop = false) {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
+  updateIntroSectionsVisibility();
   updateRecoveryVisibility();
 }
 

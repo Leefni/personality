@@ -54,16 +54,7 @@ body {
 
  display: grid;
  grid-template-columns: 1fr;
- grid-template-areas:
-   "header"
-   "content"
-   "actions"
-   "result";
  row-gap: var(--space-5);
-}
-
-.container > h1 {
- grid-area: header;
 }
 
 h1 {
@@ -208,7 +199,6 @@ h1 {
 }
 
 #questions {
- grid-area: content;
  display: grid;
  gap: var(--space-4);
  align-content: start;
@@ -297,7 +287,7 @@ h1 {
 
 .likert {
  display: grid;
- grid-template-columns: repeat(5, 1fr);
+ grid-template-columns: repeat(6, 1fr);
  gap: var(--space-2);
  margin-top: var(--space-2);
  border: 0;
@@ -367,7 +357,6 @@ fieldset[disabled] .likert-option label {
 }
 
 .nav {
- grid-area: actions;
  display: grid;
  grid-template-columns: repeat(3, minmax(0, 1fr));
  gap: var(--space-3);
@@ -420,7 +409,6 @@ fieldset[disabled] .likert-option label {
 }
 
 .result {
- grid-area: result;
  margin-top: 0;
  border-top: 1px solid var(--border);
  padding-top: var(--space-5);
