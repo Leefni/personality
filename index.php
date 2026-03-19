@@ -54,12 +54,13 @@ $metaDescription = 'Doe de Personality Test en ontdek jouw persoonlijkheidstype 
     </section>
 
     <section class="about-test" aria-labelledby="about-test-title">
-      <h2 id="about-test-title">Over deze test</h2>
+      <h2 id="about-test-title">Voor je start</h2>
       <ul>
-        <li><strong>Gemeten dimensies:</strong> Extraversie/Introversie (EI), Sensing/Intuïtie (SN), Thinking/Feeling (TF) en Judging/Perceiving (JP).</li>
-        <li><strong>Scoreberekening:</strong> Per vraag wordt je antwoord (1 t/m 5) omgerekend naar een dimensiescore met richting en weging. De som per dimensie bepaalt naar welke pool je type neigt.</li>
-        <li><strong>Interpretatie:</strong> De uitkomst is indicatief en bedoeld voor zelfreflectie; het is geen klinische diagnose of medisch advies.</li>
+        <li><strong>Verwachte duur:</strong> Deze test duurt ongeveer ±15 minuten.</li>
+        <li><strong>Uitleg antwoordschaal:</strong> Beantwoord elke stelling op een schaal van ‘helemaal oneens’ tot ‘helemaal eens’. Kies je eerste, natuurlijke reactie; er zijn geen goede of foute antwoorden.</li>
+        <li><strong>Voortgang opslaan:</strong> Je voortgang kan automatisch bewaard en later hersteld worden via e-mail (optioneel).</li>
       </ul>
+      <p class="subtle-disclaimer">Dit is een indicatief instrument voor zelfreflectie en geen klinische diagnose.</p>
     </section>
 
     <section id="questions"></section>

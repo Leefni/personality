@@ -495,8 +495,15 @@ fieldset[disabled] .likert-option label {
   padding-left: 20px;
 }
 
+
 .about-test li {
   margin-bottom: 6px;
+}
+
+.about-test .subtle-disclaimer {
+  margin: 8px 0 0;
+  font-size: 13px;
+  color: var(--text-muted);
 }
 
 button.danger,
