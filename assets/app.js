@@ -79,8 +79,9 @@ function updatePendingActionState() {
 function mergeProgress(saved) {
   const localDraft = loadLocalDraft();
   const serverAnswers = {};
+  const rows = Array.isArray(saved) ? saved : [];
 
-  saved.forEach((item) => {
+  rows.forEach((item) => {
     serverAnswers[item.question_id] = Number(item.value);
   });
 
