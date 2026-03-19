@@ -83,6 +83,23 @@ h1 {
  font-size: var(--font-size-sm);
 }
 
+.progress-bar {
+ width: min(100%, 560px);
+ height: 8px;
+ border-radius: 999px;
+ background: #dbe6f3;
+ margin: var(--space-3) auto 0;
+ overflow: hidden;
+}
+
+.progress-bar-fill {
+ width: 0;
+ height: 100%;
+ border-radius: inherit;
+ background: linear-gradient(90deg, var(--primary), #0ea5e9);
+ transition: width 0.3s ease;
+}
+
 .recovery-prompt {
  border: 1px dashed var(--border);
  border-radius: 10px;
@@ -132,6 +149,28 @@ h1 {
  display: grid;
  gap: var(--space-4);
  align-content: start;
+}
+
+.page-dots {
+ display: flex;
+ justify-content: center;
+ align-items: center;
+ gap: var(--space-2);
+ margin-bottom: var(--space-2);
+}
+
+.page-dot {
+ width: 9px;
+ height: 9px;
+ border-radius: 999px;
+ background: #cbd5e1;
+ border: 1px solid #b6c4d8;
+}
+
+.page-dot.is-active {
+ background: var(--primary);
+ border-color: var(--primary);
+ transform: scale(1.15);
 }
 
 .question {
@@ -271,6 +310,14 @@ fieldset[disabled] .likert-option label {
  font-weight: 600;
 }
 
+.nav .page-hint {
+ grid-column: 1 / -1;
+ margin: 0;
+ text-align: center;
+ font-size: var(--font-size-sm);
+ color: var(--text-muted);
+}
+
 .nav .prev,
 .nav .next {
  background: #fff;
@@ -404,6 +451,15 @@ fieldset[disabled] .likert-option label {
 
  .nav .submit {
    order: -1;
+ }
+
+ .page-dots {
+   margin-bottom: var(--space-1);
+ }
+
+ .nav .page-hint {
+   font-size: 13px;
+   padding-bottom: var(--space-1);
  }
 }
 
