@@ -110,16 +110,22 @@ export function updateQuestionPendingState(questionId, pendingQuestionIds) {
  * Updates submit button enabled state based on completion.
  * @param {Object} answers - Current answers keyed by question id.
  * @param {number} totalQuestions - Number of questions in quiz.
+ * @param {Set<number>} pendingQuestionIds - In-flight save ids used to optionally block submit.
  * @returns {void} Nothing.
  */
-export function updateNavState(answers, totalQuestions) {
+export function updateNavState(answers, totalQuestions, pendingQuestionIds = new Set()) {
   const submitButton = document.querySelector('#nav .submit');
   if (!submitButton) return;
 
   const answeredCount = Object.keys(answers).length;
   const isComplete = answeredCount === totalQuestions;
-  submitButton.disabled = !isComplete;
-  submitButton.title = isComplete ? '' : 'Beantwoord eerst alle vragen voordat je het resultaat bekijkt.';
+  const hasPendingSaves = pendingQuestionIds.size > 0;
+  submitButton.disabled = !isComplete || hasPendingSaves;
+  submitButton.title = !isComplete
+    ? 'Beantwoord eerst alle vragen voordat je het resultaat bekijkt.'
+    : hasPendingSaves
+      ? 'Nog bezig met opslaan. Wacht even tot alles klaar is.'
+      : '';
 }
 
 /**
@@ -155,7 +161,7 @@ export function renderEmptyState(dataEndpoint, isDevelopment) {
 
 /**
  * Renders pagination/submit buttons for the current page.
- * @param {{page: number, perPage: number, totalQuestions: number, answers: Object}} viewModel - Current pagination and answer values.
+ * @param {{page: number, perPage: number, totalQuestions: number, answers: Object, pendingQuestionIds: Set<number>}} viewModel - Current pagination and answer values.
  * @param {{onPrev: () => void, onNext: () => void, onSubmit: () => void}} handlers - Callbacks for nav button clicks.
  * @returns {void} Nothing.
  */
@@ -187,8 +193,13 @@ export function renderNav(viewModel, handlers) {
   submit.textContent = 'Bekijk resultaat';
   const answeredCount = Object.keys(viewModel.answers).length;
   const isComplete = answeredCount === viewModel.totalQuestions;
-  submit.disabled = !isComplete;
-  submit.title = isComplete ? '' : 'Beantwoord eerst alle vragen voordat je het resultaat bekijkt.';
+  const hasPendingSaves = viewModel.pendingQuestionIds.size > 0;
+  submit.disabled = !isComplete || hasPendingSaves;
+  submit.title = !isComplete
+    ? 'Beantwoord eerst alle vragen voordat je het resultaat bekijkt.'
+    : hasPendingSaves
+      ? 'Nog bezig met opslaan. Wacht even tot alles klaar is.'
+      : '';
   submit.addEventListener('click', handlers.onSubmit);
   nav.appendChild(submit);
 }
