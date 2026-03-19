@@ -14,6 +14,17 @@ import {
   setAnswers,
   setAnswer,
   clearAnswers,
+  setQueuedAnswerValue,
+  getQueuedAnswerValue,
+  clearQueuedAnswerValue,
+  setPendingSavePromise,
+  clearPendingSavePromise,
+  getPendingSavePromises,
+  hasPendingSaves,
+  clearSaveTimers,
+  clearPendingSavesTracking,
+  bumpSaveSession,
+  getSaveSession,
   setPagination,
   setQuestionChangeListenerAttached,
   incrementRenderCount
@@ -47,6 +58,15 @@ function getViewModel() {
     pendingQuestionIds: state.pendingQuestionIds,
     likertLabels
   };
+}
+
+function updatePendingActionState() {
+  const state = getState();
+  updateNavState(state.answers, state.totalQuestions, state.pendingQuestionIds);
+  const restartButton = document.querySelector('#result .restart');
+  if (restartButton) {
+    restartButton.disabled = hasPendingSaves();
+  }
 }
 
 function mergeProgress(saved) {
@@ -89,11 +109,13 @@ function render() {
 
   renderQuestions(getViewModel(), {
     isDevelopment: IS_DEVELOPMENT_ENV,
-    onPrev: () => {
+    onPrev: async () => {
+      await flushPendingSaves();
       setPagination({ page: getState().page - 1 });
       loadQuestionsPage();
     },
-    onNext: () => {
+    onNext: async () => {
+      await flushPendingSaves();
       setPagination({ page: getState().page + 1 });
       loadQuestionsPage();
     },
@@ -135,16 +157,19 @@ async function loadQuestionsPage() {
   }
 }
 
-async function persistAnswer(questionId, value) {
+async function persistAnswer(questionId, value, saveSession) {
   const state = getState();
   state.pendingQuestionIds.add(questionId);
   updateQuestionPendingState(questionId, state.pendingQuestionIds);
   updateProgress(getViewModel());
+  updatePendingActionState();
 
   try {
     await saveAnswer(questionId, value);
+    if (getSaveSession() !== saveSession) return;
     saveLocalDraft(state.answers);
   } catch (error) {
+    if (getSaveSession() !== saveSession) return;
     saveLocalDraft(state.answers);
     const message = formatApiError(error, 'Opslaan mislukt. Probeer het opnieuw.');
     showError(message, 'progress');
@@ -152,16 +177,19 @@ async function persistAnswer(questionId, value) {
     state.pendingQuestionIds.delete(questionId);
     updateQuestionPendingState(questionId, state.pendingQuestionIds);
     updateProgress(getViewModel());
+    updatePendingActionState();
   }
 }
 
 function queueAnswerSave(questionId, value) {
   const state = getState();
+  const sessionAtQueue = getSaveSession();
   setAnswer(questionId, value);
+  setQueuedAnswerValue(questionId, value);
   saveLocalDraft(state.answers);
   updateQuestionRow(questionId, getViewModel());
   updateProgress(getViewModel());
-  updateNavState(state.answers, state.totalQuestions);
+  updatePendingActionState();
 
   const existingTimer = state.saveTimers.get(questionId);
   if (existingTimer) {
@@ -169,18 +197,67 @@ function queueAnswerSave(questionId, value) {
   }
 
   const timerId = window.setTimeout(async () => {
+    if (getSaveSession() !== sessionAtQueue) {
+      state.saveTimers.delete(questionId);
+      clearQueuedAnswerValue(questionId);
+      updatePendingActionState();
+      return;
+    }
+
+    const queuedValue = getQueuedAnswerValue(questionId);
     state.saveTimers.delete(questionId);
-    await persistAnswer(questionId, value);
+    clearQueuedAnswerValue(questionId);
+    updatePendingActionState();
+    if (!Number.isFinite(queuedValue)) return;
+
+    const savePromise = persistAnswer(questionId, Number(queuedValue), sessionAtQueue);
+    setPendingSavePromise(questionId, savePromise);
+    try {
+      await savePromise;
+    } finally {
+      clearPendingSavePromise(questionId);
+      updatePendingActionState();
+    }
   }, 300);
 
   state.saveTimers.set(questionId, timerId);
+  updatePendingActionState();
+}
+
+export async function flushPendingSaves() {
+  const state = getState();
+  const currentSession = getSaveSession();
+  const queuedSaves = Array.from(state.saveTimers.entries());
+
+  queuedSaves.forEach(([questionId, timerId]) => {
+    window.clearTimeout(timerId);
+    state.saveTimers.delete(questionId);
+  });
+  updatePendingActionState();
+
+  const debouncedPromises = queuedSaves.map(([questionId]) => {
+    const queuedValue = getQueuedAnswerValue(questionId);
+    clearQueuedAnswerValue(questionId);
+    if (!Number.isFinite(queuedValue)) return Promise.resolve();
+
+    const savePromise = persistAnswer(questionId, Number(queuedValue), currentSession);
+    setPendingSavePromise(questionId, savePromise);
+    return savePromise.finally(() => {
+      clearPendingSavePromise(questionId);
+    });
+  });
+
+  await Promise.allSettled([...debouncedPromises, ...getPendingSavePromises()]);
+  updatePendingActionState();
 }
 
 async function submitTest() {
   try {
+    await flushPendingSaves();
     const data = await submitResults();
     clearLocalDraft();
     renderResult(data, resetTest);
+    updatePendingActionState();
   } catch (error) {
     const progress = document.getElementById('progress');
     const result = document.getElementById('result');
@@ -211,6 +288,11 @@ async function submitTest() {
 
 async function resetTest() {
   try {
+    bumpSaveSession();
+    clearSaveTimers();
+    clearPendingSavesTracking();
+    updatePendingActionState();
+    await flushPendingSaves();
     await resetProgress();
     clearAnswers();
     setPagination({ page: 1 });
