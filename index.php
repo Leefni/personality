@@ -18,7 +18,7 @@ $appEnv = (string) ($config['app_env'] ?? 'production');
     <h1>Personality Test</h1>
     <p class="progress" id="progress">Laden...</p>
     <section class="recovery-prompt" aria-label="Voortgang herstellen">
-      <label for="recovery-email"><strong>Save my progress via email</strong></label>
+      <label for="recovery-email"><strong>Sla mijn voortgang op via e-mail</strong></label>
       <div class="recovery-controls">
         <input type="email" id="recovery-email" placeholder="jij@example.com" autocomplete="email">
         <button type="button" id="recovery-request">Stuur herstel-link</button>
