@@ -66,6 +66,9 @@ curl -sS "http://localhost/personality/api/v1/get_questions.php?page=1&per_page=
 
 ## Data retention cleanup (cron)
 
+**Default decision (product/legal): `90` days.**  
+This keeps enough history for users to resume an unfinished test over a longer period while still enforcing automatic deletion for data minimization.
+
 Use `scripts/cleanup_retention.php` to remove stale rows from:
 
 - `answers`
@@ -100,10 +103,16 @@ Sample output:
 
 ### Cron setup example
 
-Run daily at 02:15 UTC with a 120-day retention window:
+Run daily at 02:15 UTC with the default 90-day retention window:
 
 ```cron
-15 2 * * * cd /path/to/personality && RETENTION_DAYS=120 RETENTION_MAX_DELETE_PER_TABLE=10000 php scripts/cleanup_retention.php >> /var/log/personality-retention.log 2>&1
+15 2 * * * cd /path/to/personality && php scripts/cleanup_retention.php >> /var/log/personality-retention.log 2>&1
+```
+
+If you need a one-off override, you can still set env vars inline:
+
+```cron
+15 2 * * * cd /path/to/personality && RETENTION_DAYS=90 RETENTION_MAX_DELETE_PER_TABLE=10000 php scripts/cleanup_retention.php >> /var/log/personality-retention.log 2>&1
 ```
 
 Suggested schedule: once per day during low traffic hours. Keep `RETENTION_MAX_DELETE_PER_TABLE` bounded to avoid long-running delete spikes.

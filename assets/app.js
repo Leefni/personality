@@ -285,6 +285,7 @@ async function loadQuestionsPage() {
     render();
   } catch (error) {
     const baseMessage = 'Fout bij laden. Controleer database en API-configuratie.';
+    console.error('Vraaglijst laden mislukt:', error);
     setProgressMessage(baseMessage);
 
     if (IS_DEVELOPMENT_ENV) {
@@ -296,6 +297,13 @@ async function loadQuestionsPage() {
         error?.parseErrorMessage ? `JSON parse: ${error.parseErrorMessage}` : null
       ].filter(Boolean);
 
+      console.error('Vraagpayload laden mislukt:', {
+        endpoint,
+        status,
+        payload: error?.payload,
+        message: error?.message,
+        parseErrorMessage: error?.parseErrorMessage
+      });
       showError(`${baseMessage} ${debugParts.join(' ')}`, 'progress');
       return;
     }

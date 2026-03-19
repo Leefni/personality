@@ -51,6 +51,10 @@ $baseConfig = [
     'recovery_rate_limit_max_per_email' => (int) env_non_empty_or_default('RECOVERY_RATE_LIMIT_MAX_PER_EMAIL', 5),
     'recovery_email_from' => (string) env_non_empty_or_default('RECOVERY_EMAIL_FROM', 'no-reply@example.test'),
     'recovery_base_url' => (string) env_non_empty_or_default('RECOVERY_BASE_URL', ''),
+    // Product/legal default: 90 days balances user continuity with data minimization.
+    'retention_days' => (int) env_non_empty_or_default('RETENTION_DAYS', 90),
+    'retention_max_delete_per_table' => (int) env_non_empty_or_default('RETENTION_MAX_DELETE_PER_TABLE', 5000),
+    'retention_dry_run' => env_bool_or_default('RETENTION_DRY_RUN', false),
 ];
 
 // Optional local, non-env override for setups where editing a local file is easier.
@@ -62,5 +66,13 @@ if (is_file($localConfigPath)) {
         $baseConfig = array_replace($baseConfig, $localConfig);
     }
 }
+
+$baseConfig['retention_days'] = max(1, (int) ($baseConfig['retention_days'] ?? 90));
+$baseConfig['retention_max_delete_per_table'] = max(1, (int) ($baseConfig['retention_max_delete_per_table'] ?? 5000));
+$baseConfig['retention_dry_run'] = (bool) ($baseConfig['retention_dry_run'] ?? false);
+$baseConfig['privacy_retention_text'] = sprintf(
+    'Je antwoorden worden tijdelijk opgeslagen zodat je later kunt doorgaan. Gegevens worden uiterlijk na %d dagen verwijderd of direct wanneer je op ‘Verwijder mijn gegevens’ klikt.',
+    $baseConfig['retention_days']
+);
 
 return $baseConfig;

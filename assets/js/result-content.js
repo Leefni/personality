@@ -180,3 +180,63 @@ export const RESULT_CONTENT = {
     }
   }
 };
+
+function buildStructuredFields(type, details) {
+  const energy = type.startsWith('E')
+    ? 'Je krijgt vaak energie van afstemming met anderen.'
+    : 'Je presteert sterk met ruimte voor diepe, ongestoorde focus.';
+  const processing = type.includes('N')
+    ? 'Concepten, patronen en toekomstscenario\'s helpen je scherpte houden.'
+    : 'Concreetheid, feiten en duidelijke stappen geven je rust.';
+  const decisionStyle = type.includes('T')
+    ? 'Je maakt keuzes graag op heldere criteria en logica.'
+    : 'Je neemt waarden, impact op mensen en context bewust mee.';
+  const structure = type.endsWith('J')
+    ? 'Heldere planning en voorspelbaarheid maken je effectiever.'
+    : 'Flexibiliteit en speelruimte houden je creatief en adaptief.';
+
+  return {
+    work_env: {
+      base: `${details.werkstijlNl} ${energy} ${structure}`,
+      personas: {
+        individual_contributor: 'Als individual contributor helpt het om je week te beschermen met focusblokken en expliciete deliverables.',
+        manager: 'Als manager helpt het om teamritme en beslisregels expliciet te maken zodat iedereen weet waar hij aan toe is.',
+        student: 'Als student werkt een vaste leerstructuur met korte evaluaties meestal beter dan ad-hoc studeren.'
+      }
+    },
+    communication: {
+      base: `${decisionStyle} ${processing}`,
+      personas: {
+        individual_contributor: 'Als individual contributor: stem verwachtingen vroeg af en deel tussentijdse updates voordat je afrondt.',
+        manager: 'Als manager: benoem naast het wat ook het waarom, zodat verschillende werkstijlen aangehaakt blijven.',
+        student: 'Als student: vat na colleges of groepswerk de afspraken kort samen om misverstanden te voorkomen.'
+      }
+    },
+    team_risks: {
+      base: `${details.valkuilenNl} Let op wanneer tempo of druk oploopt; dan worden natuurlijke voorkeuren vaak scherper.`,
+      personas: {
+        individual_contributor: 'Als individual contributor is het risico dat je te lang zelfstandig oplost en te laat afstemt.',
+        manager: 'Als manager is het risico dat teamleden jouw voorkeursstijl gaan kopiëren en alternatieve perspectieven wegvallen.',
+        student: 'Als student is het risico dat je onder deadlines terugvalt op bekende patronen en minder experimenteert.'
+      }
+    },
+    collab_tips: {
+      base: `${details.groeitipsNl}`,
+      personas: {
+        individual_contributor: 'Als individual contributor: plan één vast feedbackmoment per sprint of week en vertaal feedback naar één concrete actie.',
+        manager: 'Als manager: combineer resultaatmeting met teamgezondheid, zodat samenwerking net zo zichtbaar wordt als output.',
+        student: 'Als student: werk met een accountability-partner om doelen klein te maken en voortgang vol te houden.'
+      }
+    }
+  };
+}
+
+Object.entries(RESULT_CONTENT.types).forEach(([type, details]) => {
+  const structuredFields = buildStructuredFields(type, details);
+
+  details.work_env = structuredFields.work_env;
+  details.communication = structuredFields.communication;
+  details.team_risks = structuredFields.team_risks;
+  details.collab_tips = structuredFields.collab_tips;
+});
+
