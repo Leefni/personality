@@ -51,6 +51,8 @@ import {
 } from './js/questions-view.js';
 import { renderResult } from './js/results-view.js';
 
+const pageScrollPositions = new Map();
+
 function getViewModel() {
   const state = getState();
   return {
@@ -251,7 +253,7 @@ async function maybeRedeemRecoveryFromUrl() {
   }
 }
 
-function render() {
+function render(scrollToTop = false) {
   const state = getState();
   const renderCount = incrementRenderCount();
 
@@ -268,16 +270,25 @@ function render() {
     isDevelopment: IS_DEVELOPMENT_ENV,
     onPrev: async () => {
       await flushPendingSaves();
-      setPagination({ page: getState().page - 1 });
-      loadQuestionsPage();
+      const prevPage = getState().page - 1;
+      setPagination({ page: prevPage });
+      await loadQuestionsPage();
+      const savedY = pageScrollPositions.get(prevPage) ?? 0;
+      window.scrollTo({ top: savedY, behavior: 'smooth' });
     },
     onNext: async () => {
+      pageScrollPositions.set(getState().page, window.scrollY);
       await flushPendingSaves();
       setPagination({ page: getState().page + 1 });
-      loadQuestionsPage();
+      await loadQuestionsPage();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     },
     onSubmit: submitTest
   });
+
+  if (scrollToTop) {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
 }
 
 async function loadQuestionsPage() {
@@ -292,7 +303,7 @@ async function loadQuestionsPage() {
       page: Number(questionPayload.page),
       perPage: Number(questionPayload.per_page)
     });
-    render();
+    render(true);
   } catch (error) {
     const baseMessage = 'Fout bij laden. Controleer database en API-configuratie.';
     console.error('Vraaglijst laden mislukt:', error);
