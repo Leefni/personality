@@ -2,6 +2,7 @@ import { RESULT_CONTENT } from './result-content.js';
 
 const PERSONA_STORAGE_KEY = 'pp_result_persona';
 const MODULE_COUNTERS_STORAGE_KEY = 'pp_result_module_event_counters_v1';
+const SCORE_DIMENSIONS = Object.entries(RESULT_CONTENT.dimensions);
 
 const PERSONA_OPTIONS = [
   { key: 'individual_contributor', label: 'as individual contributor' },
@@ -90,7 +91,7 @@ function renderPersonaAdvice(module, persona) {
   }
 
   return base || personaAdvice || 'Geen advies beschikbaar.';
-const SCORE_DIMENSIONS = Object.entries(RESULT_CONTENT.dimensions);
+}
 
 function toSafeText(value, fallback = '') {
   return typeof value === 'string' && value.trim() !== '' ? value.trim() : fallback;
@@ -214,8 +215,14 @@ export function renderResult(data, onRestart) {
   const res = document.getElementById('result');
   const type = toSafeText(data?.type, '----');
   const details = RESULT_CONTENT.types[type];
-  const description = details?.shortDescription ?? 'Geen beschrijving beschikbaar voor dit type.';
   const selectedPersona = readStoredPersona();
+
+  const shortDescription = toSafeText(details?.shortDescription, 'Geen beschrijving beschikbaar voor dit type.');
+  const longDescription = toSafeText(details?.longDescriptionNl, shortDescription);
+  const strengths = asStringList(details?.strengths);
+  const attentionPoints = asStringList(details?.attentionPoints);
+  const tips = asStringList(details?.tips);
+  const summaryText = buildSummaryText(data, details);
 
   const personaToggleHtml = PERSONA_OPTIONS.map(
     (option) => `
@@ -235,35 +242,11 @@ export function renderResult(data, onRestart) {
     return `
       <details class="result-module-card" data-module-key="${moduleMeta.key}">
         <summary>${moduleMeta.title}</summary>
-        <p class="module-advice" data-module-advice="${moduleMeta.key}">${adviceText}</p>
+        <p class="module-advice" data-module-advice="${moduleMeta.key}">${escapeHtml(adviceText)}</p>
         <button type="button" class="copy-module" data-module-copy="${moduleMeta.key}">Kopieer advies</button>
       </details>
     `;
   }).join('');
-
-  res.innerHTML = `
-    <h2>Resultaat</h2>
-    <p>Persoonlijkheidstype: <strong>${type}</strong></p>
-    <p>${description}</p>
-
-    <section class="persona-toggles" aria-label="Selecteer je rol">
-      <h3>Toon advies</h3>
-      <div class="persona-toggle-group">${personaToggleHtml}</div>
-    </section>
-
-    <section class="result-modules" aria-label="Adviesmodules">
-      <h3>Advies per module</h3>
-      ${modulesHtml}
-    </section>
-
-    <button type="button" class="restart">Opnieuw doen</button>
-  const shortDescription = toSafeText(details?.shortDescription, 'Geen beschrijving beschikbaar voor dit type.');
-  const longDescription = toSafeText(details?.longDescriptionNl, shortDescription);
-  const strengths = asStringList(details?.strengths);
-  const attentionPoints = asStringList(details?.attentionPoints);
-  const tips = asStringList(details?.tips);
-
-  const summaryText = buildSummaryText(data, details);
 
   res.innerHTML = `
     <section class="result-card">
@@ -275,6 +258,16 @@ export function renderResult(data, onRestart) {
         <strong>Disclaimer:</strong>
         <p>Dit resultaat is bedoeld voor zelfreflectie en is <em>niet-diagnostisch</em>. Het vervangt geen professionele medische of psychologische beoordeling.</p>
       </article>
+
+      <section class="persona-toggles" aria-label="Selecteer je rol">
+        <h3>Toon advies</h3>
+        <div class="persona-toggle-group">${personaToggleHtml}</div>
+      </section>
+
+      <section class="result-modules" aria-label="Adviesmodules">
+        <h3>Advies per module</h3>
+        ${modulesHtml}
+      </section>
 
       <div class="result-grid">
         <article class="result-section-card">
