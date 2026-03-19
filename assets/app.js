@@ -21,8 +21,10 @@ import {
 import {
   fetchProgress,
   fetchQuestions,
+  fetchTestMetadata,
   saveAnswer,
   submitResults,
+  deleteData,
   resetProgress
 } from './js/api-client.js';
 import {
@@ -72,6 +74,81 @@ function mergeProgress(saved) {
   } else {
     saveLocalDraft(unresolvedDraft);
   }
+}
+
+function clearClientState() {
+  const state = getState();
+  state.saveTimers.forEach((timerId) => {
+    window.clearTimeout(timerId);
+  });
+  state.saveTimers.clear();
+  state.pendingQuestionIds.clear();
+  clearAnswers();
+  clearLocalDraft();
+}
+
+function clearResultUi() {
+  const result = document.getElementById('result');
+  if (result) {
+    result.innerHTML = '';
+  }
+}
+
+function updateTestMetadata(meta) {
+  const metaElement = document.getElementById('test-meta');
+  if (!metaElement) return;
+
+  const version = typeof meta?.version === 'string' ? meta.version : 'onbekend';
+  const date = typeof meta?.date === 'string' ? meta.date : 'onbekend';
+  const questionCount = Number.isFinite(Number(meta?.question_count)) ? Number(meta.question_count) : 0;
+
+  metaElement.textContent = `Testversie ${version} · releasedatum ${date} · ${questionCount} vragen`;
+}
+
+async function loadTestMetadata() {
+  try {
+    const metadata = await fetchTestMetadata();
+    updateTestMetadata(metadata);
+  } catch (error) {
+    const metaElement = document.getElementById('test-meta');
+    if (metaElement) {
+      metaElement.textContent = 'Testmetadata kon niet worden geladen.';
+    }
+
+    showError(formatApiError(error, 'Testmetadata laden mislukt.'), 'progress');
+  }
+}
+
+async function handleDeleteData() {
+  const confirmed = window.confirm('Weet je zeker dat je al je testgegevens wilt verwijderen?');
+  if (!confirmed) {
+    return;
+  }
+
+  setProgressMessage('Gegevens verwijderen...');
+
+  try {
+    await deleteData();
+    clearClientState();
+    clearResultUi();
+    setPagination({ page: 1 });
+    setProgressMessage('Gegevens verwijderd. Je kunt opnieuw beginnen.');
+    await loadQuestionsPage();
+  } catch (error) {
+    showError(formatApiError(error, 'Verwijderen mislukt. Probeer het opnieuw.'), 'progress');
+  }
+}
+
+function setupDeleteDataHandler() {
+  const deleteButton = document.getElementById('delete-data-start');
+  if (!deleteButton || deleteButton.dataset.handlerAttached === 'true') {
+    return;
+  }
+
+  deleteButton.dataset.handlerAttached = 'true';
+  deleteButton.addEventListener('click', () => {
+    handleDeleteData();
+  });
 }
 
 function render() {
@@ -212,13 +289,9 @@ async function submitTest() {
 async function resetTest() {
   try {
     await resetProgress();
-    clearAnswers();
+    clearClientState();
     setPagination({ page: 1 });
-    clearLocalDraft();
-    const result = document.getElementById('result');
-    if (result) {
-      result.innerHTML = '';
-    }
+    clearResultUi();
     await bootstrap();
     window.scrollTo({ top: 0, behavior: 'smooth' });
   } catch (error) {
@@ -233,7 +306,9 @@ async function bootstrap() {
       setQuestionChangeListenerAttached,
       queueAnswerSave
     );
+    setupDeleteDataHandler();
 
+    await loadTestMetadata();
     const saved = await fetchProgress();
     mergeProgress(saved);
     await loadQuestionsPage();
