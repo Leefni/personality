@@ -1,3 +1,10 @@
+<?php
+declare(strict_types=1);
+
+$config = require __DIR__ . '/config.php';
+$privacyRetentionText = (string) ($config['privacy_retention_text'] ?? '');
+$appEnv = (string) ($config['app_env'] ?? 'production');
+?>
 <!DOCTYPE html>
 <html lang="nl">
 <head>
@@ -13,7 +20,7 @@
     <p class="test-meta" id="test-meta">Testversie laden...</p>
 
     <section class="privacy-note" aria-label="Privacy">
-      <p><strong>Privacy:</strong> Je antwoorden worden tijdelijk opgeslagen zodat je later kunt doorgaan. Gegevens worden uiterlijk na 30 dagen verwijderd of direct wanneer je op ‘Verwijder mijn gegevens’ klikt.</p>
+      <p><strong>Privacy:</strong> <?php echo htmlspecialchars($privacyRetentionText, ENT_QUOTES, 'UTF-8'); ?></p>
       <button type="button" class="danger" id="delete-data-start">Verwijder mijn gegevens</button>
     </section>
 
@@ -31,7 +38,6 @@
     <section class="result" id="result"></section>
   </main>
 
-  <?php $appEnv = getenv('APP_ENV') ?: 'production'; ?>
   <script>
     window.APP_ENV = <?php echo json_encode($appEnv, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
   </script>
