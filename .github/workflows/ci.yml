@@ -1,0 +1,101 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  frontend-checks:
+    name: Frontend syntax and runtime
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Frontend syntax check
+        run: bash tests/frontend_syntax_check.sh
+
+      - name: Frontend runtime check
+        run: bash tests/frontend_runtime_check.sh
+
+  api-endpoints:
+    name: API endpoint checks
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: personality
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    env:
+      DB_HOST: 127.0.0.1
+      DB_PORT: 3306
+      DB_NAME: personality
+      DB_USER: root
+      DB_PASS: root
+      DB_AUTO_BOOTSTRAP: true
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: pdo_mysql
+
+      - name: Resolve BASE_URL
+        run: |
+          if [ -n "${BASE_URL:-}" ]; then
+            echo "BASE_URL=${BASE_URL}" >> "$GITHUB_ENV"
+          elif [ -n "${{ vars.BASE_URL }}" ]; then
+            echo "BASE_URL=${{ vars.BASE_URL }}" >> "$GITHUB_ENV"
+          else
+            echo "BASE_URL=http://127.0.0.1:8000" >> "$GITHUB_ENV"
+          fi
+
+      - name: Start local PHP server (fallback)
+        if: ${{ env.BASE_URL == 'http://127.0.0.1:8000' }}
+        run: |
+          php -S 127.0.0.1:8000 -t . > /tmp/php-server.log 2>&1 &
+          echo $! > /tmp/php-server.pid
+
+      - name: Wait for health endpoint (fallback)
+        if: ${{ env.BASE_URL == 'http://127.0.0.1:8000' }}
+        run: |
+          for i in {1..30}; do
+            if curl --fail --silent "${BASE_URL}/api/v1/health.php" > /dev/null; then
+              echo "Local server is ready"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "Server did not become healthy in time"
+          cat /tmp/php-server.log || true
+          exit 1
+
+      - name: Run API endpoint checks
+        run: bash tests/run_api_checks.sh
+
+      - name: Stop local PHP server (fallback)
+        if: ${{ always() && env.BASE_URL == 'http://127.0.0.1:8000' }}
+        run: |
+          if [ -f /tmp/php-server.pid ]; then
+            kill "$(cat /tmp/php-server.pid)" || true
+          fi

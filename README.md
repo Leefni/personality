@@ -221,6 +221,39 @@ You can still run the API-only test directly if needed:
 
 - `BASE_URL="http://localhost/personality" php tests/api_v1_endpoints_test.php`
 
+### CI parity (GitHub Actions)
+
+The repository CI workflow (`.github/workflows/ci.yml`) runs on both `push` and `pull_request` and executes:
+
+1. `tests/frontend_syntax_check.sh`
+2. `tests/frontend_runtime_check.sh`
+3. `tests/run_api_checks.sh` (includes API endpoint checks)
+
+To reproduce CI failures locally:
+
+```bash
+# 1) Frontend syntax/runtime checks (same as CI)
+bash tests/frontend_syntax_check.sh
+bash tests/frontend_runtime_check.sh
+
+# 2) API checks against an existing deployment
+BASE_URL="http://localhost/personality" bash tests/run_api_checks.sh
+```
+
+If you do not already have a local server running, use the same fallback pattern as CI (local PHP server + local MySQL):
+
+```bash
+# Start MySQL first (matching README DB_* defaults), then:
+export DB_HOST=127.0.0.1 DB_PORT=3306 DB_NAME=personality DB_USER=root DB_PASS=root DB_AUTO_BOOTSTRAP=true
+php -S 127.0.0.1:8000 -t . &
+BASE_URL="http://127.0.0.1:8000" bash tests/run_api_checks.sh
+```
+
+In GitHub Actions, API checks can target either:
+
+- a custom `BASE_URL` (set via environment or repository variable `BASE_URL`), or
+- the built-in fallback service path (`http://127.0.0.1:8000`) backed by a MySQL service container.
+
 ### Windows (PowerShell) debugging helpers
 
 For local debugging on Windows, use the PowerShell equivalents:
