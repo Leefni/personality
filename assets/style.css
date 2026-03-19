@@ -413,3 +413,83 @@ button.danger,
   font-size: 14px;
   margin-top: 8px;
 }
+
+.persona-toggles,
+.result-modules {
+ border: 1px solid var(--border);
+ border-radius: 12px;
+ padding: var(--space-4);
+ background: var(--surface-soft);
+ display: grid;
+ gap: var(--space-3);
+}
+
+.persona-toggles h3,
+.result-modules h3 {
+ margin: 0;
+ font-size: var(--font-size-h3);
+}
+
+.persona-toggle-group {
+ display: flex;
+ flex-wrap: wrap;
+ gap: var(--space-2);
+}
+
+.persona-toggle-option {
+ position: relative;
+ display: inline-flex;
+}
+
+.persona-toggle-option input[type='radio'] {
+ position: absolute;
+ opacity: 0;
+ pointer-events: none;
+}
+
+.persona-toggle-option span {
+ border: 1px solid #c7d2e0;
+ border-radius: 999px;
+ padding: 8px 12px;
+ font-size: var(--font-size-sm);
+ background: #fff;
+ cursor: pointer;
+}
+
+.persona-toggle-option input[type='radio']:checked + span {
+ background: var(--primary);
+ border-color: var(--primary);
+ color: #fff;
+}
+
+.result-module-card {
+ border: 1px solid var(--border);
+ border-radius: 10px;
+ background: #fff;
+ padding: var(--space-3);
+}
+
+.result-module-card summary {
+ cursor: pointer;
+ font-weight: 600;
+}
+
+.module-advice {
+ margin: var(--space-3) 0;
+ color: #1f2937;
+}
+
+.copy-module,
+.result .restart {
+ justify-self: start;
+ border: 1px solid #c7d2e0;
+ background: #fff;
+ border-radius: 8px;
+ padding: 8px 12px;
+ cursor: pointer;
+}
+
+.copy-module:hover,
+.result .restart:hover {
+ border-color: #94a3b8;
+}

@@ -226,6 +226,13 @@ async function loadQuestionsPage() {
         error?.parseErrorMessage ? `JSON parse: ${error.parseErrorMessage}` : null
       ].filter(Boolean);
 
+      console.error('Vraagpayload laden mislukt:', {
+        endpoint,
+        status,
+        payload: error?.payload,
+        message: error?.message,
+        parseErrorMessage: error?.parseErrorMessage
+      });
       showError(`${baseMessage} ${debugParts.join(' ')}`, 'progress');
       return;
     }
