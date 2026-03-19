@@ -1,11 +1,49 @@
 import { apiFetch } from './utils.js';
 
+const VISITOR_ID_STORAGE_KEY = 'personality.visitor_id.v1';
+
+function getStoredVisitorId() {
+  try {
+    const visitorId = localStorage.getItem(VISITOR_ID_STORAGE_KEY);
+    return typeof visitorId === 'string' && visitorId.trim() !== '' ? visitorId : '';
+  } catch (error) {
+    return '';
+  }
+}
+
+function storeVisitorId(visitorId) {
+  if (typeof visitorId !== 'string' || visitorId.trim() === '') return;
+  try {
+    localStorage.setItem(VISITOR_ID_STORAGE_KEY, visitorId);
+  } catch (error) {
+    // Ignore storage failures (private mode/quota) and continue with request flow.
+  }
+}
+
+function buildRequestHeaders(headers = {}) {
+  const visitorId = getStoredVisitorId();
+  if (!visitorId) return headers;
+  return {
+    ...headers,
+    'X-Visitor-ID': visitorId
+  };
+}
+
+async function apiRequest(url, options = {}) {
+  const headers = buildRequestHeaders(options.headers || {});
+  const payload = await apiFetch(url, { ...options, headers });
+  if (payload && typeof payload.visitor_id === 'string') {
+    storeVisitorId(payload.visitor_id);
+  }
+  return payload;
+}
+
 /**
  * Loads test metadata such as version and release date.
  * @returns {Promise<{version: string, date: string, question_count: number}>} Metadata payload from the API.
  */
 export function fetchTestMetadata() {
-  return apiFetch('api/v1/test_metadata.php');
+  return apiRequest('api/v1/test_metadata.php');
 }
 
 /**
@@ -13,7 +51,7 @@ export function fetchTestMetadata() {
  * @returns {Promise<Array>} Saved answer rows from the API.
  */
 export function fetchProgress() {
-  return apiFetch('api/v1/get_progress.php');
+  return apiRequest('api/v1/get_progress.php');
 }
 
 /**
@@ -24,7 +62,7 @@ export function fetchProgress() {
  */
 export async function fetchQuestions(page, perPage) {
   const dataEndpoint = `api/v1/get_questions.php?page=${page}&per_page=${perPage}`;
-  const questionPayload = await apiFetch(dataEndpoint);
+  const questionPayload = await apiRequest(dataEndpoint);
   const hasValidSchema = questionPayload
     && typeof questionPayload === 'object'
     && !Array.isArray(questionPayload)
@@ -51,7 +89,7 @@ export async function fetchQuestions(page, perPage) {
  * @returns {Promise<any>} API payload returned by the save endpoint.
  */
 export function saveAnswer(questionId, value) {
-  return apiFetch('api/v1/save_answer.php', {
+  return apiRequest('api/v1/save_answer.php', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ question_id: questionId, value })
@@ -63,7 +101,7 @@ export function saveAnswer(questionId, value) {
  * @returns {Promise<any>} Result payload containing personality type data.
  */
 export function submitResults() {
-  return apiFetch('api/v1/submit_results.php', { method: 'POST' });
+  return apiRequest('api/v1/submit_results.php', { method: 'POST' });
 }
 
 /**
@@ -71,7 +109,7 @@ export function submitResults() {
  * @returns {Promise<{ok: boolean}>} API payload confirming data deletion.
  */
 export function deleteData() {
-  return apiFetch('api/v1/delete_data.php', { method: 'POST' });
+  return apiRequest('api/v1/delete_data.php', { method: 'POST' });
 }
 
 /**
@@ -79,7 +117,7 @@ export function deleteData() {
  * @returns {Promise<any>} API payload from reset endpoint.
  */
 export function resetProgress() {
-  return apiFetch('api/v1/reset_progress.php', { method: 'POST' });
+  return apiRequest('api/v1/reset_progress.php', { method: 'POST' });
 }
 
 /**
@@ -88,7 +126,7 @@ export function resetProgress() {
  * @returns {Promise<{ok: boolean, expires_at: string, delivery: string, recovery_link?: string}>}
  */
 export function requestRecovery(email) {
-  return apiFetch('api/v1/request_recovery.php', {
+  return apiRequest('api/v1/request_recovery.php', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email })
@@ -101,7 +139,7 @@ export function requestRecovery(email) {
  * @returns {Promise<{ok: boolean, visitor_id: string}>}
  */
 export function redeemRecovery(token) {
-  return apiFetch('api/v1/redeem_recovery.php', {
+  return apiRequest('api/v1/redeem_recovery.php', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ token })

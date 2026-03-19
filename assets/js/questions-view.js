@@ -331,6 +331,7 @@ export function renderQuestions(viewModel, handlers) {
   viewModel.questions.forEach((q, index) => {
     qDiv.appendChild(createQuestionRow(q, index, viewModel));
   });
+  renderPageDots(viewModel);
 
   renderNav(viewModel, handlers);
   updateProgress(viewModel);
