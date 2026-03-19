@@ -14,6 +14,9 @@ $appEnv = (string) ($config['app_env'] ?? 'production');
   <link rel="stylesheet" href="assets/style.css">
 </head>
 <body>
+  <noscript>
+    <p>Deze website werkt alleen met JavaScript. Zet JavaScript aan om de test te gebruiken.</p>
+  </noscript>
   <main class="container">
     <h1>Personality Test</h1>
     <p class="progress" id="progress">Laden...</p>
