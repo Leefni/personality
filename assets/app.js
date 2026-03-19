@@ -420,6 +420,10 @@ async function submitTest() {
   try {
     await flushPendingSaves();
     const data = await submitResults();
+    const { type } = data ?? {};
+    if (typeof type === 'string' && type.trim()) {
+      document.title = `Jouw type: ${type} – Personality Test`;
+    }
     clearLocalDraft();
     renderResult(data, resetTest);
     updatePendingActionState();
@@ -463,6 +467,7 @@ async function resetTest() {
     setPagination({ page: 1 });
     clearResultUi();
     await bootstrap();
+    document.title = 'Personality Test – Ontdek jouw persoonlijkheidstype';
     window.scrollTo({ top: 0, behavior: 'smooth' });
   } catch (error) {
     showError('Resetten mislukt. Probeer het opnieuw.', 'progress');
