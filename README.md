@@ -21,6 +21,9 @@ Runtime configuration comes from environment variables in `config.php`:
 - `DB_PASS` (default: empty string)
 - `DB_AUTO_BOOTSTRAP` (default: `true`)
 - `APP_ENV` (default: `production`)
+- `RETENTION_DAYS` (default: `90`) for maintenance cleanup window
+- `RETENTION_MAX_DELETE_PER_TABLE` (default: `5000`) max rows deleted per table per run
+- `RETENTION_DRY_RUN` (default: `false`) report candidate rows without deleting
 
 For local-only overrides, you can optionally create `config.local.php` at the repository root. If present and it returns an array, its values override env-derived defaults.
 
@@ -54,6 +57,50 @@ curl -sS "http://localhost/personality/api/v1/get_questions.php?page=1&per_page=
 
 - **DB auth failure (dev/local)**: if you see `Database authentication failed. Check DB_USER/DB_PASS ... update env vars or config.local.php.`, verify `DB_USER`/`DB_PASS` (or `config.local.php`) and that the MySQL user is allowed from your `DB_HOST`.
 - **Missing tables / schema errors**: if requests fail with missing table errors (for example `questions`, `answers`, or `results`), either enable `DB_AUTO_BOOTSTRAP=true` or run `init.sql` (and `questions.sql` if needed) manually against `DB_NAME`.
+
+## Data retention cleanup (cron)
+
+Use `scripts/cleanup_retention.php` to remove stale rows from:
+
+- `answers`
+- `results`
+
+Rows are eligible when `COALESCE(updated_at, created_at)` is older than `RETENTION_DAYS`.
+
+### Environment variables
+
+- `RETENTION_DAYS` (default: `90`)
+- `RETENTION_MAX_DELETE_PER_TABLE` (default: `5000`)
+- `RETENTION_DRY_RUN` (`true`/`false`, default: `false`)
+
+### Manual run
+
+```bash
+php scripts/cleanup_retention.php
+```
+
+Sample output:
+
+```json
+{
+  "ok": true,
+  "dry_run": false,
+  "retention_days": 90,
+  "cutoff_utc": "2025-12-19 10:00:00",
+  "batch_size": 5000,
+  "deleted": { "answers": 120, "results": 95 }
+}
+```
+
+### Cron setup example
+
+Run daily at 02:15 UTC with a 120-day retention window:
+
+```cron
+15 2 * * * cd /path/to/personality && RETENTION_DAYS=120 RETENTION_MAX_DELETE_PER_TABLE=10000 php scripts/cleanup_retention.php >> /var/log/personality-retention.log 2>&1
+```
+
+Suggested schedule: once per day during low traffic hours. Keep `RETENTION_MAX_DELETE_PER_TABLE` bounded to avoid long-running delete spikes.
 
 ## API versioning
 
