@@ -197,6 +197,8 @@ Request body:
 }
 ```
 
+API contract note: `value` uses the canonical **6-point** Likert scale and must be an integer from `1` to `6` (inclusive).
+
 Success response:
 
 ```json

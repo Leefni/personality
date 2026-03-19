@@ -9,7 +9,10 @@ $payload = get_json_payload();
 $questionId = isset($payload['question_id']) ? (int) $payload['question_id'] : 0;
 $value = isset($payload['value']) ? (int) $payload['value'] : 0;
 
-if ($questionId <= 0 || $value < 1 || $value > 6) {
+$likertMin = 1;
+$likertMax = 6;
+
+if ($questionId <= 0 || $value < $likertMin || $value > $likertMax) {
     json_error('Invalid payload', 422);
 }
 
