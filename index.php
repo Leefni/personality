@@ -38,14 +38,6 @@ $metaDescription = 'Doe de Personality Test en ontdek jouw persoonlijkheidstype 
   <main class="container">
     <h1>Personality Test</h1>
     <p class="progress" id="progress">Laden...</p>
-    <section class="recovery-prompt" aria-label="Voortgang herstellen">
-      <label for="recovery-email"><strong>Sla mijn voortgang op via e-mail</strong></label>
-      <div class="recovery-controls">
-        <input type="email" id="recovery-email" placeholder="jij@example.com" autocomplete="email">
-        <button type="button" id="recovery-request">Stuur herstel-link</button>
-      </div>
-      <p class="recovery-status" id="recovery-status" aria-live="polite"></p>
-    </section>
     <p class="test-meta" id="test-meta">Testversie laden...</p>
 
     <section class="privacy-note" aria-label="Privacy">
@@ -64,6 +56,19 @@ $metaDescription = 'Doe de Personality Test en ontdek jouw persoonlijkheidstype 
 
     <section id="questions"></section>
     <nav class="nav" id="nav"></nav>
+    <section class="recovery-prompt is-hidden" id="recovery-prompt" aria-label="Voortgang herstellen">
+      <button type="button" class="recovery-trigger" id="recovery-toggle" aria-expanded="false" aria-controls="recovery-panel">
+        Wil je later verder? Bewaar je voortgang via e-mail.
+      </button>
+      <p class="recovery-subtext">Optioneel — je kunt ook direct doorgaan zonder op te slaan.</p>
+      <div class="recovery-panel" id="recovery-panel" hidden>
+        <div class="recovery-controls">
+          <input type="email" id="recovery-email" placeholder="jij@example.com" autocomplete="email">
+          <button type="button" id="recovery-request">Stuur herstel-link</button>
+        </div>
+      </div>
+      <p class="recovery-status" id="recovery-status" aria-live="polite"></p>
+    </section>
     <section class="result" id="result"></section>
   </main>
 
