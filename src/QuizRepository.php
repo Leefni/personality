@@ -45,9 +45,9 @@ final class QuizRepository
         $stmt = $this->pdo->prepare(
             'INSERT INTO answers (question_id, visitor_id, value)
              VALUES (?, ?, ?)
-             ON DUPLICATE KEY UPDATE value = VALUES(value)'
+             ON DUPLICATE KEY UPDATE value = ?'
         );
-        $stmt->execute([$questionId, $visitor, $value]);
+        $stmt->execute([$questionId, $visitor, $value, $value]);
     }
 
     public function clearProgress(string $visitor): void
@@ -104,9 +104,10 @@ final class QuizRepository
         $stmt = $this->pdo->prepare(
             'INSERT INTO results (visitor_id, type_code, detail_json)
              VALUES (?, ?, ?)
-             ON DUPLICATE KEY UPDATE type_code = VALUES(type_code), detail_json = VALUES(detail_json)'
+             ON DUPLICATE KEY UPDATE type_code = ?, detail_json = ?'
         );
-        $stmt->execute([$visitor, $type, json_encode($scores)]);
+        $encodedScores = json_encode($scores);
+        $stmt->execute([$visitor, $type, $encodedScores, $type, $encodedScores]);
     }
 
     public function createRecoveryToken(

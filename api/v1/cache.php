@@ -38,9 +38,10 @@ function cache_result(PDO $pdo, string $visitor, string $type, array $scores): v
     $stmt = $pdo->prepare(
         'INSERT INTO results (visitor_id, type_code, detail_json)
          VALUES (?, ?, ?)
-         ON DUPLICATE KEY UPDATE type_code = VALUES(type_code), detail_json = VALUES(detail_json)'
+         ON DUPLICATE KEY UPDATE type_code = ?, detail_json = ?'
     );
-    $stmt->execute([$visitor, $type, json_encode($scores, JSON_UNESCAPED_UNICODE)]);
+    $encodedScores = json_encode($scores, JSON_UNESCAPED_UNICODE);
+    $stmt->execute([$visitor, $type, $encodedScores, $type, $encodedScores]);
 }
 
 function invalidate_cached_result(PDO $pdo, string $visitor): void
