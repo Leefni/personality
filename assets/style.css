@@ -83,13 +83,20 @@ h1 {
  font-size: var(--font-size-sm);
 }
 
+.progress-wrap {
+ width: min(100%, 620px);
+ margin: 0 auto;
+ padding: var(--space-2) var(--space-2) 0;
+}
+
 .progress-bar {
- width: min(100%, 560px);
+ width: 100%;
  height: 8px;
  border-radius: 999px;
- background: #dbe6f3;
- margin: var(--space-3) auto 0;
+ background: linear-gradient(180deg, #e2e8f0, #d7e3f1);
+ margin: var(--space-2) auto 0;
  overflow: hidden;
+ box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.12);
 }
 
 .progress-bar-fill {
@@ -97,7 +104,38 @@ h1 {
  height: 100%;
  border-radius: inherit;
  background: linear-gradient(90deg, var(--primary), #0ea5e9);
- transition: width 0.3s ease;
+ transition: width 0.35s ease;
+ position: relative;
+}
+
+.progress-bar-fill::after {
+ content: "";
+ position: absolute;
+ inset: 0;
+ background-image: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, 0.2) 50%, rgba(255, 255, 255, 0.2) 75%, transparent 75%, transparent);
+ background-size: 18px 18px;
+ animation: progress-stripes 1.25s linear infinite;
+}
+
+.progress-meta {
+ margin: 8px 0 0;
+ text-align: right;
+ color: #475569;
+ font-size: 12px;
+ font-weight: 600;
+}
+
+#progress-percentage {
+ color: #0f172a;
+}
+
+@keyframes progress-stripes {
+ from {
+  background-position: 0 0;
+ }
+ to {
+  background-position: 18px 0;
+ }
 }
 
 .recovery-prompt {
@@ -206,6 +244,13 @@ h1 {
  display: grid;
  gap: var(--space-3);
  position: relative;
+ transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.question:hover {
+ border-color: #c6d3e3;
+ box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
+ transform: translateY(-1px);
 }
 
 @keyframes save-pulse {
@@ -335,6 +380,13 @@ fieldset[disabled] .likert-option label {
  font-weight: 600;
 }
 
+.nav button:disabled {
+ opacity: 0.65;
+ cursor: not-allowed;
+ box-shadow: none;
+ transform: none;
+}
+
 .nav .page-hint {
  grid-column: 1 / -1;
  margin: 0;
@@ -434,6 +486,18 @@ fieldset[disabled] .likert-option label {
  justify-self: start;
 }
 
+.sr-only {
+ position: absolute;
+ width: 1px;
+ height: 1px;
+ padding: 0;
+ margin: -1px;
+ overflow: hidden;
+ clip: rect(0, 0, 0, 0);
+ white-space: nowrap;
+ border: 0;
+}
+
 .error-notice {
  margin-top: var(--space-3);
  padding: 10px 12px;
@@ -485,6 +549,10 @@ fieldset[disabled] .likert-option label {
  .nav .page-hint {
    font-size: 13px;
    padding-bottom: var(--space-1);
+ }
+
+ .progress-wrap {
+   padding-inline: 0;
  }
 }
 
@@ -641,6 +709,8 @@ button.danger,
 .copy-module:hover,
 .result .restart:hover {
  border-color: #94a3b8;
+}
+
 .result-card {
   display: grid;
   gap: var(--space-4);
@@ -778,4 +848,14 @@ button.danger,
     display: grid;
     grid-template-columns: 1fr;
   }
+}
+
+@media (prefers-reduced-motion: reduce) {
+ *,
+ *::before,
+ *::after {
+   animation: none !important;
+   transition: none !important;
+   scroll-behavior: auto !important;
+ }
 }
