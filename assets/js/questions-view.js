@@ -74,6 +74,20 @@ function getRenderedQuestionElement(questionId) {
 }
 
 /**
+ * Plays a temporary success pulse on the rendered question container.
+ * @param {HTMLElement} questionElement - Rendered article.question element.
+ * @returns {void} Nothing.
+ */
+function flashSavedQuestion(questionElement) {
+  questionElement.classList.remove('answer-saved');
+  void questionElement.offsetWidth;
+  questionElement.classList.add('answer-saved');
+  window.setTimeout(() => {
+    questionElement.classList.remove('answer-saved');
+  }, 900);
+}
+
+/**
  * Re-renders one question row after its answer state changes.
  * @param {number} questionId - Question id to refresh in the DOM.
  * @param {{questions: Array, page: number, perPage: number, answers: Object, pendingQuestionIds: Set<number>, likertLabels: string[]}} viewModel - Values needed to build row markup.
@@ -103,7 +117,13 @@ export function updateQuestionPendingState(questionId, pendingQuestionIds) {
   const fieldset = questionElement.querySelector('fieldset');
   if (!fieldset) return;
 
-  fieldset.disabled = pendingQuestionIds.has(questionId);
+  const wasPending = fieldset.disabled;
+  const isPending = pendingQuestionIds.has(questionId);
+  fieldset.disabled = isPending;
+
+  if (wasPending && !isPending) {
+    flashSavedQuestion(questionElement);
+  }
 }
 
 /**
