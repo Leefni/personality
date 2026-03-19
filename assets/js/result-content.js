@@ -20,7 +20,7 @@ export const RESULT_CONTENT = {
   types: {
     ESTJ: {
       shortDescription: 'Praktische organisator die structuur en verantwoordelijkheid omarmt.',
-      longDescriptionNl: 'Je brengt snel orde in complexe situaties en neemt vanzelf verantwoordelijkheid voor het resultaat. Mensen vertrouwen op je omdat je duidelijkheid schept en afspraken bewaakt.',
+      longDescriptionNl: 'Je denkt in structuur, rolhelderheid en uitvoerbaarheid. Besluiten neem je direct wanneer doel en mandaat duidelijk zijn, waarbij je sterk leunt op logica en verantwoordelijkheid. In sociale dynamiek creëer je orde en voorspelbaarheid, wat veel mensen houvast geeft. Je interne conflict zit tussen controle en flexibiliteit: je wilt snelheid en betrouwbaarheid, maar kunt daardoor te weinig ruimte laten voor afwijkende aanpakken.',
       werkstijlNl: 'Je floreert met heldere doelen, vaste processen en duidelijke bevoegdheden. Je pakt graag de regie zodra rollen of prioriteiten onduidelijk zijn.',
       valkuilenNl: 'Je kunt streng of ongeduldig worden als anderen trager beslissen of afwijken van de afspraak. Daardoor kan vernieuwing te weinig ruimte krijgen.',
       groeitipsNl: 'Plan bij grote besluiten bewust een korte ronde voor alternatieven. Oefen met vragen stellen vóór je een richting vastlegt.',
@@ -30,7 +30,7 @@ export const RESULT_CONTENT = {
     },
     ESTP: {
       shortDescription: 'Energieke doener die kansen ziet en direct in actie komt.',
-      longDescriptionNl: 'Je leert door te doen en ziet razendsnel waar kansen liggen in het moment. Met je lef en improvisatievermogen krijg je beweging in stroperige situaties.',
+      longDescriptionNl: 'Je scant continu op kansen, risico’s en direct bruikbare actie. Besluiten neem je snel op basis van real-time informatie, met hoge tolerantie voor onzekerheid. Sociaal ben je energiek, direct en vaak overtuigend in het moment. Je interne conflict zit tussen snelheid en consequentie: je ziet direct wat kan, maar onderschat soms de impact op langere termijn of op minder assertieve teamleden.',
       werkstijlNl: 'Je werkt het sterkst in dynamische omgevingen met directe feedback en zichtbare resultaten. Vrijheid om te experimenteren houdt je scherp en betrokken.',
       valkuilenNl: 'Je kunt risico’s onderschatten wanneer iets spannend of kansrijk voelt. Langlopende afspraken verliezen dan sneller je aandacht.',
       groeitipsNl: 'Bouw korte reflectiestops in voordat je beslist. Leg per week één langetermijndoel vast en toets je acties daaraan.',
@@ -40,7 +40,7 @@ export const RESULT_CONTENT = {
     },
     ESFJ: {
       shortDescription: 'Betrokken verbinder die harmonie en samenwerking stimuleert.',
-      longDescriptionNl: 'Je voelt goed aan wat mensen nodig hebben en bouwt actief aan een veilige samenwerking. Je combineert warmte met praktische zorg, waardoor teams betrouwbaar draaien.',
+      longDescriptionNl: 'Je let scherp op onderlinge afstemming en sociale wederkerigheid. Besluitvorming is vaak pragmatisch én relationeel: werkt dit voor de taak én voor de groep? In teams ben je vaak de connector die zorgt dat afspraken ook echt gedragen worden. Je valkuil is people-pleasing; intern wringt je behoefte aan waardering met het risico dat je eigen prioriteiten naar achteren schuiven.',
       werkstijlNl: 'Je komt tot je recht in een voorspelbaar teamritme met duidelijke verwachtingen. Je bent op je best wanneer waardering en onderlinge afstemming zichtbaar zijn.',
       valkuilenNl: 'Je kunt jezelf wegcijferen om de sfeer goed te houden. Spanningen blijven dan te lang onder tafel, met frustratie als gevolg.',
       groeitipsNl: 'Benoem je eigen grenzen vroeg en concreet. Oefen met directe feedback geven, ook als dat even ongemakkelijk voelt.',
@@ -50,7 +50,7 @@ export const RESULT_CONTENT = {
     },
     ESFP: {
       shortDescription: 'Enthousiaste sfeermaker die graag in het moment leeft.',
-      longDescriptionNl: 'Je brengt energie, spontaniteit en menselijkheid in elke groep. Met je observatie van het hier-en-nu maak je snel contact en zet je ideeën om in actie.',
+      longDescriptionNl: 'Je denkt ervaringsgericht: wat leeft er nu, wat werkt direct voor mensen? Besluitvorming is mens- en contextgedreven, met voorkeur voor tastbare beweging boven abstracte planning. In sociale dynamiek ben je vaak de katalysator voor verbinding en momentum. Je valkuil is uitstel van saaie maar cruciale opvolging; intern schuurt je behoefte aan spontaniteit met de discipline die duurzame resultaten vraagt.',
       werkstijlNl: 'Je presteert goed in afwisselend werk met ruimte voor interactie en zichtbare impact. Korte doelen werken beter voor je dan starre langetermijnplannen.',
       valkuilenNl: 'Routine en administratieve details kunnen je motivatie snel laten dalen. Daardoor stel je lastige taken soms te lang uit.',
       groeitipsNl: 'Knip saaie taken op in kleine blokken met duidelijke eindpunten. Gebruik een vaste weekstart om prioriteiten en deadlines te bewaken.',
@@ -60,7 +60,7 @@ export const RESULT_CONTENT = {
     },
     ENTJ: {
       shortDescription: 'Strategische leider die richting geeft en resultaten nastreeft.',
-      longDescriptionNl: 'Je denkt in strategie, schaal en resultaat en stuurt doelgericht op vooruitgang. Je neemt makkelijk leiding wanneer richting of tempo ontbreekt.',
+      longDescriptionNl: 'Je kijkt automatisch naar richting, schaal en hefboom: wat levert structureel het meeste effect op? Besluiten neem je snel wanneer criteria helder zijn, en je verwacht dat anderen hetzelfde tempo aankunnen. In groepen pak je vanzelf de regie, vooral als doelen vaag blijven. Je interne spanning zit tussen resultaatdrang en relationele finesse: je ziet inefficiëntie meteen, maar kunt daarmee onbedoeld mensen overrulen.',
       werkstijlNl: 'Je functioneert optimaal met ambitieuze doelen, autonomie en beslisruimte. Je combineert graag lange lijnen met meetbare tussenstappen.',
       valkuilenNl: 'Je kunt te snel over gevoelens of draagvlak heenstappen als de druk hoog is. Dat kan weerstand oproepen, ook bij sterke plannen.',
       groeitipsNl: 'Check bij besluiten expliciet wat het effect op mensen is. Maak ruimte voor tegenspraak voordat je knopen doorhakt.',
@@ -70,7 +70,7 @@ export const RESULT_CONTENT = {
     },
     ENTP: {
       shortDescription: 'Inventieve uitdager die nieuwe ideeën en mogelijkheden verkent.',
-      longDescriptionNl: 'Je bruist van ideeën en ziet patronen die anderen missen. Met je scherpe vragen daag je teams uit om slimmer en origineler te denken.',
+      longDescriptionNl: 'Je denkt in mogelijkheden, tegenvoorbeelden en alternatieve routes. Je besluitvorming is experimenteel: liever testen en bijstellen dan lang op zekerheid wachten. Sociaal floreer je in debat, waar ideeën mogen botsen zonder persoonlijke lading. Je valkuil is novelty-jacht: zodra het concept staat, zakt je energie voor uitvoering; intern wringt dan je behoefte aan intellectuele vrijheid met de discipline die afronding vraagt.',
       werkstijlNl: 'Je werkt graag in omgevingen waar debat, vernieuwing en experiment welkom zijn. Vrijheid in aanpak geeft je de meeste creativiteit.',
       valkuilenNl: 'Je verliest soms interesse zodra de uitvoering veel herhaling vraagt. Dan blijven goede concepten half af.',
       groeitipsNl: 'Kies per project vooraf wat “klaar” betekent. Koppel je ideeën aan vaste oplevermomenten en laat iemand meekijken op voortgang.',
@@ -80,7 +80,7 @@ export const RESULT_CONTENT = {
     },
     ENFJ: {
       shortDescription: 'Inspirerende motivator die mensen in beweging brengt.',
-      longDescriptionNl: 'Je verbindt visie aan mensen en krijgt groepen in beweging rond een gedeeld doel. Je communiceert warm én richtinggevend, waardoor anderen zich gezien voelen.',
+      longDescriptionNl: 'Je leest groepsdynamiek snel en vertaalt abstracte doelen naar gedeelde motivatie. Besluiten neem je vaak relationeel-strategisch: wat is juist én hoe krijgen we mensen mee? In sociale settings ben je richtinggevend én verbindend, met sterke focus op ontwikkeling van anderen. Je interne conflict ontstaat wanneer je andermans behoeften structureel boven je eigen grenzen zet, waardoor overbelasting zich langzaam opbouwt.',
       werkstijlNl: 'Je bent op je best in rollen met coaching, afstemming en ontwikkelruimte. Duidelijke waarden en gezamenlijk commitment geven je extra motivatie.',
       valkuilenNl: 'Je kunt te veel verantwoordelijkheid voelen voor het welzijn van iedereen. Daardoor raak je sneller overbelast of stel je lastige keuzes uit.',
       groeitipsNl: 'Bepaal vooraf welke taken echt van jou zijn. Plan structureel herstelmomenten en bewaak die net zo serieus als afspraken.',
@@ -90,7 +90,7 @@ export const RESULT_CONTENT = {
     },
     ENFP: {
       shortDescription: 'Creatieve vernieuwer die kansen ziet in mensen en ideeën.',
-      longDescriptionNl: 'Je ziet potentieel in ideeën en mensen en brengt enthousiasme mee dat aanstekelijk werkt. Je denkt associatief en legt verrassende verbanden.',
+      longDescriptionNl: 'Je denkt associatief en mensgericht: je ziet potentieel waar anderen losse signalen zien. Besluitvorming start vaak intuïtief en waarden-gedreven, daarna zoek je pas structuur. Sociaal ben je energiek en inspirerend, vooral wanneer ruimte bestaat voor echtheid en vernieuwing. Je valkuil is versnippering door te veel interessante opties; intern worstel je dan tussen vrijheid, betekenis en de noodzaak tot afmaken.',
       werkstijlNl: 'Je floreert in creatieve contexten met vrijheid, variatie en betekenis. Samenwerken met ruimte voor eigen invulling houdt je betrokken.',
       valkuilenNl: 'Je aandacht kan versnipperen wanneer er te veel opties tegelijk openstaan. Dan worden keuzes en afronding lastig.',
       groeitipsNl: 'Beperk actieve projecten bewust tot een klein aantal. Sluit elke dag af met één concrete volgende stap per prioriteit.',
@@ -100,7 +100,7 @@ export const RESULT_CONTENT = {
     },
     ISTJ: {
       shortDescription: 'Nauwkeurige bouwer die stabiliteit en kwaliteit bewaakt.',
-      longDescriptionNl: 'Je bent zorgvuldig, plichtsgetrouw en sterk in het borgen van kwaliteit. Door je betrouwbaarheid worden processen stabiel en voorspelbaar.',
+      longDescriptionNl: 'Je redeneert vanuit feiten, precedent en betrouwbaarheid: wat aantoonbaar werkt, krijgt voorrang. Beslissingen neem je zorgvuldig en plichtsbewust, met oog voor consequenties op lange termijn. In teams ben je de stabiliserende factor die afspraken en kwaliteit bewaakt. Je interne spanning ontstaat wanneer verandering slecht onderbouwd is: je wilt best meebewegen, maar niet ten koste van degelijkheid.',
       werkstijlNl: 'Je werkt prettig met duidelijke standaarden, planning en heldere verantwoordelijkheden. Voorbereiding vooraf helpt je om efficiënt te leveren.',
       valkuilenNl: 'Plotselinge veranderingen kunnen je tempo of vertrouwen verstoren. Je kunt dan te lang vasthouden aan de bekende route.',
       groeitipsNl: 'Oefen met kleine experimenten binnen veilige kaders. Vraag actief naar de reden achter verandering om sneller mee te bewegen.',
@@ -110,7 +110,7 @@ export const RESULT_CONTENT = {
     },
     ISTP: {
       shortDescription: 'Rustige probleemoplosser die techniek en logica combineert.',
-      longDescriptionNl: 'Je ontleedt problemen koel en praktisch, en vindt vaak elegante oplossingen. Je houdt van vakmanschap en leert snel door te testen.',
+      longDescriptionNl: 'Je breekt problemen op tot mechaniek: wat is de kern, welke ingreep werkt nu? Besluiten neem je nuchter en situationeel, liefst op basis van directe observatie. Sociaal ben je onafhankelijk en laagdramatisch; je communiceert vaak korter dan je denkt. Je interne conflict: je wilt autonomie en efficiëntie, maar kunt daardoor te laat delen wat je overweegt, waardoor samenwerking stroever wordt.',
       werkstijlNl: 'Je werkt het liefst zelfstandig met duidelijke technische uitdagingen en weinig ruis. Vrijheid in methode is voor jou belangrijker dan veel overleg.',
       valkuilenNl: 'Je kunt afstandelijk overkomen omdat je intern afweegt voordat je iets deelt. Teamleden missen dan soms je redenering of intentie.',
       groeitipsNl: 'Maak je denkstappen tussentijds zichtbaar, ook als ze nog niet af zijn. Spreek verwachtingen expliciet af om misverstanden te voorkomen.',
@@ -120,7 +120,7 @@ export const RESULT_CONTENT = {
     },
     ISFJ: {
       shortDescription: 'Zorgzame ondersteuner die aandacht heeft voor detail en mensen.',
-      longDescriptionNl: 'Je ondersteunt anderen met toewijding en oog voor wat praktisch nodig is. Dankzij je zorgvuldigheid voelen mensen zich gezien en geholpen.',
+      longDescriptionNl: 'Je combineert detailgeheugen met relationele gevoeligheid: je merkt wat mensen nodig hebben én wat er praktisch ontbreekt. Besluitvorming is zorg- en verantwoordelijkheidsgericht, vaak met focus op continuïteit. Sociaal ben je steunend en loyaal, meestal zonder jezelf op de voorgrond te zetten. Je valkuil is overaanpassing; intern schuurt je behoefte aan harmonie met de noodzaak om grenzen expliciet te maken.',
       werkstijlNl: 'Je functioneert sterk in een stabiele omgeving met duidelijke afspraken en betrouwbare relaties. Je combineert nauwkeurigheid met betrokkenheid.',
       valkuilenNl: 'Je neemt gemakkelijk te veel taken over om anderen te ontlasten. Daardoor raken je eigen grenzen op de achtergrond.',
       groeitipsNl: 'Maak je belasting zichtbaar en bespreek tijdig wat haalbaar is. Oefen met vriendelijk nee zeggen zonder je te verontschuldigen.',
@@ -130,7 +130,7 @@ export const RESULT_CONTENT = {
     },
     ISFP: {
       shortDescription: 'Gevoelige maker die authenticiteit en vrijheid belangrijk vindt.',
-      longDescriptionNl: 'Je bent gevoelig voor sfeer en werkt vanuit persoonlijke waarden en esthetiek. Je brengt creativiteit en oprechte aandacht in wat je maakt.',
+      longDescriptionNl: 'Je verwerkt ervaringen via zintuiglijke nuance en persoonlijke waarden. Besluitvorming is stil maar principieel: je kiest wat integer voelt, niet wat het luidst wordt gevraagd. In sociale context ben je vriendelijk en meebewegend, met sterke behoefte aan respect voor individualiteit. Je valkuil is conflictvermijding; intern botst je behoefte aan rust met de noodzaak om tijdig uit te spreken wat niet klopt.',
       werkstijlNl: 'Je presteert het best met autonomie, rustige focus en ruimte voor een eigen aanpak. Praktische taken gaan makkelijker als ze betekenis voor je hebben.',
       valkuilenNl: 'Je kunt conflicten mijden en belangrijke zorgen te lang inslikken. Daardoor ontstaat onduidelijkheid over wat je nodig hebt.',
       groeitipsNl: 'Spreek wensen en grenzen vroeg uit in concrete taal. Gebruik lichte structuur om prioriteiten vast te houden zonder je vrijheid te verliezen.',
@@ -140,7 +140,7 @@ export const RESULT_CONTENT = {
     },
     INTJ: {
       shortDescription: 'Conceptuele strateeg die lange-termijnplannen scherp uitwerkt.',
-      longDescriptionNl: 'Je denkt strategisch vooruit en vertaalt complexe vraagstukken naar heldere systemen. Je zoekt diepgang en werkt het liefst aan structurele verbeteringen.',
+      longDescriptionNl: 'Je denkt in architecturen: eerst het onderliggende systeem, dan pas de uitvoering. Beslissingen neem je door inconsistenties weg te redeneren, niet door groepsgevoel te volgen. In sociale context kun je gereserveerd lijken tot iemand inhoudelijk scherpte toont; dan word je juist uitgesproken. Je innerlijke conflict zit vaak tussen je hoge standaarden en de rommelige realiteit: je wilt vooruit, maar haakt af wanneer processen irrationeel voelen.',
       werkstijlNl: 'Je werkt sterk met autonomie, intellectuele uitdaging en lange focusblokken. Duidelijke doelen zonder micromanagement geven je ruimte om te excelleren.',
       valkuilenNl: 'Je kunt kritisch of afstandelijk overkomen als argumenten niet scherp zijn. Daardoor kan samenwerking stroef worden, zelfs met goede intenties.',
       groeitipsNl: 'Leg vaker uit hoe je tot conclusies komt, niet alleen wat je besluit. Plan bewust momenten om draagvlak en gevoelens te peilen.',
@@ -150,7 +150,7 @@ export const RESULT_CONTENT = {
     },
     INTP: {
       shortDescription: 'Nieuwsgierige denker die patronen en systemen diep wil begrijpen.',
-      longDescriptionNl: 'Je hebt een onderzoekende geest en wilt begrijpen hoe dingen fundamenteel werken. Je originaliteit groeit juist wanneer je ruimte krijgt om ideeën uit te pluizen.',
+      longDescriptionNl: 'Je hoofd zoekt precisie: je wil begrijpen waarom iets klopt, niet alleen dát het werkt. Je besluitvorming is iteratief en hypothese-gedreven, waardoor je lang kunt verkennen vóór je commit. Sociaal ben je vaak selectief: liever een diep gesprek dan veel oppervlakkige interactie. Je valkuil is analyse zonder afronding; intern botst je behoefte aan conceptuele zuiverheid met de noodzaak om op tijd ‘goed genoeg’ te kiezen.',
       werkstijlNl: 'Je functioneert goed met vrijheid, intellectuele diepte en minimale onderbrekingen. Je levert het meeste wanneer je concepten eerst kunt doorgronden.',
       valkuilenNl: 'Je kunt blijven verfijnen waardoor keuzes te laat vallen. De vertaalslag naar concrete actie blijft dan achter.',
       groeitipsNl: 'Werk met beslisdeadlines en een simpele definitie van “goed genoeg”. Deel voorlopige conclusies eerder zodat anderen kunnen aanhaken.',
@@ -160,7 +160,7 @@ export const RESULT_CONTENT = {
     },
     INFJ: {
       shortDescription: 'Inzichtvolle idealist die betekenis en richting zoekt.',
-      longDescriptionNl: 'Je combineert intuïtief inzicht met een sterke behoefte aan betekenis. Je ziet onderstromen in mensen en situaties en denkt graag in langetermijnontwikkeling.',
+      longDescriptionNl: 'Je verwerkt informatie op patroon- en betekenislagen tegelijk: je ziet snel wat er onder gedrag speelt. Beslissingen neem je door waarden, lange-termijnimpact en menselijke consequenties te integreren. In sociale dynamiek ben je vaak een stille regisseur die sfeer en richting subtiel beïnvloedt. Je conflict zit tussen idealisme en begrenzing: je voelt sterk wat nodig is, maar draagt te lang te veel verantwoordelijkheid.',
       werkstijlNl: 'Je werkt het best in een rustige context met heldere waarden en doelgericht werk. Diepe één-op-één samenwerking past je vaak beter dan voortdurende groepsdrukte.',
       valkuilenNl: 'Je legt de lat hoog voor jezelf en trekt veel verantwoordelijkheid naar je toe. Daardoor kan mentale overbelasting ongemerkt oplopen.',
       groeitipsNl: 'Maak verwachtingen expliciet en toets ze op haalbaarheid. Plan herstel net zo concreet als je taken en bewaak je energiegrenzen.',
@@ -170,7 +170,7 @@ export const RESULT_CONTENT = {
     },
     INFP: {
       shortDescription: 'Reflectieve idealist die authenticiteit en persoonlijke groei nastreeft.',
-      longDescriptionNl: 'Je wordt gedreven door persoonlijke waarden en zoekt werk dat echt klopt met wie je bent. Met je verbeeldingskracht breng je nuance en originaliteit in gesprekken en ideeën.',
+      longDescriptionNl: 'Je toetst keuzes aan innerlijke authenticiteit: klopt dit met wie ik ben en waar ik voor sta? Besluitvorming kan traag lijken omdat je niet alleen effectiviteit, maar ook morele congruentie wilt. Sociaal ben je warm in veilige context, maar terughoudend bij harde of instrumentele communicatie. Je valkuil is uitstel bij waardeconflict; intern botst je rijke idealisme met praktische prioritering onder tijdsdruk.',
       werkstijlNl: 'Je komt tot je recht met autonomie, betekenisvolle doelen en ruimte voor reflectie. Een rustige omgeving helpt je om geconcentreerd en zorgvuldig te werken.',
       valkuilenNl: 'Je kunt beslissingen uitstellen als opties botsen met je idealen. Praktische prioriteiten raken dan op de achtergrond.',
       groeitipsNl: 'Vertaal grote idealen naar kleine dagelijkse acties. Oefen met duidelijke keuzes maken, ook als niet alles perfect voelt.',
