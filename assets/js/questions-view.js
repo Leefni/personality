@@ -185,23 +185,68 @@ export function renderNav(viewModel, handlers) {
     next.textContent = 'Next';
     next.addEventListener('click', handlers.onNext);
     nav.appendChild(next);
-    return;
+  } else {
+    const submit = document.createElement('button');
+    submit.className = 'submit';
+    submit.textContent = 'Bekijk resultaat';
+    const answeredCount = Object.keys(viewModel.answers).length;
+    const isComplete = answeredCount === viewModel.totalQuestions;
+    const hasPendingSaves = viewModel.pendingQuestionIds.size > 0;
+    submit.disabled = !isComplete || hasPendingSaves;
+    submit.title = !isComplete
+      ? 'Beantwoord eerst alle vragen voordat je het resultaat bekijkt.'
+      : hasPendingSaves
+        ? 'Nog bezig met opslaan. Wacht even tot alles klaar is.'
+        : '';
+    submit.addEventListener('click', handlers.onSubmit);
+    nav.appendChild(submit);
   }
 
-  const submit = document.createElement('button');
-  submit.className = 'submit';
-  submit.textContent = 'Bekijk resultaat';
-  const answeredCount = Object.keys(viewModel.answers).length;
-  const isComplete = answeredCount === viewModel.totalQuestions;
-  const hasPendingSaves = viewModel.pendingQuestionIds.size > 0;
-  submit.disabled = !isComplete || hasPendingSaves;
-  submit.title = !isComplete
-    ? 'Beantwoord eerst alle vragen voordat je het resultaat bekijkt.'
-    : hasPendingSaves
-      ? 'Nog bezig met opslaan. Wacht even tot alles klaar is.'
-      : '';
-  submit.addEventListener('click', handlers.onSubmit);
-  nav.appendChild(submit);
+  const unansweredOnPage = viewModel.questions
+    .filter((q) => viewModel.answers[q.id] === undefined)
+    .length;
+  const hint = document.createElement('p');
+  hint.className = 'page-hint';
+  const suffix = unansweredOnPage === 1 ? 'vraag' : 'vragen';
+  hint.textContent = `Nog ${unansweredOnPage} openstaande ${suffix} op deze pagina`;
+  nav.appendChild(hint);
+}
+
+export function renderPageDots(viewModel) {
+  const questionsContainer = document.getElementById('questions');
+  if (!questionsContainer) return;
+
+  const totalPages = Math.max(1, Math.ceil(viewModel.totalQuestions / viewModel.perPage));
+  const dots = document.createElement('div');
+  dots.className = 'page-dots';
+  dots.setAttribute('aria-label', `Paginastatus: pagina ${viewModel.page} van ${totalPages}`);
+
+  Array.from({ length: totalPages }).forEach((_, index) => {
+    const dot = document.createElement('span');
+    dot.className = 'page-dot';
+    if (index + 1 === viewModel.page) {
+      dot.classList.add('is-active');
+    }
+    dots.appendChild(dot);
+  });
+
+  questionsContainer.appendChild(dots);
+}
+
+function ensureProgressBarElements() {
+  const progress = document.getElementById('progress');
+  if (!progress || !progress.parentElement) return null;
+
+  let progressBar = document.getElementById('progress-bar');
+  if (!progressBar) {
+    progressBar = document.createElement('div');
+    progressBar.id = 'progress-bar';
+    progressBar.className = 'progress-bar';
+    progressBar.innerHTML = '<div id="progress-bar-fill" class="progress-bar-fill"></div>';
+    progress.insertAdjacentElement('afterend', progressBar);
+  }
+
+  return progressBar.querySelector('#progress-bar-fill');
 }
 
 /**
@@ -211,8 +256,17 @@ export function renderNav(viewModel, handlers) {
  */
 export function updateProgress(viewModel) {
   const totalPages = Math.max(1, Math.ceil(viewModel.totalQuestions / viewModel.perPage));
+  const answeredCount = Object.keys(viewModel.answers).length;
   document.getElementById('progress').textContent =
-    `Pagina ${viewModel.page} / ${totalPages} — ${Object.keys(viewModel.answers).length} van ${viewModel.totalQuestions} vragen ingevuld`;
+    `Pagina ${viewModel.page} / ${totalPages} — ${answeredCount} van ${viewModel.totalQuestions} vragen ingevuld`;
+
+  const progressFill = ensureProgressBarElements();
+  if (!progressFill) return;
+
+  const completionPercent = viewModel.totalQuestions > 0
+    ? (answeredCount / viewModel.totalQuestions) * 100
+    : 0;
+  progressFill.style.width = `${completionPercent}%`;
 }
 
 /**
@@ -230,6 +284,7 @@ export function renderQuestions(viewModel, handlers) {
   }
 
   qDiv.innerHTML = '';
+  renderPageDots(viewModel);
   viewModel.questions.forEach((q, index) => {
     qDiv.appendChild(createQuestionRow(q, index, viewModel));
   });
