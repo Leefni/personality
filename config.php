@@ -1,37 +1,43 @@
 <?php
 declare(strict_types=1);
 
-function env_or_default(string $key, $default)
-{
-    $value = getenv($key);
-    return $value === false ? $default : $value;
+if (!function_exists('env_or_default')) {
+    function env_or_default(string $key, $default)
+    {
+        $value = getenv($key);
+        return $value === false ? $default : $value;
+    }
 }
 
-function env_non_empty_or_default(string $key, $default)
-{
-    $value = getenv($key);
+if (!function_exists('env_non_empty_or_default')) {
+    function env_non_empty_or_default(string $key, $default)
+    {
+        $value = getenv($key);
 
-    if ($value === false) {
-        return $default;
+        if ($value === false) {
+            return $default;
+        }
+
+        if (is_string($value) && trim($value) === '') {
+            return $default;
+        }
+
+        return $value;
     }
-
-    if (is_string($value) && trim($value) === '') {
-        return $default;
-    }
-
-    return $value;
 }
 
-function env_bool_or_default(string $key, bool $default): bool
-{
-    $value = getenv($key);
+if (!function_exists('env_bool_or_default')) {
+    function env_bool_or_default(string $key, bool $default): bool
+    {
+        $value = getenv($key);
 
-    if ($value === false) {
-        return $default;
+        if ($value === false) {
+            return $default;
+        }
+
+        $parsed = filter_var($value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+        return $parsed ?? $default;
     }
-
-    $parsed = filter_var($value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
-    return $parsed ?? $default;
 }
 
 $baseConfig = [
