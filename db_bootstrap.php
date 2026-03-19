@@ -10,6 +10,13 @@ function bootstrap_database(PDO $pdo, array $config): void
         return;
     }
 
+    // DDL statements (CREATE TABLE) in MySQL cause an implicit commit and silently
+    // end any open transaction. Wrapping DDL in a PDO transaction then calling
+    // commit() afterwards throws "There is no active transaction" because MySQL
+    // already committed it. Run schema setup outside any transaction instead.
+    execute_sql_file($pdo, __DIR__ . '/init.sql');
+
+    // Seed data is DML (INSERT) so it can safely use a transaction.
     $inTransaction = false;
 
     try {
@@ -18,8 +25,6 @@ function bootstrap_database(PDO $pdo, array $config): void
             $inTransaction = true;
         }
 
-        // Keep additive schema changes in sync, even when DB already existed.
-        execute_sql_file($pdo, __DIR__ . '/init.sql');
         seed_questions_if_empty($pdo);
 
         if ($inTransaction && $pdo->inTransaction()) {
