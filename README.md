@@ -11,6 +11,8 @@ All active endpoints are now under `api/v1/`:
 - `POST /api/v1/save_answer.php`
 - `POST /api/v1/submit_results.php`
 - `POST /api/v1/reset_progress.php`
+- `POST /api/v1/delete_data.php`
+- `GET /api/v1/test_metadata.php`
 - `GET /api/v1/health.php`
 
 ## Legacy endpoints (`/api/*.php`)
@@ -23,6 +25,8 @@ They now forward directly to the corresponding `/api/v1/*.php` handlers, so beha
 - `POST /api/save_answer.php` -> `/api/v1/save_answer.php`
 - `POST /api/submit_results.php` -> `/api/v1/submit_results.php`
 - `POST /api/reset_progress.php` -> `/api/v1/reset_progress.php`
+- `POST /api/delete_data.php` -> `/api/v1/delete_data.php`
+- `GET /api/test_metadata.php` -> `/api/v1/test_metadata.php`
 - `GET /api/health.php` -> `/api/v1/health.php`
 
 Sunset policy: these wrappers are scheduled for removal after **2026-12-31**.
@@ -170,3 +174,25 @@ For local debugging on Windows, use the PowerShell equivalents:
 
 - `pwsh tests/frontend_syntax_check.ps1`
 - `pwsh tests/frontend_runtime_check.ps1`
+
+### `GET /api/v1/test_metadata.php`
+
+Returns revision metadata for the active test:
+
+```json
+{
+  "version": "2026.03",
+  "date": "2026-03-18",
+  "question_count": 120
+}
+```
+
+### `POST /api/v1/delete_data.php`
+
+Explicit privacy action that removes current visitor answers and results cache.
+
+Response:
+
+```json
+{ "ok": true }
+```
