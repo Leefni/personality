@@ -5,6 +5,12 @@ $config = require __DIR__ . '/config.php';
 $privacyRetentionText = (string) ($config['privacy_retention_text'] ?? '');
 $appEnv = (string) ($config['app_env'] ?? 'production');
 
+// Security headers for the HTML page.
+header('X-Content-Type-Options: nosniff');
+header('X-Frame-Options: SAMEORIGIN');
+header('Referrer-Policy: strict-origin-when-cross-origin');
+header("Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-ancestors 'none'");
+
 $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
 $host = (string) ($_SERVER['HTTP_HOST'] ?? 'localhost');
 $scriptDir = rtrim(str_replace('\\', '/', dirname((string) ($_SERVER['SCRIPT_NAME'] ?? '/index.php'))), '/');
@@ -20,6 +26,9 @@ $metaDescription = 'Doe de Personality Test en ontdek jouw persoonlijkheidstype 
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#1d4ed8" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0f172a" media="(prefers-color-scheme: dark)">
   <title><?php echo htmlspecialchars($metaTitle, ENT_QUOTES, 'UTF-8'); ?></title>
   <meta name="description" content="<?php echo htmlspecialchars($metaDescription, ENT_QUOTES, 'UTF-8'); ?>">
 
@@ -35,17 +44,17 @@ $metaDescription = 'Doe de Personality Test en ontdek jouw persoonlijkheidstype 
   <noscript>
     <p>Deze website werkt alleen met JavaScript. Zet JavaScript aan om de test te gebruiken.</p>
   </noscript>
-  <main class="container">
+  <main class="container" data-app-env="<?php echo htmlspecialchars($appEnv, ENT_QUOTES, 'UTF-8'); ?>">
     <h1>Personality Test</h1>
     <p class="progress" id="progress">Laden...</p>
     <p class="test-meta" id="test-meta">Testversie laden...</p>
 
-    <section class="privacy-note" aria-label="Privacy">
+    <section class="privacy-note" aria-label="Privacy" hidden>
       <p><strong>Privacy:</strong> <?php echo htmlspecialchars($privacyRetentionText, ENT_QUOTES, 'UTF-8'); ?></p>
       <button type="button" class="danger" id="delete-data-start">Verwijder mijn gegevens</button>
     </section>
 
-    <section class="about-test" aria-labelledby="about-test-title">
+    <section class="about-test" aria-labelledby="about-test-title" hidden>
       <h2 id="about-test-title">Voor je start</h2>
       <ul>
         <li><strong>Verwachte duur:</strong> Deze test duurt ongeveer ±15 minuten.</li>
@@ -73,9 +82,6 @@ $metaDescription = 'Doe de Personality Test en ontdek jouw persoonlijkheidstype 
     <section class="result" id="result"></section>
   </main>
 
-  <script>
-    window.APP_ENV = <?php echo json_encode($appEnv, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
-  </script>
   <script type="module" src="assets/app.js"></script>
 </body>
 </html>
