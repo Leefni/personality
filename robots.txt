@@ -1,2 +1,9 @@
 User-agent: *
 Disallow: /api/
+Disallow: /scripts/
+Disallow: /tests/
+Disallow: /index.php?recovery_token=
+
+# Allow the main page
+Allow: /index.php
+Allow: /assets/
