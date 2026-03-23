@@ -9,17 +9,18 @@ CREATE TABLE IF NOT EXISTS questions (
 CREATE TABLE IF NOT EXISTS answers (
     id INT AUTO_INCREMENT PRIMARY KEY,
     question_id INT NOT NULL,
-    visitor_id CHAR(32) NOT NULL,
+    visitor_id VARCHAR(64) NOT NULL,
     value TINYINT NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     UNIQUE KEY uq_answer (question_id, visitor_id),
+    KEY idx_answers_visitor (visitor_id),
     CONSTRAINT fk_answers_question FOREIGN KEY (question_id) REFERENCES questions (id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS results (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    visitor_id CHAR(32) NOT NULL,
+    visitor_id VARCHAR(64) NOT NULL,
     type_code CHAR(4) NOT NULL,
     detail_json LONGTEXT NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
