@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 /**
  * Ensure required database schema and seed data exist.
+ * Safe to call on every request — skips all work if schema is already in place.
  */
 function bootstrap_database(PDO $pdo, array $config): void
 {
@@ -10,83 +11,97 @@ function bootstrap_database(PDO $pdo, array $config): void
         return;
     }
 
-    // DDL statements (CREATE TABLE) in MySQL cause an implicit commit and silently
-    // end any open transaction. Wrapping DDL in a PDO transaction then calling
-    // commit() afterwards throws "There is no active transaction" because MySQL
-    // already committed it. Run schema setup outside any transaction instead.
-    execute_sql_file($pdo, __DIR__ . '/init.sql');
-
-    // Seed data is DML (INSERT) so it can safely use a transaction.
-    $inTransaction = false;
-
+    // Fast path: if the questions table exists, the schema is already in place.
+    // Never run DDL on every request — it triggers MySQL warnings that can
+    // surface as PDO exceptions and produce false 500 errors.
     try {
-        if (!$pdo->inTransaction()) {
-            $pdo->beginTransaction();
-            $inTransaction = true;
-        }
-
-        seed_questions_if_empty($pdo);
-
-        if ($inTransaction && $pdo->inTransaction()) {
-            $pdo->commit();
+        if (table_exists($pdo, 'questions')) {
+            // Run any pending column migrations (e.g. widening visitor_id).
+            run_migrations($pdo);
+            seed_questions_if_empty($pdo);
+            return;
         }
     } catch (Throwable $e) {
-        if ($inTransaction && $pdo->inTransaction()) {
-            $pdo->rollBack();
-        }
+        error_log('[bootstrap table_exists] ' . $e->getMessage());
+        return;
+    }
 
-        throw $e;
+    // Schema is missing: run init.sql to create all tables.
+    try {
+        execute_sql_file($pdo, __DIR__ . '/init.sql');
+    } catch (Throwable $e) {
+        error_log('[bootstrap init.sql] ' . $e->getMessage());
+        return;
+    }
+
+    // Seed questions.
+    try {
+        seed_questions_if_empty($pdo);
+    } catch (Throwable $e) {
+        error_log('[bootstrap seed] ' . $e->getMessage());
     }
 }
 
-function has_required_tables(PDO $pdo, array $requiredTables): bool
+
+/**
+ * Applies lightweight schema migrations that are safe to run on every boot.
+ * Each migration is idempotent — running it twice has no effect.
+ */
+function run_migrations(PDO $pdo): void
 {
-    $sql = <<<'SQL'
-SELECT TABLE_NAME
-FROM information_schema.TABLES
-WHERE TABLE_SCHEMA = ?
-  AND TABLE_NAME IN (%s)
-SQL;
+    // Migration 1: widen visitor_id from CHAR(32) to VARCHAR(64) so IDs of any
+    // reasonable length are accepted without SQL truncation errors.
+    try {
+        $col = $pdo->query(
+            "SELECT COLUMN_TYPE FROM information_schema.COLUMNS
+             WHERE TABLE_SCHEMA = DATABASE()
+               AND TABLE_NAME = 'answers'
+               AND COLUMN_NAME = 'visitor_id'"
+        )->fetchColumn();
 
-    $placeholders = implode(', ', array_fill(0, count($requiredTables), '?'));
-    $databaseName = (string) $pdo->query('SELECT DATABASE()')->fetchColumn();
-
-    if ($databaseName === '') {
-        throw new RuntimeException('No active database selected for bootstrap.');
+        if ($col && strtoupper((string) $col) !== 'VARCHAR(64)') {
+            $pdo->exec("ALTER TABLE answers MODIFY COLUMN visitor_id VARCHAR(64) NOT NULL");
+            $pdo->exec("ALTER TABLE results MODIFY COLUMN visitor_id VARCHAR(64) NOT NULL");
+        }
+    } catch (Throwable $e) {
+        error_log('[migration visitor_id] ' . $e->getMessage());
     }
+}
 
-    $stmt = $pdo->prepare(sprintf($sql, $placeholders));
-    $stmt->bindValue(1, $databaseName);
-
-    foreach ($requiredTables as $index => $tableName) {
-        $stmt->bindValue($index + 2, $tableName);
+/**
+ * Checks whether a single table exists in the current database.
+ * Uses a simple SELECT instead of information_schema for maximum compatibility.
+ */
+function table_exists(PDO $pdo, string $table): bool
+{
+    try {
+        $pdo->query('SELECT 1 FROM `' . str_replace('`', '``', $table) . '` LIMIT 0');
+        return true;
+    } catch (PDOException $e) {
+        // Error code 1146 = "Table doesn't exist"
+        if (($e->errorInfo[1] ?? 0) === 1146) {
+            return false;
+        }
+        // Any other DB error: re-throw so it surfaces properly.
+        throw $e;
     }
-
-    $stmt->execute();
-    $existing = $stmt->fetchAll(PDO::FETCH_COLUMN);
-
-    return count(array_intersect($requiredTables, $existing)) === count($requiredTables);
 }
 
 function seed_questions_if_empty(PDO $pdo): void
 {
     $count = (int) $pdo->query('SELECT COUNT(*) FROM questions')->fetchColumn();
-
     if ($count > 0) {
         return;
     }
-
     execute_sql_file($pdo, __DIR__ . '/questions.sql');
 }
 
 function execute_sql_file(PDO $pdo, string $filePath): void
 {
     $sql = file_get_contents($filePath);
-
     if ($sql === false) {
         throw new RuntimeException(sprintf('Unable to read SQL file: %s', $filePath));
     }
-
     foreach (split_sql_statements($sql) as $statement) {
         assert_db_agnostic_statement($statement, $filePath);
         $pdo->exec($statement);
@@ -96,7 +111,6 @@ function execute_sql_file(PDO $pdo, string $filePath): void
 function assert_db_agnostic_statement(string $statement, string $filePath): void
 {
     $normalized = ltrim($statement);
-
     if (preg_match('/^(USE\s+|CREATE\s+DATABASE\b|DROP\s+DATABASE\b)/i', $normalized) === 1) {
         throw new RuntimeException(sprintf(
             'Database-specific statement found in %s. Keep SQL bootstrap files DB-agnostic.',
