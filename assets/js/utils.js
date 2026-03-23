@@ -1,8 +1,15 @@
 export const PAGE_SIZE = 10;
-export const APP_ENV = (window.APP_ENV || 'production').toLowerCase();
+// Read APP_ENV from the data attribute set by PHP — avoids an inline <script> tag
+// so the Content-Security-Policy can omit 'unsafe-inline' for scripts.
+const APP_ENV = (
+  document.querySelector('[data-app-env]')?.dataset?.appEnv ?? 'production'
+).toLowerCase();
 export const IS_DEVELOPMENT_ENV = APP_ENV === 'development' || APP_ENV === 'local';
-export const ANSWERS_STORAGE_KEY = 'personality.answers.v1';
-export const API_TIMEOUT_MS = 12000;
+const ANSWERS_STORAGE_KEY = 'personality.answers.v1';
+const API_TIMEOUT_MS = 12000;
+const API_RETRY_ATTEMPTS = 2;       // extra attempts after first failure
+const API_RETRY_BASE_DELAY_MS = 400; // first retry after 400 ms, doubles each time
+
 export const likertLabels = [
   'Helemaal oneens',
   'Oneens',
@@ -36,11 +43,19 @@ export function loadLocalDraft() {
 }
 
 export function saveLocalDraft(draft) {
-  localStorage.setItem(ANSWERS_STORAGE_KEY, JSON.stringify(draft));
+  try {
+    localStorage.setItem(ANSWERS_STORAGE_KEY, JSON.stringify(draft));
+  } catch (error) {
+    // Ignore storage failures (private mode / quota exceeded).
+  }
 }
 
 export function clearLocalDraft() {
-  localStorage.removeItem(ANSWERS_STORAGE_KEY);
+  try {
+    localStorage.removeItem(ANSWERS_STORAGE_KEY);
+  } catch (error) {
+    // Ignore storage failures.
+  }
 }
 
 export function buildDebugHint(endpoint, status) {
@@ -48,85 +63,146 @@ export function buildDebugHint(endpoint, status) {
   return `Technische hint: ${endpoint} (status: ${statusLabel})`;
 }
 
-export function showError(message, targetId = 'progress') {
-  const target = document.getElementById(targetId);
-  if (!target) return;
-
+export function showError(message) {
   const notice = document.createElement('div');
   notice.className = 'error-notice';
+  notice.setAttribute('role', 'alert');
   notice.textContent = message;
 
-  const container = target.parentElement || target;
-  container.insertBefore(notice, target.nextSibling);
+  // Append to body so it sits in fixed position above everything, never lost
+  // inside a grid container.
+  document.body.appendChild(notice);
 
   window.setTimeout(() => {
     notice.remove();
-  }, 4000);
+  }, 5000);
 }
 
+/**
+ * Returns true for status codes that are worth retrying (network/server transient errors).
+ * We never retry 4xx client errors.
+ * @param {number|undefined} status
+ */
+function isRetryableStatus(status) {
+  if (status === undefined) return true; // network failure (no status)
+  return status === 408 || status === 429 || status >= 500;
+}
+
+/**
+ * Sleeps for the given number of milliseconds.
+ * @param {number} ms
+ * @returns {Promise<void>}
+ */
+function sleep(ms) {
+  return new Promise((resolve) => window.setTimeout(resolve, ms));
+}
+
+/**
+ * Low-level HTTP fetch with timeout and exponential-backoff retry.
+ * @param {string} url
+ * @param {Object} [options]
+ * @returns {Promise<any>}
+ */
 export async function apiFetch(url, options = {}) {
   const timeoutMs = Number.isFinite(options.timeoutMs) ? Number(options.timeoutMs) : API_TIMEOUT_MS;
-  const { timeoutMs: _timeoutMs, ...requestOptions } = options;
-  const controller = new AbortController();
-  const abortTimerId = window.setTimeout(() => {
-    controller.abort();
-  }, timeoutMs);
+  // Never retry non-idempotent POST requests — a save that succeeds on attempt 1
+  // but whose response is lost in transit should not be silently re-sent.
+  const isPost = (options.method || 'GET').toUpperCase() === 'POST';
+  const maxRetries = isPost ? 0 : (Number.isFinite(options.retries) ? Number(options.retries) : API_RETRY_ATTEMPTS);
+  const { timeoutMs: _t, retries: _r, ...requestOptions } = options;
 
-  let response;
-  try {
-    response = await fetch(url, { ...requestOptions, signal: controller.signal });
-  } catch (error) {
-    if (error?.name === 'AbortError') {
-      const timeoutError = new Error('Request timed out: ' + url);
-      timeoutError.status = 408;
-      timeoutError.url = url;
-      timeoutError.isTimeout = true;
-      timeoutError.timeoutMs = timeoutMs;
-      throw timeoutError;
+  let lastError;
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    if (attempt > 0) {
+      await sleep(API_RETRY_BASE_DELAY_MS * Math.pow(2, attempt - 1));
     }
-    throw error;
-  } finally {
-    window.clearTimeout(abortTimerId);
-  }
 
-  const text = await response.text();
-  const hasBody = text.trim().length > 0;
-  const bodyPreview = text.slice(0, 180);
+    const controller = new AbortController();
+    const abortTimerId = window.setTimeout(() => controller.abort(), timeoutMs);
 
-  let payload = null;
-  let jsonParseError = null;
-  if (hasBody) {
+    let response;
     try {
-      payload = JSON.parse(text);
-    } catch (error) {
-      jsonParseError = error;
+      response = await fetch(url, { ...requestOptions, signal: controller.signal });
+    } catch (fetchError) {
+      // Cancel the abort timer immediately — we already failed.
+      window.clearTimeout(abortTimerId);
+      if (fetchError?.name === 'AbortError') {
+        const timeoutError = new Error('Request timed out: ' + url);
+        timeoutError.status = 408;
+        timeoutError.url = url;
+        timeoutError.isTimeout = true;
+        timeoutError.timeoutMs = timeoutMs;
+        lastError = timeoutError;
+      } else {
+        lastError = fetchError;
+        lastError.url = url;
+      }
+      continue;
     }
+
+    // Cancel the abort timer as soon as the response headers arrive — before
+    // reading the body — so an in-progress response.text() can never be aborted
+    // by our own timer and incorrectly surface as a network failure.
+    window.clearTimeout(abortTimerId);
+
+    let text = '';
+    try {
+      text = await response.text();
+    } catch (bodyError) {
+      // Body read failed (e.g. connection reset mid-stream). Treat as retryable.
+      const readError = new Error('Response body read failed: ' + url);
+      readError.status = response.status;
+      readError.url = url;
+      lastError = readError;
+      continue;
+    }
+
+    const hasBody = text.trim().length > 0;
+    const bodyPreview = text.slice(0, 180);
+
+    let payload = null;
+    let jsonParseError = null;
+    if (hasBody) {
+      try {
+        payload = JSON.parse(text);
+      } catch (error) {
+        jsonParseError = error;
+      }
+    }
+
+    if (!response.ok) {
+      const requestError = new Error('Request failed: ' + url);
+      requestError.status = response.status;
+      requestError.payload = payload;
+      requestError.text = text || null;
+      requestError.bodyPreview = bodyPreview || null;
+      requestError.isJsonParseError = Boolean(jsonParseError);
+      requestError.parseErrorMessage = jsonParseError?.message || null;
+      requestError.url = url;
+      lastError = requestError;
+
+      if (!isRetryableStatus(response.status)) {
+        throw requestError; // 4xx client error: don't retry.
+      }
+      continue; // 5xx / 429 / 408: retry.
+    }
+
+    if (jsonParseError) {
+      const parseError = new Error('Response JSON parse failed');
+      parseError.status = response.status;
+      parseError.url = url;
+      parseError.text = text || null;
+      parseError.bodyPreview = bodyPreview || null;
+      parseError.isJsonParseError = true;
+      parseError.parseErrorMessage = jsonParseError.message;
+      throw parseError;
+    }
+
+    return payload; // Success.
   }
 
-  if (!response.ok) {
-    const requestError = new Error('Request failed: ' + url);
-    requestError.status = response.status;
-    requestError.payload = payload;
-    requestError.text = text || null;
-    requestError.bodyPreview = bodyPreview || null;
-    requestError.isJsonParseError = Boolean(jsonParseError);
-    requestError.parseErrorMessage = jsonParseError?.message || null;
-    requestError.url = url;
-    throw requestError;
-  }
-
-  if (jsonParseError) {
-    const parseError = new Error('Response JSON parse failed');
-    parseError.status = response.status;
-    parseError.url = url;
-    parseError.text = text || null;
-    parseError.bodyPreview = bodyPreview || null;
-    parseError.isJsonParseError = true;
-    parseError.parseErrorMessage = jsonParseError.message;
-    throw parseError;
-  }
-
-  return payload;
+  throw lastError;
 }
 
 export function formatApiError(error, fallbackMessage) {
@@ -141,15 +217,14 @@ export function formatApiError(error, fallbackMessage) {
 
   const message = statusMessages[error?.status] || fallbackMessage;
 
-  if (IS_DEVELOPMENT_ENV) {
-    console.error('API error:', {
-      message,
-      status: error?.status,
-      payload: error?.payload,
-      text: error?.text,
-      url: error?.url
-    });
-  }
+  // Always log to console so errors are visible in DevTools regardless of env.
+  console.error('[API error]', {
+    url: error?.url,
+    status: error?.status,
+    message,
+    responseBody: error?.text,
+    payload: error?.payload,
+  });
 
   return message;
 }

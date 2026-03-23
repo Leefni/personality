@@ -3,6 +3,9 @@ declare(strict_types=1);
 
 require __DIR__ . '/http/response.php';
 
+ini_set('display_errors', '0');
+ini_set('log_errors', '1');
+
 /** @return array{app_version:string,test_version:string,test_release_date:string} */
 function health_metadata(): array
 {
@@ -66,6 +69,7 @@ $bootstrapReady = false;
 
 try {
     require __DIR__ . '/../../db.php';
+    require_once __DIR__ . '/../../db_bootstrap.php';
 
     if (!isset($pdo) || !$pdo instanceof PDO) {
         throw new RuntimeException('Database connection was not initialized.');
@@ -74,13 +78,8 @@ try {
     $pdo->query('SELECT 1');
     $dbConnected = true;
 
-    $tableCheckStmt = $pdo->prepare(
-        'SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = :table_name'
-    );
-
     foreach ($requiredTables as $table) {
-        $tableCheckStmt->execute(['table_name' => $table]);
-        $tableStatuses[$table] = ((int) $tableCheckStmt->fetchColumn()) > 0;
+        $tableStatuses[$table] = table_exists($pdo, $table);
     }
 
     if ($tableStatuses['questions']) {

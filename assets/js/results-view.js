@@ -110,14 +110,35 @@ function escapeHtml(value) {
     .replaceAll("'", '&#39;');
 }
 
-function scoreToPercent(score) {
-  const numericScore = Number(score);
-  if (!Number.isFinite(numericScore)) {
-    return 50;
-  }
+// Fallback max scores based on the question set (count × 2.5 max deviation per answer).
+// These are overwritten by the value returned from the API so they stay accurate
+// even if the question set changes in future.
+const DEFAULT_MAX_SCORES = { EI: 75, SN: 47.5, TF: 92.5, JP: 85 };
+let dimensionMaxScores = { ...DEFAULT_MAX_SCORES };
 
-  const bounded = Math.max(-50, Math.min(50, numericScore * 8));
-  return Math.round(50 + bounded);
+function applyMaxScores(apiData) {
+  const ms = apiData?.max_scores;
+  if (!ms || typeof ms !== 'object') return;
+
+  ['EI', 'SN', 'TF', 'JP'].forEach((dim) => {
+    const v = Number(ms[dim]);
+    if (Number.isFinite(v) && v > 0) {
+      dimensionMaxScores[dim] = v;
+    }
+  });
+}
+
+function scoreToPercent(score, dimension) {
+  const numericScore = Number(score);
+  if (!Number.isFinite(numericScore)) return 50;
+
+  const maxScore = dimensionMaxScores[dimension] || DEFAULT_MAX_SCORES[dimension] || 75;
+  // Clamp to the theoretical range, then map linearly to [0, 100].
+  // score = +maxScore → 100%  (full left-pole dominance)
+  // score = 0         →  50%  (perfectly balanced)
+  // score = -maxScore →   0%  (full right-pole dominance)
+  const clamped = Math.max(-maxScore, Math.min(maxScore, numericScore));
+  return Math.round(50 + (clamped / maxScore) * 50);
 }
 
 const STRENGTH_LABELS = {
@@ -194,7 +215,7 @@ function classifyStrength(dominancePercent) {
 }
 
 function buildDimensionInsight(dimension, config, scoreValue) {
-  const percent = scoreToPercent(scoreValue);
+  const percent = scoreToPercent(scoreValue, dimension);
   const leftPole = config.poles[0];
   const rightPole = config.poles[1];
   const dominantPole = percent >= 50 ? leftPole : rightPole;
@@ -324,6 +345,8 @@ function downloadSummary(text, filename = 'persoonlijkheidssamenvatting.txt') {
  * @returns {void} Nothing.
  */
 export function renderResult(data, onRestart) {
+  applyMaxScores(data);
+
   const res = document.getElementById('result');
   const type = toSafeText(data?.type, '----');
   const details = RESULT_CONTENT.types[type];
@@ -364,7 +387,7 @@ export function renderResult(data, onRestart) {
   res.innerHTML = `
     <section class="result-card">
       <h2>Resultaat</h2>
-      <p class="result-type">Persoonlijkheidstype: <strong>${escapeHtml(type)}</strong></p>
+      <p class="result-type">Persoonlijkheidstype: <strong translate="no">${escapeHtml(type)}</strong></p>
       <p class="result-short-description">${escapeHtml(shortDescription)}</p>
 
       <article class="result-disclaimer" aria-label="Disclaimer">
@@ -413,7 +436,7 @@ export function renderResult(data, onRestart) {
         <h3>Download / deel samenvatting</h3>
         <div class="result-actions">
           <button type="button" class="copy-summary">Kopieer samenvatting</button>
-          <button type="button" class="share-result">Kopieer deelbare tekst</button>
+          <button type="button" class="share-result">${typeof navigator.share === 'function' ? 'Delen' : 'Kopieer deelbare tekst'}</button>
           <button type="button" class="download-summary">Download als .txt</button>
           <button type="button" class="restart">Opnieuw doen</button>
         </div>
@@ -438,6 +461,24 @@ export function renderResult(data, onRestart) {
   res.querySelector('.share-result')?.addEventListener('click', async () => {
     if (!statusElement) return;
 
+    const shareData = {
+      title: `Mijn persoonlijkheidstype: ${type}`,
+      text: shareText,
+    };
+
+    // Use the native share sheet when available (mobile / modern desktop).
+    if (typeof navigator.share === 'function' && navigator.canShare?.(shareData)) {
+      try {
+        await navigator.share(shareData);
+        statusElement.textContent = 'Gedeeld!';
+        return;
+      } catch (error) {
+        // User cancelled — don't show an error, just fall through silently.
+        if (error?.name === 'AbortError') return;
+      }
+    }
+
+    // Fallback: copy to clipboard.
     try {
       await window.navigator.clipboard.writeText(shareText);
       statusElement.textContent = 'Deelbare tekst gekopieerd naar klembord.';

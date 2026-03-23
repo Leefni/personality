@@ -16,6 +16,7 @@ if ($cached !== null) {
     json_success([
         'type' => $cached['type'],
         'scores' => is_array($cached['scores']) ? $cached['scores'] : new stdClass(),
+        'max_scores' => $quizRepository->getMaxTheoreticalScores(),
         'metadata' => get_test_metadata($quizRepository),
     ]);
 }
@@ -33,11 +34,11 @@ if (!$quizService->isComplete($answeredCount, $totalQuestions)) {
 $scores = $quizRepository->getDimensionScores($visitor);
 $type = $quizService->deriveType($scores);
 
-$quizRepository->saveResult($visitor, $type, $scores);
 cache_result($pdo, $visitor, $type, $scores);
 
 json_success([
     'type' => $type,
     'scores' => $scores,
+    'max_scores' => $quizRepository->getMaxTheoreticalScores(),
     'metadata' => get_test_metadata($quizRepository),
 ]);

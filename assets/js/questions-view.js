@@ -11,10 +11,10 @@ export function setProgressMessage(message) {
 
 /**
  * Attaches a single delegated change listener for question radio inputs.
- * @param {() => boolean} isAttached - Function that reports if listener already exists.
- * @param {(attached: boolean) => void} setAttached - Function that stores listener attached state.
- * @param {(questionId: number, value: number) => void} onAnswerChange - Callback for radio value changes.
- * @returns {void} Nothing.
+ * @param {() => boolean} isAttached
+ * @param {(attached: boolean) => void} setAttached
+ * @param {(questionId: number, value: number) => void} onAnswerChange
+ * @returns {void}
  */
 export function setupQuestionChangeListener(isAttached, setAttached, onAnswerChange) {
   if (isAttached()) return;
@@ -32,6 +32,39 @@ export function setupQuestionChangeListener(isAttached, setAttached, onAnswerCha
     onAnswerChange(qid, value);
   });
 
+  // Keyboard roving within each likert fieldset (←/→ arrow keys).
+  questionsElement?.addEventListener('keydown', (event) => {
+    if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+
+    const target = event.target;
+    if (!(target instanceof HTMLInputElement)) return;
+    if (!target.matches('input[type="radio"][data-qid]')) return;
+
+    const fieldset = target.closest('fieldset.likert');
+    if (!fieldset) return;
+
+    const radios = Array.from(fieldset.querySelectorAll('input[type="radio"]'));
+    const currentIndex = radios.indexOf(target);
+    if (currentIndex === -1) return;
+
+    let nextIndex;
+    if (event.key === 'ArrowRight') {
+      nextIndex = currentIndex < radios.length - 1 ? currentIndex + 1 : 0;
+    } else {
+      nextIndex = currentIndex > 0 ? currentIndex - 1 : radios.length - 1;
+    }
+
+    event.preventDefault();
+    const nextRadio = radios[nextIndex];
+    if (!(nextRadio instanceof HTMLInputElement)) return;
+
+    // Move roving tabindex.
+    radios.forEach((r) => r.setAttribute('tabindex', '-1'));
+    nextRadio.setAttribute('tabindex', '0');
+    nextRadio.focus();
+    nextRadio.click(); // select + trigger change event
+  });
+
   setAttached(true);
 }
 
@@ -39,11 +72,11 @@ function createQuestionRow(question, index, viewModel) {
   const div = document.createElement('article');
   div.className = 'question';
   div.dataset.questionId = String(question.id);
-  const isPending = viewModel.pendingQuestionIds.has(question.id);
+  const currentAnswer = viewModel.answers[question.id];
 
   div.innerHTML = `
     <p><strong>${(viewModel.page - 1) * viewModel.perPage + index + 1}.</strong> ${question.text}</p>
-    <fieldset class="likert" aria-describedby="likert-scale-hint" ${isPending ? 'disabled' : ''}>
+    <fieldset class="likert" aria-describedby="likert-scale-hint">
       <legend class="sr-only">Kies een antwoordoptie voor vraag ${(viewModel.page - 1) * viewModel.perPage + index + 1}</legend>
       ${[1, 2, 3, 4, 5, 6].map((value) => `
         <div class="likert-option">
@@ -55,14 +88,18 @@ function createQuestionRow(question, index, viewModel) {
             data-value="${value}"
             value="${value}"
             title="${viewModel.likertLabels[value - 1]}"
-            tabindex="${(viewModel.answers[question.id] ?? 1) === value ? '0' : '-1'}"
-            ${viewModel.answers[question.id] === value ? 'checked' : ''}
+            tabindex="${(currentAnswer ?? 1) === value ? '0' : '-1'}"
+            ${currentAnswer === value ? 'checked' : ''}
           >
-          <label for="q-${question.id}-v-${value}">${value} <span class="sr-only">(${viewModel.likertLabels[value - 1]})</span></label>
+          <label for="q-${question.id}-v-${value}">
+            <span class="likert-num">${value}</span>
+            <span class="likert-hint" aria-hidden="true">${viewModel.likertLabels[value - 1]}</span>
+            <span class="sr-only">(${viewModel.likertLabels[value - 1]})</span>
+          </label>
         </div>
       `).join('')}
     </fieldset>
-    <div class="likert-labels">
+    <div class="likert-labels" aria-hidden="true">
       <span>${viewModel.likertLabels[0]}</span>
       <span>${viewModel.likertLabels[5]}</span>
     </div>
@@ -77,23 +114,38 @@ function getRenderedQuestionElement(questionId) {
 
 /**
  * Plays a temporary success pulse on the rendered question container.
- * @param {HTMLElement} questionElement - Rendered article.question element.
- * @returns {void} Nothing.
+ * @param {HTMLElement} questionElement
+ * @returns {void}
  */
-function flashSavedQuestion(questionElement) {
+export function flashSavedQuestion(questionElement) {
   questionElement.classList.remove('answer-saved');
   void questionElement.offsetWidth;
   questionElement.classList.add('answer-saved');
+
+  // Show a brief "✓ Opgeslagen" badge in the corner.
+  const existing = questionElement.querySelector('.save-badge');
+  if (existing) existing.remove();
+
+  const badge = document.createElement('span');
+  badge.className = 'save-badge';
+  badge.setAttribute('aria-hidden', 'true');
+  badge.textContent = '✓';
+  questionElement.appendChild(badge);
+
   window.setTimeout(() => {
-    questionElement.classList.remove('answer-saved');
+    badge.classList.add('save-badge--out');
+    window.setTimeout(() => {
+      badge.remove();
+      questionElement.classList.remove('answer-saved');
+    }, 300);
   }, 900);
 }
 
 /**
  * Re-renders one question row after its answer state changes.
- * @param {number} questionId - Question id to refresh in the DOM.
- * @param {{questions: Array, page: number, perPage: number, answers: Object, pendingQuestionIds: Set<number>, likertLabels: string[]}} viewModel - Values needed to build row markup.
- * @returns {void} Nothing.
+ * @param {number} questionId
+ * @param {Object} viewModel
+ * @returns {void}
  */
 export function updateQuestionRow(questionId, viewModel) {
   const questionIndex = viewModel.questions.findIndex((question) => question.id === questionId);
@@ -107,33 +159,11 @@ export function updateQuestionRow(questionId, viewModel) {
 }
 
 /**
- * Enables or disables a question while its save request is running.
- * @param {number} questionId - Question id to toggle disabled state for.
- * @param {Set<number>} pendingQuestionIds - Set of ids currently being saved.
- * @returns {void} Nothing.
- */
-export function updateQuestionPendingState(questionId, pendingQuestionIds) {
-  const questionElement = getRenderedQuestionElement(questionId);
-  if (!questionElement) return;
-
-  const fieldset = questionElement.querySelector('fieldset');
-  if (!fieldset) return;
-
-  const wasPending = fieldset.disabled;
-  const isPending = pendingQuestionIds.has(questionId);
-  fieldset.disabled = isPending;
-
-  if (wasPending && !isPending) {
-    flashSavedQuestion(questionElement);
-  }
-}
-
-/**
  * Updates submit button enabled state based on completion.
- * @param {Object} answers - Current answers keyed by question id.
- * @param {number} totalQuestions - Number of questions in quiz.
- * @param {Set<number>} pendingQuestionIds - In-flight save ids used to optionally block submit.
- * @returns {void} Nothing.
+ * @param {Object} answers
+ * @param {number} totalQuestions
+ * @param {Set<number>} [pendingQuestionIds]
+ * @returns {void}
  */
 export function updateNavState(answers, totalQuestions, pendingQuestionIds = new Set()) {
   const submitButton = document.querySelector('#nav .submit');
@@ -152,9 +182,9 @@ export function updateNavState(answers, totalQuestions, pendingQuestionIds = new
 
 /**
  * Renders a fallback state for an empty first page of questions.
- * @param {string} dataEndpoint - Endpoint used, shown in development hint.
- * @param {boolean} isDevelopment - True when debug details should be shown.
- * @returns {void} Nothing.
+ * @param {string} dataEndpoint
+ * @param {boolean} isDevelopment
+ * @returns {void}
  */
 export function renderEmptyState(dataEndpoint, isDevelopment) {
   const progress = document.getElementById('progress');
@@ -162,30 +192,32 @@ export function renderEmptyState(dataEndpoint, isDevelopment) {
   const nav = document.getElementById('nav');
 
   const baseMessage = 'Geen vragen gevonden. Controleer database-seeding.';
-  progress.textContent = baseMessage;
+  if (progress) progress.textContent = baseMessage;
 
   if (isDevelopment) {
     const debugHint = `Debug: controleer response van ${dataEndpoint} en verwacht dat db_bootstrap/seed ten minste 1 vraag aanmaakt.`;
-    questionsElement.innerHTML = `
-      <p class="error">${baseMessage}</p>
-      <p class="error">${debugHint}</p>
-    `;
-  } else {
-    questionsElement.innerHTML = `<p class="error">${baseMessage}</p>`;
+    if (questionsElement) {
+      questionsElement.innerHTML = `
+        <p class="error" role="alert">${baseMessage}</p>
+        <p class="error">${debugHint}</p>
+      `;
+    }
+  } else if (questionsElement) {
+    questionsElement.innerHTML = `<p class="error" role="alert">${baseMessage}</p>`;
   }
 
-  nav.querySelectorAll('button').forEach((button) => {
-    button.disabled = true;
-  });
-  nav.innerHTML = '';
-  nav.hidden = true;
+  if (nav) {
+    nav.querySelectorAll('button').forEach((button) => { button.disabled = true; });
+    nav.innerHTML = '';
+    nav.hidden = true;
+  }
 }
 
 /**
  * Renders pagination/submit buttons for the current page.
- * @param {{page: number, perPage: number, totalQuestions: number, answers: Object, pendingQuestionIds: Set<number>}} viewModel - Current pagination and answer values.
- * @param {{onPrev: () => void, onNext: () => void, onSubmit: () => void}} handlers - Callbacks for nav button clicks.
- * @returns {void} Nothing.
+ * @param {Object} viewModel
+ * @param {Object} handlers
+ * @returns {void}
  */
 export function renderNav(viewModel, handlers) {
   const nav = document.getElementById('nav');
@@ -224,14 +256,18 @@ export function renderNav(viewModel, handlers) {
     nav.appendChild(submit);
   }
 
+  // Only show the unanswered-count hint when there are actually unanswered questions on this page.
   const unansweredOnPage = viewModel.questions
     .filter((q) => viewModel.answers[q.id] === undefined)
     .length;
-  const hint = document.createElement('p');
-  hint.className = 'page-hint';
-  const suffix = unansweredOnPage === 1 ? 'vraag' : 'vragen';
-  hint.textContent = `Nog ${unansweredOnPage} openstaande ${suffix} op deze pagina`;
-  nav.appendChild(hint);
+
+  if (unansweredOnPage > 0) {
+    const hint = document.createElement('p');
+    hint.className = 'page-hint';
+    const suffix = unansweredOnPage === 1 ? 'vraag' : 'vragen';
+    hint.textContent = `Nog ${unansweredOnPage} openstaande ${suffix} op deze pagina`;
+    nav.appendChild(hint);
+  }
 }
 
 export function renderPageDots(viewModel) {
@@ -241,6 +277,7 @@ export function renderPageDots(viewModel) {
   const totalPages = Math.max(1, Math.ceil(viewModel.totalQuestions / viewModel.perPage));
   const dots = document.createElement('div');
   dots.className = 'page-dots';
+  dots.setAttribute('role', 'status');
   dots.setAttribute('aria-label', `Paginastatus: pagina ${viewModel.page} van ${totalPages}`);
 
   Array.from({ length: totalPages }).forEach((_, index) => {
@@ -248,6 +285,7 @@ export function renderPageDots(viewModel) {
     dot.className = 'page-dot';
     if (index + 1 === viewModel.page) {
       dot.classList.add('is-active');
+      dot.setAttribute('aria-current', 'page');
     }
     dots.appendChild(dot);
   });
@@ -269,7 +307,7 @@ function ensureProgressBarElements() {
     progressWrap.className = 'progress-wrap';
     progressWrap.setAttribute('aria-label', 'Voortgang');
     progressWrap.innerHTML = `
-      <div id="progress-bar" class="progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+      <div id="progress-bar" class="progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Percentage vragen ingevuld">
         <div id="progress-bar-fill" class="progress-bar-fill"></div>
       </div>
       <p class="progress-meta">
@@ -283,7 +321,11 @@ function ensureProgressBarElements() {
   const progressFill = progressWrap.querySelector('#progress-bar-fill');
   const progressPercentage = progressWrap.querySelector('#progress-percentage');
 
-  if (!(progressBar instanceof HTMLElement) || !(progressFill instanceof HTMLElement) || !(progressPercentage instanceof HTMLElement)) {
+  if (
+    !(progressBar instanceof HTMLElement) ||
+    !(progressFill instanceof HTMLElement) ||
+    !(progressPercentage instanceof HTMLElement)
+  ) {
     return null;
   }
 
@@ -292,14 +334,17 @@ function ensureProgressBarElements() {
 
 /**
  * Updates the page and answer count progress text.
- * @param {{page: number, perPage: number, totalQuestions: number, answers: Object}} viewModel - Values used to build progress text.
- * @returns {void} Nothing.
+ * @param {Object} viewModel
+ * @returns {void}
  */
 export function updateProgress(viewModel) {
   const totalPages = Math.max(1, Math.ceil(viewModel.totalQuestions / viewModel.perPage));
   const answeredCount = Object.keys(viewModel.answers).length;
-  document.getElementById('progress').textContent =
-    `Pagina ${viewModel.page} / ${totalPages} — ${answeredCount} van ${viewModel.totalQuestions} vragen ingevuld`;
+  const progressEl = document.getElementById('progress');
+  if (progressEl) {
+    progressEl.textContent =
+      `Pagina ${viewModel.page} / ${totalPages} — ${answeredCount} van ${viewModel.totalQuestions} vragen ingevuld`;
+  }
 
   const progressElements = ensureProgressBarElements();
   if (!progressElements) return;
@@ -315,19 +360,26 @@ export function updateProgress(viewModel) {
 
 /**
  * Renders the full question list and navigation controls.
- * @param {{questions: Array, page: number, perPage: number, totalQuestions: number, answers: Object, pendingQuestionIds: Set<number>, likertLabels: string[]}} viewModel - Data needed to paint the question page.
- * @param {{isDevelopment: boolean, onPrev: () => void, onNext: () => void, onSubmit: () => void}} handlers - Environment flag and click handlers.
- * @returns {void} Nothing.
+ * @param {Object} viewModel
+ * @param {Object} handlers
+ * @returns {void}
  */
 export function renderQuestions(viewModel, handlers) {
   const qDiv = document.getElementById('questions');
-  const isFirstPageEmpty = viewModel.page === 1 && (viewModel.totalQuestions === 0 || viewModel.questions.length === 0);
+  const isFirstPageEmpty =
+    viewModel.page === 1 &&
+    (viewModel.totalQuestions === 0 || viewModel.questions.length === 0);
+
   if (isFirstPageEmpty) {
-    renderEmptyState(`api/v1/get_questions.php?page=${viewModel.page}&per_page=${viewModel.perPage}`, handlers.isDevelopment);
+    renderEmptyState(
+      `api/v1/get_questions.php?page=${viewModel.page}&per_page=${viewModel.perPage}`,
+      handlers.isDevelopment
+    );
     return;
   }
 
-  qDiv.innerHTML = '<p id="likert-scale-hint" class="sr-only">Schaal van 1 (Helemaal oneens) tot 6 (Helemaal eens).</p>';
+  qDiv.innerHTML =
+    '<p id="likert-scale-hint" class="sr-only">Schaal van 1 (Helemaal oneens) tot 6 (Helemaal eens).</p>';
   viewModel.questions.forEach((q, index) => {
     qDiv.appendChild(createQuestionRow(q, index, viewModel));
   });

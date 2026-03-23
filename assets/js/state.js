@@ -11,13 +11,12 @@ const state = {
   saveTimers: new Map(),
   queuedAnswerValues: new Map(),
   pendingSavePromises: new Map(),
-  saveSession: 0,
-  renderCount: 0
+  saveSession: 0
 };
 
 /**
  * Returns all shared app state used by the quiz screens.
- * @returns {{questions: Array, answers: Object, page: number, perPage: number, totalQuestions: number, hasQuestionChangeListener: boolean, pendingQuestionIds: Set<number>, saveTimers: Map<number, number>, renderCount: number}} Current in-memory state object.
+ * @returns {{questions: Array, answers: Object, page: number, perPage: number, totalQuestions: number, hasQuestionChangeListener: boolean, pendingQuestionIds: Set<number>, saveTimers: Map<number, number>}} Current in-memory state object.
  */
 export function getState() {
   return state;
@@ -178,11 +177,3 @@ export function setQuestionChangeListenerAttached(attached) {
   state.hasQuestionChangeListener = Boolean(attached);
 }
 
-/**
- * Increments the full render counter used in development diagnostics.
- * @returns {number} The updated render count.
- */
-export function incrementRenderCount() {
-  state.renderCount += 1;
-  return state.renderCount;
-}

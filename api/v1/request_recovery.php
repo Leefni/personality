@@ -63,14 +63,26 @@ if ($isDevelopment) {
     ]);
 }
 
-$subject = 'Herstel je testvoortgang';
-$message = "Klik op deze link om je voortgang te herstellen (geldig voor " . (int) floor($ttlSeconds / 60) . " minuten):\n\n" . $recoveryLink;
-$headers = [
-    'From: ' . (string) ($config['recovery_email_from'] ?? 'no-reply@example.test'),
+$subject = '=?UTF-8?B?' . base64_encode('Herstel je testvoortgang') . '?=';
+$minutesTtl = (int) floor($ttlSeconds / 60);
+$message = implode("\r\n", [
+    'Klik op deze link om je voortgang te herstellen',
+    "(geldig voor {$minutesTtl} minuten):",
+    '',
+    $recoveryLink,
+    '',
+    'Als je deze e-mail niet hebt aangevraagd, kun je hem negeren.',
+]);
+$fromAddress = (string) ($config['recovery_email_from'] ?? 'no-reply@example.test');
+$headers = implode("\r\n", [
+    'From: ' . $fromAddress,
     'Content-Type: text/plain; charset=UTF-8',
-];
+    'Content-Transfer-Encoding: 8bit',
+    'X-Mailer: PersonalityQuiz/1.0',
+    'MIME-Version: 1.0',
+]);
 
-$sent = mail($email, $subject, $message, implode("\r\n", $headers));
+$sent = mail($email, $subject, $message, $headers);
 if (!$sent) {
     $quizRepository->writeRecoveryAudit('recovery_email', 'send_failed', $visitorId, $email, $ipAddress);
     json_error('Unable to send recovery email right now.', 500);

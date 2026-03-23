@@ -2,10 +2,18 @@ import { apiFetch } from './utils.js';
 
 const VISITOR_ID_STORAGE_KEY = 'personality.visitor_id.v1';
 
+function isValidVisitorId(id) {
+  // Must be exactly 32 lowercase hex chars (matches bin2hex(random_bytes(16))).
+  return typeof id === 'string' && /^[0-9a-f]{32}$/.test(id);
+}
+
 function getStoredVisitorId() {
   try {
     const visitorId = localStorage.getItem(VISITOR_ID_STORAGE_KEY);
-    return typeof visitorId === 'string' && visitorId.trim() !== '' ? visitorId : '';
+    if (isValidVisitorId(visitorId)) return visitorId;
+    // Stale/malformed ID: clear it so a fresh one is issued by the server.
+    if (visitorId) localStorage.removeItem(VISITOR_ID_STORAGE_KEY);
+    return '';
   } catch (error) {
     return '';
   }

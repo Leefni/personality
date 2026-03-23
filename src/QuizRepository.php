@@ -72,6 +72,31 @@ final class QuizRepository
         return (int) $this->pdo->query('SELECT COUNT(*) FROM questions')->fetchColumn();
     }
 
+    /**
+     * Returns the theoretical maximum absolute score for each dimension.
+     * Max = SUM(weight) * 2.5, where 2.5 is the max deviation on a 6-point
+     * scale with midpoint 3.5 (i.e. 6 − 3.5).
+     *
+     * @return array<string, float>
+     */
+    public function getMaxTheoreticalScores(): array
+    {
+        $defaults = ['EI' => 0.0, 'SN' => 0.0, 'TF' => 0.0, 'JP' => 0.0];
+
+        $stmt = $this->pdo->query(
+            'SELECT dimension, SUM(weight) * 2.5 AS max_score FROM questions GROUP BY dimension'
+        );
+
+        foreach ($stmt as $row) {
+            $dimension = (string) $row['dimension'];
+            if (array_key_exists($dimension, $defaults)) {
+                $defaults[$dimension] = (float) $row['max_score'];
+            }
+        }
+
+        return $defaults;
+    }
+
     /** @return array<string, float> */
     public function getDimensionScores(string $visitor): array
     {
@@ -99,17 +124,6 @@ final class QuizRepository
     }
 
     /** @param array<string, float> $scores */
-    public function saveResult(string $visitor, string $type, array $scores): void
-    {
-        $stmt = $this->pdo->prepare(
-            'INSERT INTO results (visitor_id, type_code, detail_json)
-             VALUES (?, ?, ?)
-             ON DUPLICATE KEY UPDATE type_code = ?, detail_json = ?'
-        );
-        $encodedScores = json_encode($scores);
-        $stmt->execute([$visitor, $type, $encodedScores, $type, $encodedScores]);
-    }
-
     public function createRecoveryToken(
         string $tokenHash,
         string $visitorId,

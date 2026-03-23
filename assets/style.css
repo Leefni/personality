@@ -8,7 +8,6 @@
  --primary: #1d4ed8;
  --primary-strong: #1e40af;
  --success: #16a34a;
- --neutral: #6b7280;
  --shadow-soft: 0 10px 28px rgba(15, 23, 42, 0.08);
 
  /* Spacing scale */
@@ -255,6 +254,35 @@ h1 {
   }
 }
 
+/* Save confirmation badge */
+.save-badge {
+  position: absolute;
+  top: var(--space-3);
+  right: var(--space-3);
+  background: var(--success);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  padding: 3px 7px;
+  border-radius: 999px;
+  opacity: 1;
+  transform: scale(1);
+  transition: opacity 0.25s ease, transform 0.25s ease;
+  pointer-events: none;
+  animation: badge-in 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.save-badge--out {
+  opacity: 0;
+  transform: scale(0.8);
+}
+
+@keyframes badge-in {
+  from { opacity: 0; transform: scale(0.6); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
 .answer-saved {
   animation: save-pulse 0.9s ease-out forwards;
   border-color: var(--success) !important;
@@ -292,10 +320,13 @@ h1 {
  margin-top: var(--space-2);
  border: 0;
  padding: 0;
+ align-items: stretch;
 }
 
 .likert-option {
  position: relative;
+ display: flex;
+ flex-direction: column;
 }
 
 .likert-option input[type="radio"] {
@@ -306,7 +337,45 @@ h1 {
  opacity: 0;
 }
 
-.likert-option label,
+/* Likert labels: full-height, vertically centered, equal sizing */
+.likert-option label {
+ display: flex;
+ flex-direction: column;
+ align-items: center;
+ justify-content: center;
+ gap: 4px;
+ flex: 1;
+ text-align: center;
+ padding: 10px 4px;
+ border-radius: 8px;
+ border: 1px solid #cfd8e3;
+ background: #fff;
+ cursor: pointer;
+ font-size: 14px;
+ font-weight: 600;
+ line-height: 1;
+ min-height: 52px;
+ transition: transform 0.15s ease, box-shadow 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
+ user-select: none;
+}
+
+.likert-option label .likert-num {
+ font-size: 15px;
+ font-weight: 700;
+}
+
+.likert-option label .likert-hint {
+ font-size: 10px;
+ font-weight: 500;
+ color: var(--text-muted);
+ line-height: 1.2;
+ max-width: 52px;
+ overflow: hidden;
+ display: -webkit-box;
+ -webkit-line-clamp: 2;
+ -webkit-box-orient: vertical;
+}
+
 .nav button {
  display: block;
  text-align: center;
@@ -323,6 +392,7 @@ h1 {
 .nav button:hover {
  transform: translateY(-1px);
  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.12);
+ border-color: #a8b8cc;
 }
 
 .likert-option input[type="radio"]:focus-visible + label,
@@ -336,14 +406,16 @@ h1 {
  background: var(--primary);
  color: #fff;
  border-color: var(--primary);
- font-weight: 700;
+ box-shadow: 0 2px 8px rgba(29, 78, 216, 0.25);
+}
+
+.likert-option input[type="radio"]:checked + label .likert-hint {
+ color: rgba(255,255,255,0.8);
 }
 
 fieldset[disabled] .likert-option label {
- opacity: 0.7;
- cursor: progress;
- background: #f8fafc;
- border-style: dashed;
+ opacity: 0.85;
+ cursor: default;
  transform: none;
  box-shadow: none;
 }
@@ -416,36 +488,6 @@ fieldset[disabled] .likert-option label {
  gap: var(--space-4);
 }
 
-/* Result score card styles */
-.result .bar {
- margin: 0;
- background: var(--surface-soft);
- border: 1px solid var(--border);
- border-radius: 12px;
- padding: var(--space-3) var(--space-4);
-}
-
-.bar-label {
- font-size: 14px;
- margin-bottom: var(--space-2);
- color: #374151;
- font-weight: 600;
-}
-
-.bar-track {
- background: #e9eef4;
- border-radius: 999px;
- height: 18px;
- overflow: hidden;
-}
-
-.bar-fill {
- height: 100%;
- background: linear-gradient(90deg, var(--primary), #0ea5e9);
- width: 50%;
- transition: width 0.5s;
-}
-
 .result h2 {
  font-size: var(--font-size-h2);
  line-height: var(--line-height-heading);
@@ -474,6 +516,11 @@ fieldset[disabled] .likert-option label {
  justify-self: start;
 }
 
+/* Ensure [hidden] always wins, even inside a grid container. */
+[hidden] {
+ display: none !important;
+}
+
 .sr-only {
  position: absolute;
  width: 1px;
@@ -486,14 +533,29 @@ fieldset[disabled] .likert-option label {
  border: 0;
 }
 
+/* Error notices are fixed to the bottom of the viewport so they never
+   get lost in the grid flow and are always visible regardless of scroll. */
 .error-notice {
- margin-top: var(--space-3);
- padding: 10px 12px;
- border-radius: 8px;
+ position: fixed;
+ bottom: var(--space-5);
+ left: 50%;
+ transform: translateX(-50%);
+ z-index: 100;
+ max-width: min(480px, calc(100vw - 2rem));
+ width: max-content;
+ padding: 12px 16px;
+ border-radius: 10px;
  background: #fff1f2;
  border: 1px solid #fecdd3;
  color: #9f1239;
  font-size: 14px;
+ box-shadow: 0 8px 24px rgba(15, 23, 42, 0.14);
+ animation: notice-in 0.2s ease;
+}
+
+@keyframes notice-in {
+ from { opacity: 0; transform: translateX(-50%) translateY(8px); }
+ to   { opacity: 1; transform: translateX(-50%) translateY(0); }
 }
 
 @media (max-width: 720px) {
@@ -510,7 +572,16 @@ fieldset[disabled] .likert-option label {
  }
 
  .likert {
-   grid-template-columns: 1fr;
+   grid-template-columns: repeat(3, 1fr);
+ }
+
+ .likert-option label {
+   min-height: 48px;
+   padding: 8px 4px;
+ }
+
+ .likert-option label .likert-hint {
+   display: none;
  }
 
  .nav {
@@ -846,4 +917,544 @@ button.danger,
    transition: none !important;
    scroll-behavior: auto !important;
  }
+}
+
+/* ── Focus visible: all interactive elements ─────────────────────────────── */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* ── Dark mode ───────────────────────────────────────────────────────────── */
+/* ── Quality & polish ─────────────────────────────────────────────────────── */
+
+/* Smooth scroll always (reduced-motion block overrides this) */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Subtle page-load fade-in */
+.container {
+  animation: page-fade-in 0.3s ease;
+}
+
+@keyframes page-fade-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Question cards: richer entrance animation */
+.question {
+  animation: card-in 0.25s ease both;
+}
+
+.question:nth-child(2)  { animation-delay: 0.03s; }
+.question:nth-child(3)  { animation-delay: 0.06s; }
+.question:nth-child(4)  { animation-delay: 0.09s; }
+.question:nth-child(5)  { animation-delay: 0.12s; }
+.question:nth-child(6)  { animation-delay: 0.15s; }
+.question:nth-child(7)  { animation-delay: 0.18s; }
+.question:nth-child(8)  { animation-delay: 0.21s; }
+.question:nth-child(9)  { animation-delay: 0.24s; }
+.question:nth-child(10) { animation-delay: 0.27s; }
+
+@keyframes card-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Likert: scale-up micro-animation on selection */
+.likert-option input[type="radio"]:checked + label {
+  animation: pop 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes pop {
+  from { transform: scale(0.93); }
+  to   { transform: scale(1); }
+}
+
+/* Progress bar: shine sweep on fill change */
+.progress-bar-fill {
+  transition: width 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Nav buttons: pressed feel */
+.nav button:active:not(:disabled) {
+  transform: translateY(0) scale(0.97);
+  box-shadow: none;
+}
+
+/* Submit button: pulsing glow when enabled */
+.nav .submit:not(:disabled) {
+  animation: submit-glow 2.5s ease-in-out infinite;
+}
+
+@keyframes submit-glow {
+  0%, 100% { box-shadow: 0 8px 16px rgba(29, 78, 216, 0.22); }
+  50%       { box-shadow: 0 8px 24px rgba(29, 78, 216, 0.45); }
+}
+
+/* Page dots: smooth scale transition */
+.page-dot {
+  transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+}
+
+/* Result cards: stagger entrance */
+.result-card { animation: card-in 0.3s ease; }
+
+.result-score-card {
+  animation: card-in 0.3s ease both;
+}
+
+.result-score-card:nth-child(1) { animation-delay: 0.05s; }
+.result-score-card:nth-child(2) { animation-delay: 0.1s; }
+.result-score-card:nth-child(3) { animation-delay: 0.15s; }
+.result-score-card:nth-child(4) { animation-delay: 0.2s; }
+
+/* Score fill bar: animated on load */
+.result-score-fill {
+  animation: bar-grow 0.7s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+@keyframes bar-grow {
+  from { width: 0 !important; }
+}
+
+/* Smoother question hover */
+.question {
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+}
+
+/* Better button transitions */
+.nav button,
+.recovery-controls button,
+button.danger,
+.result .restart,
+.copy-module,
+.result-actions button,
+.persona-toggle-option span {
+  transition: background 0.15s ease, border-color 0.15s ease,
+              color 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
+}
+
+/* Result action buttons: hover lift */
+.result-actions button:hover,
+.result .restart:hover,
+.copy-module:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.1);
+}
+
+/* Recovery prompt: slide in */
+.recovery-prompt:not(.is-hidden) {
+  animation: slide-down 0.2s ease;
+}
+
+@keyframes slide-down {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Error toast: improved animation already defined, add exit would need JS */
+
+/* Input focus ring: smooth */
+.recovery-controls input {
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.recovery-controls input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.12);
+}
+
+/* h1: gradient text for a premium feel */
+h1 {
+  background: linear-gradient(135deg, #0f172a 0%, #1d4ed8 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Page hint fade in */
+.page-hint {
+  animation: fade-in 0.2s ease;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* Result score fill: gradient */
+.result-score-fill {
+  background: linear-gradient(90deg, #2563eb, #0ea5e9, #06b6d4);
+  border-radius: inherit;
+}
+
+/* Container: subtle inner glow on left edge */
+.container {
+  border-left: 3px solid transparent;
+  background-clip: padding-box;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --surface-soft: #0d1117;
+    --text: #e6edf3;
+    --text-muted: #8b949e;
+    --border: #30363d;
+    --primary: #58a6ff;
+    --primary-strong: #388bfd;
+    --success: #3fb950;
+    --shadow-soft: 0 10px 28px rgba(0, 0, 0, 0.6);
+  }
+
+  body {
+    background: #0d1117;
+  }
+
+  h1 { color: #e6edf3; }
+
+  .container {
+    background: #161b22;
+    border-color: #30363d;
+  }
+
+  .question {
+    background: #1c2128;
+    border-color: #30363d;
+  }
+
+  .question p { color: #e6edf3; }
+  .question p strong { color: #f0f6fc; }
+
+  /* Likert buttons: clear light text on dark surface */
+  .likert-option label {
+    background: #21262d;
+    border-color: #30363d;
+    color: #e6edf3;
+  }
+
+  .likert-option label .likert-num {
+    color: #e6edf3;
+  }
+
+  .likert-option label .likert-hint {
+    color: #8b949e;
+  }
+
+  .likert-option label:hover {
+    background: #2d333b;
+    border-color: #58a6ff;
+  }
+
+  .likert-option input[type="radio"]:checked + label {
+    background: #1f6feb;
+    color: #ffffff;
+    border-color: #388bfd;
+    box-shadow: 0 2px 8px rgba(31, 111, 235, 0.4);
+  }
+
+  .likert-option input[type="radio"]:checked + label .likert-num,
+  .likert-option input[type="radio"]:checked + label .likert-hint {
+    color: #ffffff;
+  }
+
+  .likert-labels { color: #8b949e; }
+
+  fieldset[disabled] .likert-option label {
+    background: #161b22;
+    color: #484f58;
+    border-color: #21262d;
+    cursor: default;
+  }
+
+  /* Nav buttons */
+  .nav .prev,
+  .nav .next {
+    background: #21262d;
+    color: #e6edf3;
+    border-color: #30363d;
+  }
+
+  .nav .prev:hover,
+  .nav .next:hover {
+    background: #2d333b;
+    border-color: #58a6ff;
+  }
+
+  .nav .submit {
+    background: #1f6feb;
+    color: #ffffff;
+    border-color: #388bfd;
+  }
+
+  .nav .submit:hover {
+    background: #388bfd;
+  }
+
+  /* Progress bar */
+  .progress-bar {
+    background: #21262d;
+  }
+
+  .progress { color: #8b949e; }
+  .progress-meta { color: #8b949e; }
+  #progress-percentage { color: #e6edf3; }
+
+  /* Recovery */
+  .recovery-prompt {
+    background: #1c2128;
+    border-color: #30363d;
+  }
+
+  .recovery-trigger { color: #58a6ff; }
+  .recovery-subtext { color: #8b949e; }
+
+  .recovery-controls input {
+    background: #0d1117;
+    border-color: #30363d;
+    color: #e6edf3;
+  }
+
+  .recovery-controls button {
+    background: #1f6feb;
+    border-color: #388bfd;
+    color: #ffffff;
+  }
+
+  /* Intro sections */
+  .privacy-note,
+  .about-test {
+    background: #1c2128;
+    border-color: #30363d;
+  }
+
+  .privacy-note p,
+  .about-test li,
+  .about-test p { color: #e6edf3; }
+
+  .about-test .subtle-disclaimer { color: #8b949e; }
+
+  /* Danger button */
+  button.danger,
+  .result button.danger {
+    background: #da3633;
+    border-color: #f85149;
+    color: #ffffff;
+  }
+
+  /* Result cards */
+  .result-section-card {
+    background: #1c2128;
+    border-color: #30363d;
+    color: #e6edf3;
+  }
+
+  .result-section-card p,
+  .result-section-card ul,
+  .result-section-card li { color: #e6edf3; }
+
+  .result-score-card {
+    background: #1c2128;
+    border-color: #30363d;
+  }
+
+  .result-score-header h4 { color: #e6edf3; }
+  .result-score-header p { color: #8b949e; }
+  .result-score-legend { color: #8b949e; }
+  .result-score-raw { color: #8b949e; }
+
+  .result-score-track {
+    background: #21262d;
+  }
+
+  .result-module-card {
+    background: #1c2128;
+    border-color: #30363d;
+    color: #e6edf3;
+  }
+
+  .result-module-card summary { color: #e6edf3; }
+  .module-advice { color: #e6edf3; }
+
+  .result-disclaimer {
+    background: #1a1200;
+    border-color: #7d5a00;
+    color: #e3b341;
+  }
+
+  .result-disclaimer strong { color: #f0c040; }
+  .result-disclaimer p { color: #e3b341; }
+
+  .result-type { color: #e6edf3; }
+  .result-short-description { color: #c9d1d9; }
+  .result-meta { color: #8b949e; }
+
+  /* Persona toggles */
+  .persona-toggles,
+  .result-modules {
+    background: #1c2128;
+    border-color: #30363d;
+  }
+
+  .persona-toggles h3,
+  .result-modules h3 { color: #e6edf3; }
+
+  .persona-toggle-option span {
+    background: #21262d;
+    border-color: #30363d;
+    color: #e6edf3;
+  }
+
+  .persona-toggle-option input[type="radio"]:checked + span {
+    background: #1f6feb;
+    border-color: #388bfd;
+    color: #ffffff;
+  }
+
+  /* Copy / action buttons */
+  .copy-module,
+  .result .restart,
+  .result-actions button {
+    background: #21262d;
+    color: #e6edf3;
+    border-color: #30363d;
+  }
+
+  .copy-module:hover,
+  .result .restart:hover,
+  .result-actions button:hover {
+    background: #2d333b;
+    border-color: #58a6ff;
+  }
+
+  .result-summary-actions {
+    background: #1c2128;
+    border-color: #30363d;
+  }
+
+  /* Error toast */
+  .error-notice {
+    background: #1a0a0a;
+    border-color: #da3633;
+    color: #ffa198;
+  }
+
+  /* Page dots */
+  .page-dot { background: #30363d; border-color: #30363d; }
+  .page-dot.is-active { background: #58a6ff; border-color: #58a6ff; }
+
+  /* Headings inside result */
+  .result h2,
+  .result h3 { color: #e6edf3; }
+}
+
+/* ── Print styles ─────────────────────────────────────────────────────────── */
+@media print {
+  /* Hide everything that isn't the result */
+  .privacy-note,
+  .about-test,
+  #questions,
+  #nav,
+  .recovery-prompt,
+  .result-summary-actions,
+  .result-actions,
+  .persona-toggles,
+  .copy-module,
+  .page-dots,
+  .progress-wrap,
+  #progress,
+  #test-meta {
+    display: none !important;
+  }
+
+  body {
+    background: #fff;
+    color: #111;
+    font-size: 11pt;
+  }
+
+  .container {
+    box-shadow: none;
+    border: none;
+    margin: 0;
+    padding: 0;
+    max-width: 100%;
+    border-radius: 0;
+  }
+
+  h1 { font-size: 20pt; margin-bottom: 8pt; }
+  h2 { font-size: 16pt; }
+  h3 { font-size: 13pt; }
+
+  .result-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 12pt;
+  }
+
+  .result-score-card,
+  .result-section-card,
+  .result-module-card {
+    border: 1px solid #ccc;
+    break-inside: avoid;
+  }
+
+  .result-score-fill {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  .result-disclaimer {
+    border: 1px solid #999;
+    background: #f9f9f9;
+    color: #333;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  a[href]::after {
+    content: " (" attr(href) ")";
+    font-size: 9pt;
+    color: #555;
+  }
+}
+
+/* Dark mode: fix gradient h1 to use light colors */
+@media (prefers-color-scheme: dark) {
+  h1 {
+    background: linear-gradient(135deg, #e6edf3 0%, #58a6ff 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Disable glow animation on submit button in dark mode (use blue glow) */
+  .nav .submit:not(:disabled) {
+    animation: submit-glow-dark 2.5s ease-in-out infinite;
+  }
+
+  @keyframes submit-glow-dark {
+    0%, 100% { box-shadow: 0 8px 16px rgba(31, 111, 235, 0.3); }
+    50%       { box-shadow: 0 8px 28px rgba(31, 111, 235, 0.6); }
+  }
+
+  /* Score fill in dark mode */
+  .result-score-fill {
+    background: linear-gradient(90deg, #1f6feb, #388bfd, #58a6ff);
+  }
+
+  /* Question stagger animation: slightly stronger in dark */
+  @keyframes card-in {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
 }

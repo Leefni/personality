@@ -26,8 +26,7 @@ import {
   bumpSaveSession,
   getSaveSession,
   setPagination,
-  setQuestionChangeListenerAttached,
-  incrementRenderCount
+  setQuestionChangeListenerAttached
 } from './js/state.js';
 import {
   fetchProgress,
@@ -46,8 +45,8 @@ import {
   renderQuestions,
   updateNavState,
   updateProgress,
-  updateQuestionPendingState,
-  updateQuestionRow
+  updateQuestionRow,
+  flashSavedQuestion
 } from './js/questions-view.js';
 import { renderResult } from './js/results-view.js';
 
@@ -56,17 +55,16 @@ const RECOVERY_MIN_ANSWER_COUNT = 5;
 
 function updateIntroSectionsVisibility() {
   const state = getState();
+  // Show intro sections only on page 1. The sections start with [hidden] in
+  // the HTML so they never flash on subsequent pages even before JS runs.
   const shouldShowIntro = state.page === 1;
-  const privacySection = document.querySelector('.privacy-note');
-  const aboutSection = document.querySelector('.about-test');
 
-  if (privacySection instanceof HTMLElement) {
-    privacySection.hidden = !shouldShowIntro;
-  }
-
-  if (aboutSection instanceof HTMLElement) {
-    aboutSection.hidden = !shouldShowIntro;
-  }
+  ['.privacy-note', '.about-test'].forEach((selector) => {
+    const el = document.querySelector(selector);
+    if (el instanceof HTMLElement) {
+      el.hidden = !shouldShowIntro;
+    }
+  });
 }
 
 function getViewModel() {
@@ -156,7 +154,7 @@ async function loadTestMetadata() {
       metaElement.textContent = 'Testmetadata kon niet worden geladen.';
     }
 
-    showError(formatApiError(error, 'Testmetadata laden mislukt.'), 'progress');
+    showError(formatApiError(error, 'Testmetadata laden mislukt.'));
   }
 }
 
@@ -176,7 +174,7 @@ async function handleDeleteData() {
     setProgressMessage('Gegevens verwijderd. Je kunt opnieuw beginnen.');
     await loadQuestionsPage();
   } catch (error) {
-    showError(formatApiError(error, 'Verwijderen mislukt. Probeer het opnieuw.'), 'progress');
+    showError(formatApiError(error, 'Verwijderen mislukt. Probeer het opnieuw.'));
   }
 }
 
@@ -310,47 +308,6 @@ async function maybeRedeemRecoveryFromUrl() {
   }
 }
 
-function render(scrollToTop = false) {
-  const state = getState();
-  const renderCount = incrementRenderCount();
-
-  if (IS_DEVELOPMENT_ENV) {
-    window.__appRenderStats = {
-      fullRenderCount: renderCount,
-      page: state.page,
-      perPage: state.perPage,
-      totalQuestions: state.totalQuestions
-    };
-  }
-
-  renderQuestions(getViewModel(), {
-    isDevelopment: IS_DEVELOPMENT_ENV,
-    onPrev: async () => {
-      await flushPendingSaves();
-      const prevPage = getState().page - 1;
-      setPagination({ page: prevPage });
-      await loadQuestionsPage();
-      const savedY = pageScrollPositions.get(prevPage) ?? 0;
-      window.scrollTo({ top: savedY, behavior: 'smooth' });
-    },
-    onNext: async () => {
-      pageScrollPositions.set(getState().page, window.scrollY);
-      await flushPendingSaves();
-      setPagination({ page: getState().page + 1 });
-      await loadQuestionsPage();
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    },
-    onSubmit: submitTest
-  });
-
-  if (scrollToTop) {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }
-
-  updateIntroSectionsVisibility();
-  updateRecoveryVisibility();
-}
-
 async function loadQuestionsPage() {
   const state = getState();
   const dataEndpoint = `api/v1/get_questions.php?page=${state.page}&per_page=${state.perPage}`;
@@ -363,7 +320,28 @@ async function loadQuestionsPage() {
       page: Number(questionPayload.page),
       perPage: Number(questionPayload.per_page)
     });
-    render(true);
+    renderQuestions(getViewModel(), {
+      isDevelopment: IS_DEVELOPMENT_ENV,
+      onPrev: async () => {
+        await flushPendingSaves();
+        const prevPage = getState().page - 1;
+        setPagination({ page: prevPage });
+        await loadQuestionsPage();
+        const savedY = pageScrollPositions.get(prevPage) ?? 0;
+        window.scrollTo({ top: savedY, behavior: 'smooth' });
+      },
+      onNext: async () => {
+        pageScrollPositions.set(getState().page, window.scrollY);
+        await flushPendingSaves();
+        setPagination({ page: getState().page + 1 });
+        await loadQuestionsPage();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      },
+      onSubmit: submitTest
+    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    updateIntroSectionsVisibility();
+    updateRecoveryVisibility();
   } catch (error) {
     const baseMessage = 'Fout bij laden. Controleer database en API-configuratie.';
     console.error('Vraaglijst laden mislukt:', error);
@@ -385,34 +363,35 @@ async function loadQuestionsPage() {
         message: error?.message,
         parseErrorMessage: error?.parseErrorMessage
       });
-      showError(`${baseMessage} ${debugParts.join(' ')}`, 'progress');
+      showError(`${baseMessage} ${debugParts.join(' ')}`);
       return;
     }
 
-    showError(baseMessage, 'progress');
+    showError(baseMessage);
   }
 }
 
 async function persistAnswer(questionId, value, saveSession) {
   const state = getState();
+  // Optimistic UI: don't disable the question while saving.
+  // Track pending saves only for submit-gating purposes.
   state.pendingQuestionIds.add(questionId);
-  updateQuestionPendingState(questionId, state.pendingQuestionIds);
-  updateProgress(getViewModel());
   updatePendingActionState();
 
   try {
     await saveAnswer(questionId, value);
     if (getSaveSession() !== saveSession) return;
     saveLocalDraft(state.answers);
+    // Show brief save confirmation badge on the question card.
+    const questionEl = document.querySelector(`[data-question-id="${questionId}"]`);
+    if (questionEl) flashSavedQuestion(questionEl);
   } catch (error) {
     if (getSaveSession() !== saveSession) return;
     saveLocalDraft(state.answers);
     const message = formatApiError(error, 'Opslaan mislukt. Probeer het opnieuw.');
-    showError(message, 'progress');
+    showError(message);
   } finally {
     state.pendingQuestionIds.delete(questionId);
-    updateQuestionPendingState(questionId, state.pendingQuestionIds);
-    updateProgress(getViewModel());
     updatePendingActionState();
   }
 }
@@ -455,7 +434,7 @@ function queueAnswerSave(questionId, value) {
       clearPendingSavePromise(questionId);
       updatePendingActionState();
     }
-  }, 300);
+  }, 150);
 
   state.saveTimers.set(questionId, timerId);
   updatePendingActionState();
@@ -542,7 +521,7 @@ async function resetTest() {
     document.title = 'Personality Test – Ontdek jouw persoonlijkheidstype';
     window.scrollTo({ top: 0, behavior: 'smooth' });
   } catch (error) {
-    showError('Resetten mislukt. Probeer het opnieuw.', 'progress');
+    showError('Resetten mislukt. Probeer het opnieuw.');
   }
 }
 
@@ -568,11 +547,11 @@ async function bootstrap() {
     setProgressMessage(baseMessage);
 
     if (IS_DEVELOPMENT_ENV) {
-      showError(`${baseMessage} ${buildDebugHint('api/v1/get_progress.php', error?.status)}`, 'progress');
+      showError(`${baseMessage} ${buildDebugHint('api/v1/get_progress.php', error?.status)}`);
       return;
     }
 
-    showError(baseMessage, 'progress');
+    showError(baseMessage);
   }
 }
 

@@ -1,19 +1,31 @@
 <?php
 declare(strict_types=1);
 
+// visitor_id is always a 32-char hex string (bin2hex(random_bytes(16))).
+// Reject anything that doesn't match to prevent SQL truncation errors
+// if a client sends a stale or malformed value.
+function is_valid_visitor_id(string $id): bool
+{
+    return strlen($id) === 32 && ctype_xdigit($id);
+}
+
 function get_visitor_id(?array $payload = null): string
 {
     $cookieVisitor = (string) ($_COOKIE['visitor_id'] ?? '');
-    if ($cookieVisitor !== '') {
+    if ($cookieVisitor !== '' && is_valid_visitor_id($cookieVisitor)) {
         return $cookieVisitor;
     }
 
-    if ($payload !== null && isset($payload['visitor_id']) && is_string($payload['visitor_id']) && $payload['visitor_id'] !== '') {
-        return $payload['visitor_id'];
+    if ($payload !== null && isset($payload['visitor_id']) && is_string($payload['visitor_id'])) {
+        $payloadVisitor = $payload['visitor_id'];
+        if ($payloadVisitor !== '' && is_valid_visitor_id($payloadVisitor)) {
+            return $payloadVisitor;
+        }
     }
 
-    if (isset($_SERVER['HTTP_X_VISITOR_ID']) && $_SERVER['HTTP_X_VISITOR_ID'] !== '') {
-        return (string) $_SERVER['HTTP_X_VISITOR_ID'];
+    $headerVisitor = (string) ($_SERVER['HTTP_X_VISITOR_ID'] ?? '');
+    if ($headerVisitor !== '' && is_valid_visitor_id($headerVisitor)) {
+        return $headerVisitor;
     }
 
     return '';
