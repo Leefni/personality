@@ -1,0 +1,37 @@
+name: 💡 Feature Request
+description: Suggest an idea or improvement
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+      description: Is your feature request related to a problem? Describe it.
+      placeholder: "It's frustrating that I can't share my results directly to social media without screenshotting."
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution
+      description: Describe the feature you'd like.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives you've considered
+      description: Any other approaches you thought of?
+
+  - type: checkboxes
+    id: area
+    attributes:
+      label: Which area does this touch?
+      options:
+        - label: Frontend / UI
+        - label: API / backend
+        - label: Database / data model
+        - label: CI / developer tooling
+        - label: Docs
