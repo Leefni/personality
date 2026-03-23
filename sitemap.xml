@@ -1,6 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Update the <loc> below to match your production URL before deploying.
+  Set RECOVERY_BASE_URL in your .env to the same base URL.
+-->
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>http://localhost/personality/index.php</loc>
+    <loc>https://example.com/index.php</loc>
+    <changefreq>monthly</changefreq>
+    <priority>1.0</priority>
   </url>
 </urlset>
