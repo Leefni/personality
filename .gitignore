@@ -3,3 +3,24 @@
 .env.local
 config.local.php
 config.php.local
+
+# PHP error logs
+*.log
+php_errors.log
+error_log
+
+# File-based cache (legacy, disabled)
+cache/
+
+# Node (if any tooling is added)
+node_modules/
+npm-debug.log*
+
+# macOS
+.DS_Store
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
