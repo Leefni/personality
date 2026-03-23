@@ -131,8 +131,5 @@ try {
 
 require_once __DIR__ . '/db_bootstrap.php';
 
-try {
-    bootstrap_database($pdo, $config);
-} catch (Throwable $exception) {
-    respond_database_runtime_error($exception, $isDevelopment);
-}
+// bootstrap_database() is fully exception-safe and will never throw.
+bootstrap_database($pdo, $config);
