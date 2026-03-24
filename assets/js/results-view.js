@@ -4,19 +4,6 @@ const PERSONA_STORAGE_KEY = 'pp_result_persona';
 const MODULE_COUNTERS_STORAGE_KEY = 'pp_result_module_event_counters_v1';
 const SCORE_DIMENSIONS = Object.entries(RESULT_CONTENT.dimensions);
 
-const PERSONA_OPTIONS = [
-  { key: 'individual_contributor', label: 'als individuele bijdrager' },
-  { key: 'manager', label: 'als manager' },
-  { key: 'student', label: 'als student' }
-];
-
-const MODULES = [
-  { key: 'work_env', title: 'Werkomgeving' },
-  { key: 'communication', title: 'Communicatie' },
-  { key: 'team_risks', title: 'Teamrisico\'s' },
-  { key: 'collab_tips', title: 'Samenwerkingstips' }
-];
-
 function readStoredPersona() {
   try {
     const stored = window.localStorage.getItem(PERSONA_STORAGE_KEY);
@@ -289,13 +276,11 @@ function buildSummaryText(payload, details) {
   return [
     `Persoonlijkheidssamenvatting (${type})`,
     '',
+    `Persoonlijkheidstitel (${personalitytitel})`,
+    '',
     `Kern: ${shortDescription}`,
     '',
     `Uitgebreide beschrijving: ${longDescription}`,
-    '',
-    `Sterke punten: ${strengths.length > 0 ? strengths.join('; ') : 'n.v.t.'}`,
-    `Aandachtspunten: ${attentionPoints.length > 0 ? attentionPoints.join('; ') : 'n.v.t.'}`,
-    `Tips: ${tips.length > 0 ? tips.join('; ') : 'n.v.t.'}`,
     '',
     'Dimensiescores:',
     ...scoreLines,
