@@ -575,7 +575,6 @@ async function loadQuestionsPage() {
 
         try {
           await withButtonLoadingState(event?.currentTarget, async () => {
-            await flushPendingSaves();
             const prevPage = getState().page - 1;
             setPagination({ page: prevPage });
             await loadQuestionsPage();
@@ -595,7 +594,6 @@ async function loadQuestionsPage() {
         try {
           await withButtonLoadingState(event?.currentTarget, async () => {
             pageScrollPositions.set(getState().page, window.scrollY);
-            await flushPendingSaves();
             setPagination({ page: getState().page + 1 });
             await loadQuestionsPage();
             window.scrollTo({ top: 0, behavior: 'smooth' });
