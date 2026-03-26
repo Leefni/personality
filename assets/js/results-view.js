@@ -447,11 +447,14 @@ export function renderResult(data, onRestart) {
     try {
       const publishPayload = await publishResult(normalizedDisplayName);
       const publicId = toSafeText(publishPayload?.public_id, '');
-      const directUrl = toSafeText(publishPayload?.public_url, resolvePublicResultsUrl(publicId));
+      const fallbackDirectUrl = resolvePublicResultsUrl(publicId);
+      const directUrl = publicId
+        ? fallbackDirectUrl
+        : toSafeText(publishPayload?.public_url, fallbackDirectUrl);
       const publicResultsUrl = resolvePublicResultsUrl();
       const shareSuffix = publicId ? ` (ID: ${publicId})` : '';
 
-      publishStatus.innerHTML = `Gelukt! <a href="${escapeHtml(publicResultsUrl)}">Bekijk publieke resultaten</a> of deel direct: <a href="${escapeHtml(directUrl)}">${escapeHtml(directUrl)}</a>${escapeHtml(shareSuffix)}`;
+      publishStatus.innerHTML = `Gelukt! <a href="${escapeHtml(publicResultsUrl)}">Bekijk publieke resultaten</a> of deel direct dit resultaat: <a href="${escapeHtml(directUrl)}">${escapeHtml(directUrl)}</a>${escapeHtml(shareSuffix)}`;
       publishStatus.classList.add('is-success');
     } catch (error) {
       publishStatus.textContent = 'Publiceren mislukt. Probeer het opnieuw.';

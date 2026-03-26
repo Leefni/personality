@@ -145,11 +145,18 @@ export function requestRecovery(email) {
 }
 
 /**
- * Loads public shared results for the community wall.
- * @returns {Promise<{results: Array}>}
+ * Loads public shared results for the community wall or one direct result.
+ * @param {string} [publicId] - Optional public id for deep-link mode.
+ * @returns {Promise<{results?: Array, result?: Object}>}
  */
-export function fetchPublicResults() {
-  return apiRequest('api/v1/public_results.php');
+export function fetchPublicResults(publicId = '') {
+  const cleanedPublicId = typeof publicId === 'string' ? publicId.trim() : '';
+  if (cleanedPublicId === '') {
+    return apiRequest('api/v1/public_results.php');
+  }
+
+  const endpoint = `api/v1/public_results.php?public_id=${encodeURIComponent(cleanedPublicId)}`;
+  return apiRequest(endpoint);
 }
 
 /**
