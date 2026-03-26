@@ -223,11 +223,13 @@ export function renderNav(viewModel, handlers) {
   const nav = document.getElementById('nav');
   nav.hidden = false;
   nav.innerHTML = '';
+  const isNavigating = Boolean(viewModel.isNavigating);
 
   if (viewModel.page > 1) {
     const prev = document.createElement('button');
     prev.className = 'prev';
     prev.textContent = '← Vorige';
+    prev.disabled = isNavigating;
     prev.addEventListener('click', handlers.onPrev);
     nav.appendChild(prev);
   }
@@ -237,6 +239,7 @@ export function renderNav(viewModel, handlers) {
     const next = document.createElement('button');
     next.className = 'next';
     next.textContent = 'Volgende →';
+    next.disabled = isNavigating;
     next.addEventListener('click', handlers.onNext);
     nav.appendChild(next);
   } else {
@@ -246,7 +249,7 @@ export function renderNav(viewModel, handlers) {
     const answeredCount = Object.keys(viewModel.answers).length;
     const isComplete = answeredCount === viewModel.totalQuestions;
     const hasPendingSaves = viewModel.pendingQuestionIds.size > 0;
-    submit.disabled = !isComplete || hasPendingSaves;
+    submit.disabled = isNavigating || !isComplete || hasPendingSaves;
     submit.title = !isComplete
       ? 'Beantwoord eerst alle vragen voordat je het resultaat bekijkt.'
       : hasPendingSaves
