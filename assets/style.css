@@ -746,6 +746,39 @@ button.danger,
   cursor: pointer;
 }
 
+.result-publish-name {
+  display: grid;
+  gap: 6px;
+  min-width: min(260px, 100%);
+}
+
+.result-publish-name span {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.result-publish-name input {
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 10px 12px;
+  min-width: 220px;
+}
+
+.result-publish-status {
+  margin: 0;
+  font-size: 14px;
+  color: var(--text-muted);
+  width: 100%;
+}
+
+.result-publish-status.is-success {
+  color: #166534;
+}
+
+.result-publish-status.is-error {
+  color: #b91c1c;
+}
+
 .result-meta {
   color: var(--text-muted);
   font-size: 14px;
@@ -1461,6 +1494,12 @@ h1 {
   /* Copy / action buttons */
   .result .restart,
   .result-actions button {
+    background: #21262d;
+    color: #e6edf3;
+    border-color: #30363d;
+  }
+
+  .result-publish-name input {
     background: #21262d;
     color: #e6edf3;
     border-color: #30363d;
