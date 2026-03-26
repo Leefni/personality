@@ -11,6 +11,7 @@ const state = {
   saveTimers: new Map(),
   queuedAnswerValues: new Map(),
   pendingSavePromises: new Map(),
+  unsyncedQuestionIds: new Set(),
   saveSession: 0,
   isNavigating: false
 };
@@ -139,6 +140,39 @@ export function clearSaveTimers() {
 export function clearPendingSavesTracking() {
   state.pendingQuestionIds.clear();
   state.pendingSavePromises.clear();
+}
+
+/**
+ * Replaces unsynced question id markers used for submit-gating.
+ * @param {Iterable<number|string>} ids
+ * @returns {void}
+ */
+export function setUnsyncedQuestionIds(ids) {
+  state.unsyncedQuestionIds = new Set(
+    Array.from(ids, (id) => Number(id)).filter((id) => Number.isInteger(id))
+  );
+}
+
+/**
+ * Marks one question id as unsynced.
+ * @param {number|string} questionId
+ * @returns {void}
+ */
+export function addUnsyncedQuestionId(questionId) {
+  const normalized = Number(questionId);
+  if (!Number.isInteger(normalized)) return;
+  state.unsyncedQuestionIds.add(normalized);
+}
+
+/**
+ * Clears one unsynced question id marker.
+ * @param {number|string} questionId
+ * @returns {void}
+ */
+export function removeUnsyncedQuestionId(questionId) {
+  const normalized = Number(questionId);
+  if (!Number.isInteger(normalized)) return;
+  state.unsyncedQuestionIds.delete(normalized);
 }
 
 /**

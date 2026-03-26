@@ -163,18 +163,26 @@ export function updateQuestionRow(questionId, viewModel) {
  * @param {Object} answers
  * @param {number} totalQuestions
  * @param {boolean} [isNavigating]
+ * @param {boolean} [hasUnsyncedAnswers]
  * @returns {void}
  */
-export function updateNavState(answers, totalQuestions, isNavigating = false) {
+export function updateNavState(
+  answers,
+  totalQuestions,
+  isNavigating = false,
+  hasUnsyncedAnswers = false
+) {
   const submitButton = document.querySelector('#nav .submit');
   if (!submitButton) return;
 
   const answeredCount = Object.keys(answers).length;
   const isComplete = answeredCount === totalQuestions;
-  submitButton.disabled = !isComplete || isNavigating;
+  submitButton.disabled = !isComplete || isNavigating || hasUnsyncedAnswers;
   submitButton.title = !isComplete
     ? 'Beantwoord eerst alle vragen voordat je het resultaat bekijkt.'
-    : '';
+    : (hasUnsyncedAnswers
+      ? 'Nog niet alle antwoorden zijn met de server gesynchroniseerd.'
+      : '');
 }
 
 /**
