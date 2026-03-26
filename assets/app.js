@@ -65,6 +65,7 @@ const loadingMessages = [
 ];
 
 let loadingMessageTimer = null;
+let isSubmitting = false;
 
 function getLoadingOverlayElements() {
   return {
@@ -225,7 +226,7 @@ function setNavLoadingState(isLoading) {
 
 function updatePendingActionState() {
   const state = getState();
-  updateNavState(state.answers, state.totalQuestions, state.pendingQuestionIds);
+  updateNavState(state.answers, state.totalQuestions, state.isNavigating);
   const restartButton = document.querySelector('#result .restart');
   if (restartButton) {
     restartButton.disabled = hasPendingSaves();
@@ -669,6 +670,11 @@ export async function flushPendingSaves() {
 }
 
 async function submitTest() {
+  if (isSubmitting) {
+    return;
+  }
+
+  isSubmitting = true;
   showLoadingOverlay();
 
   try {
@@ -708,7 +714,9 @@ async function submitTest() {
       result.innerHTML = `<p class="error">${message}</p>`;
     }
   } finally {
+    isSubmitting = false;
     hideLoadingOverlay();
+    updatePendingActionState();
   }
 }
 

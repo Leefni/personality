@@ -162,22 +162,19 @@ export function updateQuestionRow(questionId, viewModel) {
  * Updates submit button enabled state based on completion.
  * @param {Object} answers
  * @param {number} totalQuestions
- * @param {Set<number>} [pendingQuestionIds]
+ * @param {boolean} [isNavigating]
  * @returns {void}
  */
-export function updateNavState(answers, totalQuestions, pendingQuestionIds = new Set()) {
+export function updateNavState(answers, totalQuestions, isNavigating = false) {
   const submitButton = document.querySelector('#nav .submit');
   if (!submitButton) return;
 
   const answeredCount = Object.keys(answers).length;
   const isComplete = answeredCount === totalQuestions;
-  const hasPendingSaves = pendingQuestionIds.size > 0;
-  submitButton.disabled = !isComplete || hasPendingSaves;
+  submitButton.disabled = !isComplete || isNavigating;
   submitButton.title = !isComplete
     ? 'Beantwoord eerst alle vragen voordat je het resultaat bekijkt.'
-    : hasPendingSaves
-      ? 'Nog bezig met opslaan. Wacht even tot alles klaar is.'
-      : '';
+    : '';
 }
 
 /**
@@ -314,13 +311,10 @@ export function renderNav(viewModel, handlers) {
     submit.textContent = 'Bekijk resultaat';
     const answeredCount = Object.keys(viewModel.answers).length;
     const isComplete = answeredCount === viewModel.totalQuestions;
-    const hasPendingSaves = viewModel.pendingQuestionIds.size > 0;
-    submit.disabled = isNavigating || !isComplete || hasPendingSaves;
+    submit.disabled = isNavigating || !isComplete;
     submit.title = !isComplete
       ? 'Beantwoord eerst alle vragen voordat je het resultaat bekijkt.'
-      : hasPendingSaves
-        ? 'Nog bezig met opslaan. Wacht even tot alles klaar is.'
-        : '';
+      : '';
     submit.addEventListener('click', handlers.onSubmit);
     nav.appendChild(submit);
   }
