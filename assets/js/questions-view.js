@@ -214,6 +214,71 @@ export function renderEmptyState(dataEndpoint, isDevelopment) {
 }
 
 /**
+ * Counts unanswered questions for the currently rendered page.
+ * @param {Object} viewModel
+ * @returns {number}
+ */
+export function getUnansweredCountOnPage(viewModel) {
+  return viewModel.questions.filter((q) => viewModel.answers[q.id] === undefined).length;
+}
+
+function ensureIncompletePageModal() {
+  let modal = document.getElementById('incomplete-page-modal');
+  if (modal) return modal;
+
+  modal = document.createElement('div');
+  modal.id = 'incomplete-page-modal';
+  modal.className = 'modal';
+  modal.hidden = true;
+  modal.innerHTML = `
+    <div class="modal__backdrop" data-modal-close="true"></div>
+    <div class="modal__dialog" role="dialog" aria-modal="true" aria-labelledby="incomplete-page-title" aria-describedby="incomplete-page-message">
+      <h2 id="incomplete-page-title">Incomplete Page</h2>
+      <p id="incomplete-page-message">You haven't answered all questions. Are you sure you want to continue?</p>
+      <div class="modal__actions">
+        <button type="button" class="modal-go-back">Go Back</button>
+        <button type="button" class="modal-continue">Continue Anyway</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+  return modal;
+}
+
+function showIncompletePageModal(onContinue) {
+  const modal = ensureIncompletePageModal();
+  const goBackButton = modal.querySelector('.modal-go-back');
+  const continueButton = modal.querySelector('.modal-continue');
+  const backdrop = modal.querySelector('[data-modal-close="true"]');
+
+  if (!(goBackButton instanceof HTMLButtonElement) || !(continueButton instanceof HTMLButtonElement)) {
+    return;
+  }
+
+  const closeModal = () => {
+    modal.hidden = true;
+    goBackButton.removeEventListener('click', handleGoBack);
+    continueButton.removeEventListener('click', handleContinue);
+    backdrop?.removeEventListener('click', handleGoBack);
+  };
+
+  const handleGoBack = () => {
+    closeModal();
+  };
+
+  const handleContinue = () => {
+    closeModal();
+    onContinue();
+  };
+
+  goBackButton.addEventListener('click', handleGoBack);
+  continueButton.addEventListener('click', handleContinue);
+  backdrop?.addEventListener('click', handleGoBack);
+  modal.hidden = false;
+  goBackButton.focus();
+}
+
+/**
  * Renders pagination/submit buttons for the current page.
  * @param {Object} viewModel
  * @param {Object} handlers
@@ -233,11 +298,21 @@ export function renderNav(viewModel, handlers) {
   }
 
   const hasNext = viewModel.page * viewModel.perPage < viewModel.totalQuestions;
+  const unansweredOnPage = getUnansweredCountOnPage(viewModel);
   if (hasNext) {
     const next = document.createElement('button');
     next.className = 'next';
     next.textContent = 'Volgende →';
-    next.addEventListener('click', handlers.onNext);
+    next.addEventListener('click', () => {
+      if (unansweredOnPage === 0) {
+        handlers.onNext();
+        return;
+      }
+
+      showIncompletePageModal(() => {
+        handlers.onNext({ force: true });
+      });
+    });
     nav.appendChild(next);
   } else {
     const submit = document.createElement('button');
@@ -257,10 +332,6 @@ export function renderNav(viewModel, handlers) {
   }
 
   // Only show the unanswered-count hint when there are actually unanswered questions on this page.
-  const unansweredOnPage = viewModel.questions
-    .filter((q) => viewModel.answers[q.id] === undefined)
-    .length;
-
   if (unansweredOnPage > 0) {
     const hint = document.createElement('p');
     hint.className = 'page-hint';

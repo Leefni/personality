@@ -43,6 +43,7 @@ import {
   setProgressMessage,
   setupQuestionChangeListener,
   renderQuestions,
+  getUnansweredCountOnPage,
   updateNavState,
   updateProgress,
   updateQuestionRow,
@@ -330,7 +331,10 @@ async function loadQuestionsPage() {
         const savedY = pageScrollPositions.get(prevPage) ?? 0;
         window.scrollTo({ top: savedY, behavior: 'smooth' });
       },
-      onNext: async () => {
+      onNext: async ({ force } = {}) => {
+        if (force !== true && getUnansweredCountOnPage(getViewModel()) > 0) {
+          return;
+        }
         pageScrollPositions.set(getState().page, window.scrollY);
         await flushPendingSaves();
         setPagination({ page: getState().page + 1 });
