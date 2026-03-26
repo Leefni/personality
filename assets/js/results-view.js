@@ -353,7 +353,7 @@ export function renderResult(data, onRestart) {
           <div class="result-actions">
             <a class="view-community-wall" href="public-results.php">Community wall bekijken</a>
             <label class="result-publish-name">
-              <span>Naam (optioneel)</span>
+              <span>Naam (optioneel, max ${DISPLAY_NAME_MAX_LENGTH} tekens)</span>
               <input type="text" class="publish-name-input" maxlength="${DISPLAY_NAME_MAX_LENGTH}" autocomplete="name" placeholder="Bijv. Alex" />
             </label>
             <button type="button" class="publish-result">Resultaat publiceren / delen</button>
