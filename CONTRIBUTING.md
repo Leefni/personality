@@ -38,7 +38,7 @@ bash tests/run_api_checks.sh
 phpunit --bootstrap db_bootstrap.php tests/quiz_service_test.php
 ```
 
-All of the above are run automatically in CI on every push and pull request.
+The GitHub Actions CI workflow runs PHP lint (8.1–8.3 matrix) and PHP unit tests automatically on every push and pull request. Frontend syntax/runtime checks remain recommended local checks.
 
 ## Code conventions
 

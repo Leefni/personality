@@ -272,21 +272,19 @@ You can still run the API-only test directly if needed:
 
 ### CI parity (GitHub Actions)
 
-The repository CI workflow (`.github/workflows/ci.yml`) runs on both `push` and `pull_request` and executes:
+The repository CI workflow (`.github/workflows/ci.yml`) runs on both `push` and `pull_request` and currently executes:
 
-1. `tests/frontend_syntax_check.sh`
-2. `tests/frontend_runtime_check.sh`
-3. `tests/run_api_checks.sh` (includes API endpoint checks)
+1. PHP lint checks (matrix: PHP 8.1, 8.2, 8.3)
+2. PHP unit tests (`tests/quiz_service_test.php` on PHP 8.2)
 
 To reproduce CI failures locally:
 
 ```bash
-# 1) Frontend syntax/runtime checks (same as CI)
-bash tests/frontend_syntax_check.sh
-bash tests/frontend_runtime_check.sh
+# 1) PHP lint checks
+find . -name "*.php" -not -path "./vendor/*" | sort | xargs -I{} php -l {}
 
-# 2) API checks against an existing deployment
-BASE_URL="http://localhost/personality" bash tests/run_api_checks.sh
+# 2) PHP unit tests
+php tests/quiz_service_test.php
 ```
 
 If you do not already have a local server running, use the same fallback pattern as CI (local PHP server + local MySQL):
@@ -298,10 +296,10 @@ php -S 127.0.0.1:8000 -t . &
 BASE_URL="http://127.0.0.1:8000" bash tests/run_api_checks.sh
 ```
 
-In GitHub Actions, API checks can target either:
+For local or alternative CI environments, API checks can target either:
 
-- a custom `BASE_URL` (set via environment or repository variable `BASE_URL`), or
-- the built-in fallback service path (`http://127.0.0.1:8000`) backed by a MySQL service container.
+- a custom `BASE_URL` (set via environment variables), or
+- the built-in fallback service path (`http://127.0.0.1:8000`) backed by a local MySQL instance.
 
 ### Windows (PowerShell) debugging helpers
 

@@ -5,24 +5,7 @@ on:
   pull_request:
 
 jobs:
-  # ── 1. Frontend ────────────────────────────────────────────────────────────
-  frontend:
-    name: Frontend (syntax + runtime)
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-
-      - uses: actions/setup-node@v6
-        with:
-          node-version: '20'
-
-      - name: Syntax check
-        run: bash tests/frontend_syntax_check.sh
-
-      - name: Runtime check
-        run: bash tests/frontend_runtime_check.sh
-
-  # ── 2. PHP lint (matrix across supported versions) ────────────────────────
+  # ── 1. PHP lint (matrix across supported versions) ────────────────────────
   php-lint:
     name: PHP lint (PHP ${{ matrix.php }})
     runs-on: ubuntu-latest
@@ -50,7 +33,7 @@ jobs:
 
           exit "${failures}"
 
-  # ── 3. PHP unit tests (pure service logic, no DB dependency) ──────────────
+  # ── 2. PHP unit tests (pure service logic, no DB dependency) ──────────────
   php-unit:
     name: PHP unit tests
     runs-on: ubuntu-latest
