@@ -97,21 +97,54 @@ function renderResults(payload) {
   list.innerHTML = entries.map((entry) => createCard(entry, maxScores)).join('');
 }
 
-function renderError() {
+function renderSingleResult(payload) {
+  const list = document.getElementById('public-results-list');
+  const status = document.getElementById('public-results-status');
+  if (!(list instanceof HTMLElement) || !(status instanceof HTMLElement)) return;
+
+  const entry = payload?.result && typeof payload.result === 'object' ? payload.result : null;
+  const maxScores = resolveMaxScores(payload?.max_scores);
+
+  status.hidden = true;
+  status.setAttribute('aria-busy', 'false');
+
+  if (!entry) {
+    status.hidden = false;
+    status.textContent = 'Dit gedeelde resultaat kon niet worden gevonden.';
+    return;
+  }
+
+  list.innerHTML = createCard(entry, maxScores);
+}
+
+function renderError(message = 'Kon publieke resultaten niet laden. Probeer het later opnieuw.') {
   const status = document.getElementById('public-results-status');
   if (!(status instanceof HTMLElement)) return;
 
   status.hidden = false;
   status.setAttribute('aria-busy', 'false');
-  status.textContent = 'Kon publieke resultaten niet laden. Probeer het later opnieuw.';
+  status.textContent = message;
 }
 
 async function initPublicResultsView() {
+  const params = new URLSearchParams(window.location.search);
+  const publicId = (params.get('public_id') || '').trim();
+
   try {
-    const payload = await fetchPublicResults();
+    const payload = await fetchPublicResults(publicId);
+    if (publicId) {
+      renderSingleResult(payload);
+      return;
+    }
+
     renderResults(payload);
   } catch (error) {
     console.error('[public-results-view] failed to load results', error);
+    if (publicId && error?.status === 404) {
+      renderError('Dit gedeelde resultaat bestaat niet (meer).');
+      return;
+    }
+
     renderError();
   }
 }
