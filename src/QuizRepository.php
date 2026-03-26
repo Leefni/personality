@@ -248,4 +248,65 @@ final class QuizRepository
             throw $e;
         }
     }
+
+    /**
+     * @return array<int, array{display_name:string,type_code:string,scores:array<string,mixed>,created_at:string}>
+     */
+    public function getPublicResults(int $limit = 30): array
+    {
+        $safeLimit = max(1, min(120, $limit));
+        $stmt = $this->pdo->prepare(
+            'SELECT id, visitor_id, display_name, type_code, detail_json, created_at
+             FROM results
+             WHERE is_public = 1
+             ORDER BY created_at DESC
+             LIMIT :limit'
+        );
+        $stmt->bindValue(':limit', $safeLimit, PDO::PARAM_INT);
+        $stmt->execute();
+
+        $rows = [];
+        foreach ($stmt->fetchAll() as $row) {
+            $rawDisplayName = isset($row['display_name']) ? trim((string) $row['display_name']) : '';
+            $displayName = $rawDisplayName !== ''
+                ? $rawDisplayName
+                : self::buildAnonymousDisplayName((int) ($row['id'] ?? 0), (string) ($row['visitor_id'] ?? ''));
+
+            $decodedScores = json_decode((string) ($row['detail_json'] ?? ''), true);
+            $scores = is_array($decodedScores) ? $decodedScores : [];
+
+            $rows[] = [
+                'display_name' => $displayName,
+                'type_code' => (string) ($row['type_code'] ?? ''),
+                'scores' => $scores,
+                'created_at' => (string) ($row['created_at'] ?? ''),
+            ];
+        }
+
+        return $rows;
+    }
+
+    public function upsertResultShareMeta(string $visitorId, ?string $displayName, bool $isPublic = true): void
+    {
+        $name = trim((string) ($displayName ?? ''));
+        $stmt = $this->pdo->prepare(
+            'UPDATE results SET display_name = ?, is_public = ? WHERE visitor_id = ?'
+        );
+        $stmt->execute([
+            $name !== '' ? mb_substr($name, 0, 80) : null,
+            $isPublic ? 1 : 0,
+            $visitorId,
+        ]);
+    }
+
+    private static function buildAnonymousDisplayName(int $resultId, string $visitorId): string
+    {
+        $animals = ['Fox', 'Otter', 'Falcon', 'Sparrow', 'Panda', 'Dolphin', 'Owl', 'Koala'];
+        $seed = $resultId > 0 ? $resultId : abs((int) crc32($visitorId));
+        $animal = $animals[$seed % count($animals)];
+        $suffix = str_pad((string) (($seed % 9000) + 1000), 4, '0', STR_PAD_LEFT);
+
+        return sprintf('Anoniem %s %s', $animal, $suffix);
+    }
+
 }

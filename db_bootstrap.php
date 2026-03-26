@@ -66,6 +66,47 @@ function run_migrations(PDO $pdo): void
     } catch (Throwable $e) {
         error_log('[migration visitor_id] ' . $e->getMessage());
     }
+
+    // Migration 2: add sharing metadata columns for public results browsing.
+    try {
+        $displayNameExists = (bool) $pdo->query(
+            "SELECT 1 FROM information_schema.COLUMNS
+             WHERE TABLE_SCHEMA = DATABASE()
+               AND TABLE_NAME = 'results'
+               AND COLUMN_NAME = 'display_name'
+             LIMIT 1"
+        )->fetchColumn();
+
+        if (!$displayNameExists) {
+            $pdo->exec("ALTER TABLE results ADD COLUMN display_name VARCHAR(80) DEFAULT NULL AFTER detail_json");
+        }
+
+        $isPublicExists = (bool) $pdo->query(
+            "SELECT 1 FROM information_schema.COLUMNS
+             WHERE TABLE_SCHEMA = DATABASE()
+               AND TABLE_NAME = 'results'
+               AND COLUMN_NAME = 'is_public'
+             LIMIT 1"
+        )->fetchColumn();
+
+        if (!$isPublicExists) {
+            $pdo->exec("ALTER TABLE results ADD COLUMN is_public TINYINT(1) NOT NULL DEFAULT 1 AFTER display_name");
+        }
+
+        $publicIndexExists = (bool) $pdo->query(
+            "SELECT 1 FROM information_schema.STATISTICS
+             WHERE TABLE_SCHEMA = DATABASE()
+               AND TABLE_NAME = 'results'
+               AND INDEX_NAME = 'idx_results_public_created'
+             LIMIT 1"
+        )->fetchColumn();
+
+        if (!$publicIndexExists) {
+            $pdo->exec("ALTER TABLE results ADD INDEX idx_results_public_created (is_public, created_at)");
+        }
+    } catch (Throwable $e) {
+        error_log('[migration result sharing] ' . $e->getMessage());
+    }
 }
 
 /**

@@ -23,9 +23,12 @@ CREATE TABLE IF NOT EXISTS results (
     visitor_id VARCHAR(64) NOT NULL,
     type_code CHAR(4) NOT NULL,
     detail_json LONGTEXT NOT NULL,
+    display_name VARCHAR(80) DEFAULT NULL,
+    is_public TINYINT(1) NOT NULL DEFAULT 1,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    UNIQUE KEY uq_result_visitor (visitor_id)
+    UNIQUE KEY uq_result_visitor (visitor_id),
+    KEY idx_results_public_created (is_public, created_at)
 );
 
 CREATE TABLE IF NOT EXISTS recovery_tokens (
