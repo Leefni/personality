@@ -935,6 +935,58 @@ button.danger,
   background: linear-gradient(90deg, #dbeafe 0%, #f8fafc 50%, #dcfce7 100%);
 }
 
+.result-dimension-meter-track--offset-0 { --meter-offset: 0%; }
+.result-dimension-meter-track--offset-1 { --meter-offset: 1%; }
+.result-dimension-meter-track--offset-2 { --meter-offset: 2%; }
+.result-dimension-meter-track--offset-3 { --meter-offset: 3%; }
+.result-dimension-meter-track--offset-4 { --meter-offset: 4%; }
+.result-dimension-meter-track--offset-5 { --meter-offset: 5%; }
+.result-dimension-meter-track--offset-6 { --meter-offset: 6%; }
+.result-dimension-meter-track--offset-7 { --meter-offset: 7%; }
+.result-dimension-meter-track--offset-8 { --meter-offset: 8%; }
+.result-dimension-meter-track--offset-9 { --meter-offset: 9%; }
+.result-dimension-meter-track--offset-10 { --meter-offset: 10%; }
+.result-dimension-meter-track--offset-11 { --meter-offset: 11%; }
+.result-dimension-meter-track--offset-12 { --meter-offset: 12%; }
+.result-dimension-meter-track--offset-13 { --meter-offset: 13%; }
+.result-dimension-meter-track--offset-14 { --meter-offset: 14%; }
+.result-dimension-meter-track--offset-15 { --meter-offset: 15%; }
+.result-dimension-meter-track--offset-16 { --meter-offset: 16%; }
+.result-dimension-meter-track--offset-17 { --meter-offset: 17%; }
+.result-dimension-meter-track--offset-18 { --meter-offset: 18%; }
+.result-dimension-meter-track--offset-19 { --meter-offset: 19%; }
+.result-dimension-meter-track--offset-20 { --meter-offset: 20%; }
+.result-dimension-meter-track--offset-21 { --meter-offset: 21%; }
+.result-dimension-meter-track--offset-22 { --meter-offset: 22%; }
+.result-dimension-meter-track--offset-23 { --meter-offset: 23%; }
+.result-dimension-meter-track--offset-24 { --meter-offset: 24%; }
+.result-dimension-meter-track--offset-25 { --meter-offset: 25%; }
+.result-dimension-meter-track--offset-26 { --meter-offset: 26%; }
+.result-dimension-meter-track--offset-27 { --meter-offset: 27%; }
+.result-dimension-meter-track--offset-28 { --meter-offset: 28%; }
+.result-dimension-meter-track--offset-29 { --meter-offset: 29%; }
+.result-dimension-meter-track--offset-30 { --meter-offset: 30%; }
+.result-dimension-meter-track--offset-31 { --meter-offset: 31%; }
+.result-dimension-meter-track--offset-32 { --meter-offset: 32%; }
+.result-dimension-meter-track--offset-33 { --meter-offset: 33%; }
+.result-dimension-meter-track--offset-34 { --meter-offset: 34%; }
+.result-dimension-meter-track--offset-35 { --meter-offset: 35%; }
+.result-dimension-meter-track--offset-36 { --meter-offset: 36%; }
+.result-dimension-meter-track--offset-37 { --meter-offset: 37%; }
+.result-dimension-meter-track--offset-38 { --meter-offset: 38%; }
+.result-dimension-meter-track--offset-39 { --meter-offset: 39%; }
+.result-dimension-meter-track--offset-40 { --meter-offset: 40%; }
+.result-dimension-meter-track--offset-41 { --meter-offset: 41%; }
+.result-dimension-meter-track--offset-42 { --meter-offset: 42%; }
+.result-dimension-meter-track--offset-43 { --meter-offset: 43%; }
+.result-dimension-meter-track--offset-44 { --meter-offset: 44%; }
+.result-dimension-meter-track--offset-45 { --meter-offset: 45%; }
+.result-dimension-meter-track--offset-46 { --meter-offset: 46%; }
+.result-dimension-meter-track--offset-47 { --meter-offset: 47%; }
+.result-dimension-meter-track--offset-48 { --meter-offset: 48%; }
+.result-dimension-meter-track--offset-49 { --meter-offset: 49%; }
+.result-dimension-meter-track--offset-50 { --meter-offset: 50%; }
+
 .result-dimension-meter-center {
   position: absolute;
   left: 50%;

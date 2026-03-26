@@ -165,7 +165,8 @@ function renderScoreVisualizations(scores) {
 
   return SCORE_DIMENSION_ENTRIES.map(([dimension, config]) => {
     const insight = buildDimensionInsight(dimension, config, scorePayload[dimension]);
-    const meterOffset = Math.abs(insight.normalized) * 50;
+    const meterOffset = Math.round(Math.abs(insight.normalized) * 50);
+    const meterOffsetClass = `result-dimension-meter-track--offset-${meterOffset}`;
     const dominantDirectionClass = insight.dominantPole === insight.leftPole
       ? 'result-dimension-meter-badge--left'
       : 'result-dimension-meter-badge--right';
@@ -190,7 +191,7 @@ function renderScoreVisualizations(scores) {
             <span class="result-dimension-meter-zero">0</span>
             <span class="result-dimension-meter-end result-dimension-meter-end--right">${escapeHtml(insight.rightPole)}</span>
           </div>
-          <div class="result-dimension-meter-track" style="--meter-offset:${meterOffset}%;">
+          <div class="result-dimension-meter-track ${meterOffsetClass}">
             <span class="result-dimension-meter-center" aria-hidden="true"></span>
             <span class="result-dimension-meter-badge ${dominantDirectionClass}" aria-hidden="true">${escapeHtml(insight.dominantPole)}</span>
           </div>
