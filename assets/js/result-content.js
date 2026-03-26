@@ -115,7 +115,11 @@ function buildStructuredFields(type, details) {
     ? 'Je staat meer geordend in het leven en wilt graag zaken afronden. Daarom neem je al ras een standpunt in zodat er duidelijkheid ontstaat. Zo vaar je een resolute koers waarbij je zelf in de hand wilt houden wat er gebeurt. Je gedijt bij een optie die je taakgericht, stap voor stap tegemoet treedt, waarbij planningen en schema’s een belangrijke leidraad vormen. Aan onverwachte gebeurtenissen en verrassingen heb je een hekel, ze verstoren jouw doelgerichtheid.'
     : 'Je staat meer waarnemend in het leven en wilt graag opties open houden. Door af te wachten zie je wel wat er gebeurt, jouw improvisatievermogen helpt jou verder. Het is een tolerante leefstijl waarin routines, vaste structuren en deadlines belemmerend werken. Standpunten zijn voorlopig en onderhevig aan verandering. Met die afwachtende houding speel je flexibel in op wat de veranderende omgeving nodig heeft en geef je invulling aan jouw behoefte aan vrijheid, afwisseling en variatie.';
 
-  
+  return {
+    work_env: `${energy} ${structure}`,
+    communication: `${decisionStyle} ${energy}`,
+    team_risks: `${processing} ${decisionStyle}`,
+    collab_tips: `${structure} ${processing}`
   };
 }
 
