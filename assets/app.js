@@ -727,11 +727,13 @@ async function persistAnswer(questionId, value, saveSession, options = {}) {
     if (getSaveSession() !== saveSession) return;
     markQuestionPendingRetry(questionId);
     saveLocalDraft(state.answers);
-    const message = formatApiError(
-      error,
-      'Opslaan mislukt. Antwoord blijft lokaal bewaard en wordt later opnieuw geprobeerd.'
-    );
-    showError(message);
+    if (!isRetryableSaveError(error)) {
+      const message = formatApiError(
+        error,
+        'Opslaan mislukt. Antwoord blijft lokaal bewaard en wordt later opnieuw geprobeerd.'
+      );
+      showError(message);
+    }
   } finally {
     state.pendingQuestionIds.delete(questionId);
     updatePendingActionState();
