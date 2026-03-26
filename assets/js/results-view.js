@@ -1,4 +1,5 @@
 import { RESULT_CONTENT } from './result-content.js';
+import { publishResult } from './api-client.js';
 
 function toSafeText(value, fallback = '') {
   return typeof value === 'string' && value.trim() !== '' ? value.trim() : fallback;
@@ -291,6 +292,25 @@ function downloadSummary(text, filename = 'persoonlijkheidssamenvatting.txt') {
   URL.revokeObjectURL(url);
 }
 
+const DISPLAY_NAME_MAX_LENGTH = 60;
+const DISPLAY_NAME_FALLBACK = 'Anoniem';
+
+function normalizeDisplayName(inputValue) {
+  const raw = typeof inputValue === 'string' ? inputValue : '';
+  const trimmed = raw.trim();
+  if (trimmed === '') return DISPLAY_NAME_FALLBACK;
+  return trimmed.slice(0, DISPLAY_NAME_MAX_LENGTH);
+}
+
+function resolvePublicResultsUrl(publicId = '') {
+  const pageUrl = new URL('public-results.html', window.location.origin + window.location.pathname);
+  const cleanedPublicId = typeof publicId === 'string' ? publicId.trim() : '';
+  if (cleanedPublicId !== '') {
+    pageUrl.searchParams.set('public_id', cleanedPublicId);
+  }
+  return pageUrl.toString();
+}
+
 /**
  * Renders the result card and wires action button callbacks.
  * @param {{type?: string}} data - API result payload.
@@ -306,6 +326,35 @@ export function renderResult(data, onRestart) {
   const longDescription = toSafeText(details?.longDescriptionNl, shortDescription);
 
   res.innerHTML = `
+    <section class="result-card result-theme-shell">
+      <div class="result-hero-background" aria-hidden="true">
+        <span class="result-hero-blob result-hero-blob--one"></span>
+        <span class="result-hero-blob result-hero-blob--two"></span>
+        <span class="result-hero-particles"></span>
+      </div>
+      <div class="result-content-stack">
+        <header class="result-hero">
+          <h2 id="result-heading" tabindex="-1">Resultaat</h2>
+          <div class="result-type-badge-frame">
+            <p class="result-type">Persoonlijkheidstype: <strong translate="no">${escapeHtml(type)}</strong></p>
+          </div>
+          <p class="result-short-description">${escapeHtml(shortDescription)}</p>
+        </header>
+        <article class="result-section-card result-glass-shell result-glass-shell--description">
+          <h3>Lange beschrijving</h3>
+          <p>${escapeHtml(longDescription)}</p>
+        </article>
+        <section class="result-score-grid result-glass-shell result-glass-shell--scores" aria-label="Dimensiescores">
+          <h3>Dimensiescores</h3>
+          <div class="result-dimension-shell-grid">
+            ${renderScoreVisualizations(data?.scores)}
+          </div>
+        </section>
+        <div class="result-action-rail">
+          <div class="result-actions">
+            <button type="button" class="restart">Opnieuw doen</button>
+          </div>
+        </div>
     <section class="result-card">
       <h2 id="result-heading" tabindex="-1">Resultaat</h2>
       <p class="result-type">Persoonlijkheidstype: <strong translate="no">${escapeHtml(type)}</strong></p>
@@ -320,7 +369,13 @@ export function renderResult(data, onRestart) {
       </section>
       <div class="result-actions">
         <a class="view-community-wall" href="public-results.php">Community wall bekijken</a>
+        <label class="result-publish-name">
+          <span>Naam (optioneel)</span>
+          <input type="text" class="publish-name-input" maxlength="${DISPLAY_NAME_MAX_LENGTH}" autocomplete="name" placeholder="Bijv. Alex" />
+        </label>
+        <button type="button" class="publish-result">Resultaat publiceren / delen</button>
         <button type="button" class="restart">Opnieuw doen</button>
+        <p class="result-publish-status" aria-live="polite"></p>
       </div>
     </section>
   `;
@@ -337,6 +392,38 @@ export function renderResult(data, onRestart) {
     communityLink.textContent = 'Bekijk alle gedeelde resultaten';
     publishSuccess.appendChild(communityLink);
   }
+  const publishButton = res.querySelector('.publish-result');
+  const displayNameInput = res.querySelector('.publish-name-input');
+  const publishStatus = res.querySelector('.result-publish-status');
+
+  publishButton?.addEventListener('click', async () => {
+    if (!(publishStatus instanceof HTMLElement)) return;
+    const normalizedDisplayName = normalizeDisplayName(displayNameInput?.value || '');
+    if (displayNameInput instanceof HTMLInputElement) {
+      displayNameInput.value = normalizedDisplayName === DISPLAY_NAME_FALLBACK ? '' : normalizedDisplayName;
+    }
+
+    publishButton.disabled = true;
+    publishStatus.textContent = 'Publiceren...';
+    publishStatus.classList.remove('is-error', 'is-success');
+
+    try {
+      const publishPayload = await publishResult(normalizedDisplayName);
+      const publicId = toSafeText(publishPayload?.public_id, '');
+      const directUrl = toSafeText(publishPayload?.public_url, resolvePublicResultsUrl(publicId));
+      const publicResultsUrl = resolvePublicResultsUrl();
+      const shareSuffix = publicId ? ` (ID: ${publicId})` : '';
+
+      publishStatus.innerHTML = `Gelukt! <a href="${escapeHtml(publicResultsUrl)}">Bekijk publieke resultaten</a> of deel direct: <a href="${escapeHtml(directUrl)}">${escapeHtml(directUrl)}</a>${escapeHtml(shareSuffix)}`;
+      publishStatus.classList.add('is-success');
+    } catch (error) {
+      publishStatus.textContent = 'Publiceren mislukt. Probeer het opnieuw.';
+      publishStatus.classList.add('is-error');
+    } finally {
+      publishButton.disabled = false;
+    }
+  });
+
   const resultHeading = res.querySelector('#result-heading');
   if (resultHeading instanceof HTMLElement) {
     resultHeading.focus({ preventScroll: true });

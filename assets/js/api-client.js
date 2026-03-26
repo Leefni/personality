@@ -162,3 +162,24 @@ export function redeemRecovery(token) {
     body: JSON.stringify({ token })
   });
 }
+
+/**
+ * Publishes the current result so it can be listed publicly.
+ * @param {string} displayName - Name shown with the published result.
+ * @returns {Promise<{ok: boolean, public_id?: string, public_url?: string}>}
+ */
+export function publishResult(displayName) {
+  return apiRequest('api/v1/publish_result.php', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ display_name: displayName })
+  });
+}
+
+/**
+ * Fetches published public results.
+ * @returns {Promise<{ok?: boolean, items?: Array}>}
+ */
+export function fetchPublicResults() {
+  return apiRequest('api/v1/public_results.php');
+}

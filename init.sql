@@ -31,6 +31,21 @@ CREATE TABLE IF NOT EXISTS results (
     KEY idx_results_public_created (is_public, created_at)
 );
 
+CREATE TABLE IF NOT EXISTS public_results (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    public_id VARCHAR(32) NOT NULL,
+    visitor_id VARCHAR(64) NOT NULL,
+    display_name VARCHAR(80) NOT NULL DEFAULT 'Anoniem',
+    type_code CHAR(4) NOT NULL,
+    scores_json LONGTEXT NOT NULL,
+    is_visible TINYINT(1) NOT NULL DEFAULT 1,
+    reported_count INT UNSIGNED NOT NULL DEFAULT 0,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_public_results_public_id (public_id),
+    KEY idx_public_results_visible_created (is_visible, created_at),
+    KEY idx_public_results_visitor_created (visitor_id, created_at)
+);
+
 CREATE TABLE IF NOT EXISTS recovery_tokens (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     token_hash CHAR(64) NOT NULL,

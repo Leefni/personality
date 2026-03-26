@@ -123,6 +123,135 @@ final class QuizRepository
         return $sums;
     }
 
+    /**
+     * @param array<string, mixed> $scores
+     * @return array{public_id:string,created_at:string}
+     */
+    public function createPublicResult(
+        string $visitorId,
+        string $displayName,
+        string $typeCode,
+        array $scores
+    ): array {
+        $normalizedDisplayName = trim($displayName);
+        if ($normalizedDisplayName === '') {
+            $normalizedDisplayName = 'Anoniem';
+        }
+
+        $normalizedDisplayName = mb_substr($normalizedDisplayName, 0, 80);
+        $encodedScores = json_encode($scores, JSON_UNESCAPED_UNICODE);
+
+        if ($encodedScores === false) {
+            throw new RuntimeException('Kon scores niet coderen.');
+        }
+
+        $insert = $this->pdo->prepare(
+            'INSERT INTO public_results (public_id, visitor_id, display_name, type_code, scores_json)
+             VALUES (?, ?, ?, ?, ?)'
+        );
+
+        $maxAttempts = 5;
+        for ($attempt = 0; $attempt < $maxAttempts; $attempt++) {
+            $publicId = bin2hex(random_bytes(8));
+            try {
+                $insert->execute([$publicId, $visitorId, $normalizedDisplayName, $typeCode, $encodedScores]);
+
+                $createdAtStmt = $this->pdo->prepare(
+                    'SELECT created_at FROM public_results WHERE id = LAST_INSERT_ID() LIMIT 1'
+                );
+                $createdAtStmt->execute();
+                $createdAt = (string) ($createdAtStmt->fetchColumn() ?: '');
+
+                return [
+                    'public_id' => $publicId,
+                    'created_at' => $createdAt,
+                ];
+            } catch (PDOException $e) {
+                if ($e->errorInfo[1] !== 1062) {
+                    throw $e;
+                }
+            }
+        }
+
+        throw new RuntimeException('Kon geen unieke publieke identifier genereren.');
+    }
+
+    /** @return array{results: array<int, array<string, mixed>>, total: int} */
+    public function listRecentVisiblePublicResults(int $perPage, int $offset): array
+    {
+        $countStmt = $this->pdo->query('SELECT COUNT(*) FROM public_results WHERE is_visible = 1');
+        $total = (int) $countStmt->fetchColumn();
+
+        $stmt = $this->pdo->prepare(
+            'SELECT public_id, display_name, type_code, scores_json, created_at
+             FROM public_results
+             WHERE is_visible = 1
+             ORDER BY created_at DESC, id DESC
+             LIMIT :limit OFFSET :offset'
+        );
+        $stmt->bindValue(':limit', $perPage, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+        $stmt->execute();
+
+        $results = [];
+        foreach ($stmt->fetchAll() as $row) {
+            $scores = [];
+            if (isset($row['scores_json']) && is_string($row['scores_json']) && $row['scores_json'] !== '') {
+                $decoded = json_decode($row['scores_json'], true);
+                if (is_array($decoded)) {
+                    $scores = $decoded;
+                }
+            }
+
+            $results[] = [
+                'public_id' => (string) $row['public_id'],
+                'display_name' => (string) $row['display_name'],
+                'type' => (string) $row['type_code'],
+                'scores' => $scores,
+                'created_at' => (string) $row['created_at'],
+            ];
+        }
+
+        return [
+            'results' => $results,
+            'total' => $total,
+        ];
+    }
+
+    /** @return array<string, mixed>|null */
+    public function getPublicResultByPublicId(string $publicId): ?array
+    {
+        $stmt = $this->pdo->prepare(
+            'SELECT public_id, display_name, type_code, scores_json, created_at
+             FROM public_results
+             WHERE public_id = ?
+               AND is_visible = 1
+             LIMIT 1'
+        );
+        $stmt->execute([$publicId]);
+        $row = $stmt->fetch();
+
+        if (!is_array($row)) {
+            return null;
+        }
+
+        $scores = [];
+        if (isset($row['scores_json']) && is_string($row['scores_json']) && $row['scores_json'] !== '') {
+            $decoded = json_decode($row['scores_json'], true);
+            if (is_array($decoded)) {
+                $scores = $decoded;
+            }
+        }
+
+        return [
+            'public_id' => (string) $row['public_id'],
+            'display_name' => (string) $row['display_name'],
+            'type' => (string) $row['type_code'],
+            'scores' => $scores,
+            'created_at' => (string) $row['created_at'],
+        ];
+    }
+
     /** @param array<string, float> $scores */
     public function createRecoveryToken(
         string $tokenHash,
