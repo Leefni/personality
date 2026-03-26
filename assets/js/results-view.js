@@ -303,7 +303,7 @@ function normalizeDisplayName(inputValue) {
 }
 
 function resolvePublicResultsUrl(publicId = '') {
-  const pageUrl = new URL('public-results.html', window.location.origin + window.location.pathname);
+  const pageUrl = new URL('public-results.php', window.location.origin + window.location.pathname);
   const cleanedPublicId = typeof publicId === 'string' ? publicId.trim() : '';
   if (cleanedPublicId !== '') {
     pageUrl.searchParams.set('public_id', cleanedPublicId);
@@ -352,31 +352,16 @@ export function renderResult(data, onRestart) {
         </section>
         <div class="result-action-rail">
           <div class="result-actions">
+            <a class="view-community-wall" href="public-results.php">Community wall bekijken</a>
+            <label class="result-publish-name">
+              <span>Naam (optioneel)</span>
+              <input type="text" class="publish-name-input" maxlength="${DISPLAY_NAME_MAX_LENGTH}" autocomplete="name" placeholder="Bijv. Alex" />
+            </label>
+            <button type="button" class="publish-result">Resultaat publiceren / delen</button>
             <button type="button" class="restart">Opnieuw doen</button>
+            <p class="result-publish-status" aria-live="polite"></p>
           </div>
         </div>
-    <section class="result-card">
-      <h2 id="result-heading" tabindex="-1">Resultaat</h2>
-      <p class="result-type">Persoonlijkheidstype: <strong translate="no">${escapeHtml(type)}</strong></p>
-      <p class="result-short-description">${escapeHtml(shortDescription)}</p>
-      <article class="result-section-card">
-        <h3>Lange beschrijving</h3>
-        <p>${escapeHtml(longDescription)}</p>
-      </article>
-      <section class="result-score-grid" aria-label="Dimensiescores">
-        <h3>Dimensiescores</h3>
-        ${renderScoreVisualizations(data?.scores)}
-      </section>
-      <div class="result-actions">
-        <a class="view-community-wall" href="public-results.php">Community wall bekijken</a>
-        <label class="result-publish-name">
-          <span>Naam (optioneel)</span>
-          <input type="text" class="publish-name-input" maxlength="${DISPLAY_NAME_MAX_LENGTH}" autocomplete="name" placeholder="Bijv. Alex" />
-        </label>
-        <button type="button" class="publish-result">Resultaat publiceren / delen</button>
-        <button type="button" class="restart">Opnieuw doen</button>
-        <p class="result-publish-status" aria-live="polite"></p>
-      </div>
     </section>
   `;
 
