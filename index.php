@@ -82,6 +82,18 @@ $metaDescription = 'Doe de Personality Test en ontdek jouw persoonlijkheidstype 
     <section class="result" id="result"></section>
   </main>
 
+  <div class="loading-overlay" id="loading-overlay" hidden aria-hidden="true">
+    <div class="loading-overlay__panel" role="status" aria-live="polite" aria-atomic="true">
+      <span class="loading-overlay__spinner" aria-hidden="true"></span>
+      <ul class="loading-overlay__messages" aria-hidden="true">
+        <li>Analyzing your personality...</li>
+        <li>Calculating results...</li>
+        <li>Generating your personality profile...</li>
+      </ul>
+      <p class="loading-overlay__live" id="loading-overlay-live">Analyzing your personality...</p>
+    </div>
+  </div>
+
   <script type="module" src="assets/app.js"></script>
 </body>
 </html>
