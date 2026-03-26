@@ -1,4 +1,5 @@
 import { RESULT_CONTENT } from './result-content.js';
+import { publishResult } from './api-client.js';
 
 function toSafeText(value, fallback = '') {
   return typeof value === 'string' && value.trim() !== '' ? value.trim() : fallback;
@@ -291,6 +292,25 @@ function downloadSummary(text, filename = 'persoonlijkheidssamenvatting.txt') {
   URL.revokeObjectURL(url);
 }
 
+const DISPLAY_NAME_MAX_LENGTH = 60;
+const DISPLAY_NAME_FALLBACK = 'Anoniem';
+
+function normalizeDisplayName(inputValue) {
+  const raw = typeof inputValue === 'string' ? inputValue : '';
+  const trimmed = raw.trim();
+  if (trimmed === '') return DISPLAY_NAME_FALLBACK;
+  return trimmed.slice(0, DISPLAY_NAME_MAX_LENGTH);
+}
+
+function resolvePublicResultsUrl(publicId = '') {
+  const pageUrl = new URL('public-results.html', window.location.origin + window.location.pathname);
+  const cleanedPublicId = typeof publicId === 'string' ? publicId.trim() : '';
+  if (cleanedPublicId !== '') {
+    pageUrl.searchParams.set('public_id', cleanedPublicId);
+  }
+  return pageUrl.toString();
+}
+
 /**
  * Renders the result card and wires action button callbacks.
  * @param {{type?: string}} data - API result payload.
@@ -319,12 +339,50 @@ export function renderResult(data, onRestart) {
         ${renderScoreVisualizations(data?.scores)}
       </section>
       <div class="result-actions">
+        <label class="result-publish-name">
+          <span>Naam (optioneel)</span>
+          <input type="text" class="publish-name-input" maxlength="${DISPLAY_NAME_MAX_LENGTH}" autocomplete="name" placeholder="Bijv. Alex" />
+        </label>
+        <button type="button" class="publish-result">Resultaat publiceren / delen</button>
         <button type="button" class="restart">Opnieuw doen</button>
+        <p class="result-publish-status" aria-live="polite"></p>
       </div>
     </section>
   `;
 
   res.querySelector('.restart')?.addEventListener('click', onRestart);
+  const publishButton = res.querySelector('.publish-result');
+  const displayNameInput = res.querySelector('.publish-name-input');
+  const publishStatus = res.querySelector('.result-publish-status');
+
+  publishButton?.addEventListener('click', async () => {
+    if (!(publishStatus instanceof HTMLElement)) return;
+    const normalizedDisplayName = normalizeDisplayName(displayNameInput?.value || '');
+    if (displayNameInput instanceof HTMLInputElement) {
+      displayNameInput.value = normalizedDisplayName === DISPLAY_NAME_FALLBACK ? '' : normalizedDisplayName;
+    }
+
+    publishButton.disabled = true;
+    publishStatus.textContent = 'Publiceren...';
+    publishStatus.classList.remove('is-error', 'is-success');
+
+    try {
+      const publishPayload = await publishResult(normalizedDisplayName);
+      const publicId = toSafeText(publishPayload?.public_id, '');
+      const directUrl = toSafeText(publishPayload?.public_url, resolvePublicResultsUrl(publicId));
+      const publicResultsUrl = resolvePublicResultsUrl();
+      const shareSuffix = publicId ? ` (ID: ${publicId})` : '';
+
+      publishStatus.innerHTML = `Gelukt! <a href="${escapeHtml(publicResultsUrl)}">Bekijk publieke resultaten</a> of deel direct: <a href="${escapeHtml(directUrl)}">${escapeHtml(directUrl)}</a>${escapeHtml(shareSuffix)}`;
+      publishStatus.classList.add('is-success');
+    } catch (error) {
+      publishStatus.textContent = 'Publiceren mislukt. Probeer het opnieuw.';
+      publishStatus.classList.add('is-error');
+    } finally {
+      publishButton.disabled = false;
+    }
+  });
+
   const resultHeading = res.querySelector('#result-heading');
   if (resultHeading instanceof HTMLElement) {
     resultHeading.focus({ preventScroll: true });
