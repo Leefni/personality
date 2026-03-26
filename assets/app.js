@@ -82,6 +82,8 @@ function showQuestionScreen() {
   if (resultsScreen instanceof HTMLElement) {
     resultsScreen.hidden = true;
   }
+
+  document.body.classList.remove('results-dark');
 }
 
 function showResultScreen() {
@@ -95,6 +97,8 @@ function showResultScreen() {
   if (resultsScreen instanceof HTMLElement) {
     resultsScreen.hidden = false;
   }
+
+  document.body.classList.add('results-dark');
 }
 
 function getLoadingOverlayElements() {
