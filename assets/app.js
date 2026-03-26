@@ -58,6 +58,101 @@ import { renderResult } from './js/results-view.js';
 
 const pageScrollPositions = new Map();
 const RECOVERY_MIN_ANSWER_COUNT = 5;
+const loadingMessages = [
+  'Analyzing your personality...',
+  'Calculating results...',
+  'Generating your personality profile...'
+];
+
+let loadingMessageTimer = null;
+
+function getLoadingOverlayElements() {
+  return {
+    overlay: document.getElementById('loading-overlay'),
+    liveRegion: document.getElementById('loading-overlay-live'),
+    main: document.querySelector('main.container')
+  };
+}
+
+function getInteractiveControls() {
+  return document.querySelectorAll(
+    '#nav button, #result .restart, #delete-data-start, #recovery-toggle, #recovery-request, #recovery-email, #questions input, #questions button'
+  );
+}
+
+function setInteractiveControlsDisabled(isDisabled) {
+  getInteractiveControls().forEach((element) => {
+    if (!(element instanceof HTMLButtonElement || element instanceof HTMLInputElement)) {
+      return;
+    }
+
+    if (isDisabled) {
+      if (!element.disabled) {
+        element.dataset.loadingDisabled = 'true';
+        element.disabled = true;
+      }
+      return;
+    }
+
+    if (element.dataset.loadingDisabled === 'true') {
+      element.disabled = false;
+    }
+    delete element.dataset.loadingDisabled;
+  });
+}
+
+function showLoadingOverlay() {
+  const { overlay, liveRegion, main } = getLoadingOverlayElements();
+  if (!(overlay instanceof HTMLElement)) {
+    return;
+  }
+
+  setInteractiveControlsDisabled(true);
+  overlay.hidden = false;
+  overlay.setAttribute('aria-hidden', 'false');
+  document.body.classList.add('is-loading');
+
+  if (main instanceof HTMLElement) {
+    main.setAttribute('aria-busy', 'true');
+  }
+
+  if (liveRegion instanceof HTMLElement) {
+    let messageIndex = 0;
+    liveRegion.textContent = loadingMessages[messageIndex];
+
+    if (loadingMessageTimer) {
+      window.clearInterval(loadingMessageTimer);
+    }
+
+    loadingMessageTimer = window.setInterval(() => {
+      messageIndex = (messageIndex + 1) % loadingMessages.length;
+      liveRegion.textContent = loadingMessages[messageIndex];
+    }, 1400);
+  }
+}
+
+function hideLoadingOverlay() {
+  const { overlay, liveRegion, main } = getLoadingOverlayElements();
+  if (loadingMessageTimer) {
+    window.clearInterval(loadingMessageTimer);
+    loadingMessageTimer = null;
+  }
+
+  if (overlay instanceof HTMLElement) {
+    overlay.hidden = true;
+    overlay.setAttribute('aria-hidden', 'true');
+  }
+
+  if (liveRegion instanceof HTMLElement) {
+    liveRegion.textContent = loadingMessages[0];
+  }
+
+  if (main instanceof HTMLElement) {
+    main.setAttribute('aria-busy', 'false');
+  }
+
+  document.body.classList.remove('is-loading');
+  setInteractiveControlsDisabled(false);
 const SAVE_RETRY_ATTEMPTS = 3;
 const SAVE_RETRY_BASE_DELAY_MS = 350;
 
@@ -584,6 +679,8 @@ export async function flushPendingSaves() {
 }
 
 async function submitTest() {
+  showLoadingOverlay();
+
   try {
     await flushPendingSaves();
     const data = await submitResults();
@@ -620,6 +717,8 @@ async function submitTest() {
     if (result) {
       result.innerHTML = `<p class="error">${message}</p>`;
     }
+  } finally {
+    hideLoadingOverlay();
   }
 }
 
