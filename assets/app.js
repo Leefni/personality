@@ -153,6 +153,8 @@ function hideLoadingOverlay() {
 
   document.body.classList.remove('is-loading');
   setInteractiveControlsDisabled(false);
+}
+
 const SAVE_RETRY_ATTEMPTS = 3;
 const SAVE_RETRY_BASE_DELAY_MS = 350;
 
@@ -464,18 +466,6 @@ async function loadQuestionsPage() {
     });
     renderQuestions(getViewModel(), {
       isDevelopment: IS_DEVELOPMENT_ENV,
-      onPrev: async () => {
-        const prevPage = getState().page - 1;
-        setPagination({ page: prevPage });
-        await loadQuestionsPage();
-        const savedY = pageScrollPositions.get(prevPage) ?? 0;
-        window.scrollTo({ top: savedY, behavior: 'smooth' });
-      },
-      onNext: async () => {
-        pageScrollPositions.set(getState().page, window.scrollY);
-        setPagination({ page: getState().page + 1 });
-        await loadQuestionsPage();
-        window.scrollTo({ top: 0, behavior: 'smooth' });
       onPrev: async (event) => {
         if (getIsNavigating()) return;
         setIsNavigating(true);
