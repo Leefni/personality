@@ -1169,6 +1169,37 @@ button.danger,
   color: #0f172a;
 }
 
+
+.result-type-label {
+  margin: 0.2rem 0 0;
+  color: #1e293b;
+  font-size: 0.95rem;
+}
+
+.result-type-legend,
+.result-famous-people-list {
+  margin: 0;
+  padding-left: 1.15rem;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.result-type-legend li {
+  display: grid;
+  gap: 0.1rem;
+}
+
+.result-type-legend li small {
+  color: #475569;
+}
+
+.result-famous-people-note,
+.result-type-legend-fallback,
+.result-famous-people-empty {
+  margin-top: 0;
+  color: #475569;
+}
+
 .result-short-description {
   color: #1f2937;
   max-width: 66ch;
@@ -2019,6 +2050,10 @@ body.results-dark .result-glass-shell {
 
 body.results-dark .result-section-card p,
 body.results-dark .result-section-card ul,
+body.results-dark .result-type-legend li small,
+body.results-dark .result-famous-people-note,
+body.results-dark .result-type-legend-fallback,
+body.results-dark .result-famous-people-empty,
 body.results-dark .result-section-card li,
 body.results-dark .result-dimension-dominant,
 body.results-dark .result-dimension-metrics,
@@ -2032,6 +2067,7 @@ body.theme-dark .public-result-card__dimensions {
 }
 
 body.results-dark .result-type,
+body.results-dark .result-type-label,
 body.results-dark .result h2,
 body.results-dark .result h3,
 body.results-dark .result-dimension-header h4,
