@@ -45,6 +45,7 @@ import {
   setProgressMessage,
   setupQuestionChangeListener,
   renderQuestions,
+  getUnansweredCountOnPage,
   updateNavState,
   updateProgress,
   updateQuestionRow,
