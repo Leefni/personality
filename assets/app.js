@@ -99,7 +99,9 @@ function showResultScreen() {
     resultsScreen.hidden = false;
   }
 
-  document.body.classList.add('results-dark');
+  if (!document.body.classList.contains('theme-light')) {
+    document.body.classList.add('results-dark');
+  }
 }
 
 function getLoadingOverlayElements() {

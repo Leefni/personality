@@ -172,11 +172,13 @@ function renderScoreVisualizations(scores) {
     return `
       <article class="result-dimension-card">
         <header class="result-dimension-header">
-          <h4>${escapeHtml(dimension)} · ${escapeHtml(config.labels[0])} ↔ ${escapeHtml(config.labels[1])}</h4>
-          <p class="result-dimension-dominant">
-            Dominant: <strong>${escapeHtml(insight.dominantPole)}</strong>
-            <span class="result-dimension-strength">${insight.dominantPercent}% (${escapeHtml(insight.strengthLabel)})</span>
-          </p>
+          <div class="result-dimension-header-row">
+            <h4 class="result-dimension-title">
+              <span class="result-dimension-code" translate="no">${escapeHtml(dimension)}</span>
+              <span class="result-dimension-poles">${escapeHtml(config.labels[0])} \u2194 ${escapeHtml(config.labels[1])}</span>
+            </h4>
+            <span class="result-dimension-strength">${insight.dominantPercent}% <strong>${escapeHtml(insight.dominantPole)}</strong></span>
+          </div>
         </header>
 
         <div class="result-dimension-meter" role="img" aria-label="${escapeHtml(dimension)} score: dominant ${escapeHtml(insight.dominantPole)}, sterkte ${insight.dominantPercent} procent, genormaliseerd ${normalizedLabel}, ruwe score ${Number.isFinite(insight.rawScore) ? insight.rawScore.toFixed(2) : 'niet beschikbaar'}.">
@@ -191,11 +193,16 @@ function renderScoreVisualizations(scores) {
           </div>
         </div>
 
-        <p class="result-dimension-metrics">
-          <span><strong>Genormaliseerd:</strong> ${normalizedLabel}</span>
-          <span><strong>Ruwe score:</strong> ${Number.isFinite(insight.rawScore) ? insight.rawScore.toFixed(2) : 'n.v.t.'}</span>
-        </p>
-        <p class="result-dimension-explainer"><strong>${escapeHtml(insight.behaviorText)}</strong> ${escapeHtml(insight.nuanceText)}</p>
+        <details class="result-dimension-details">
+          <summary class="result-dimension-summary">Toelichting</summary>
+          <div class="result-dimension-details-body">
+            <p class="result-dimension-explainer"><strong>${escapeHtml(insight.behaviorText)}</strong> ${escapeHtml(insight.nuanceText)}</p>
+            <p class="result-dimension-metrics">
+              <span><strong>Genormaliseerd:</strong> ${normalizedLabel}</span>
+              <span><strong>Ruwe score:</strong> ${Number.isFinite(insight.rawScore) ? insight.rawScore.toFixed(2) : 'n.v.t.'}</span>
+            </p>
+          </div>
+        </details>
       </article>
     `;
   }).join('');
