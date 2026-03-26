@@ -238,11 +238,11 @@ function ensureIncompletePageModal() {
   modal.innerHTML = `
     <div class="modal__backdrop" data-modal-close="true"></div>
     <div class="modal__dialog" role="dialog" aria-modal="true" aria-labelledby="incomplete-page-title" aria-describedby="incomplete-page-message">
-      <h2 id="incomplete-page-title">Incomplete Page</h2>
-      <p id="incomplete-page-message">You haven't answered all questions. Are you sure you want to continue?</p>
+      <h2 id="incomplete-page-title">Niet alle vragen op deze pagina zijn beantwoord</h2>
+      <p id="incomplete-page-message">Je hebt nog niet alle vragen op deze pagina beantwoord. Weet je zeker dat je naar de volgende pagina wilt gaan?</p>
       <div class="modal__actions">
-        <button type="button" class="modal-go-back">Go Back</button>
-        <button type="button" class="modal-continue">Continue Anyway</button>
+        <button type="button" class="modal-go-back">← Vorige</button>
+        <button type="button" class="modal-continue">Volgende →</button>
       </div>
     </div>
   `;
