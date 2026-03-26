@@ -1,4 +1,5 @@
 import { fetchPublicResults } from './api-client.js';
+import { RESULT_CONTENT } from './result-content.js';
 
 function escapeHtml(value) {
   return String(value)
@@ -9,19 +10,53 @@ function escapeHtml(value) {
     .replaceAll("'", '&#39;');
 }
 
-function formatDimensionSummary(scores) {
-  if (!scores || typeof scores !== 'object') {
-    return 'Geen dimensiescore beschikbaar.';
+function normalizeTypeCode(value) {
+  if (typeof value !== 'string') return '';
+  const trimmed = value.trim().toUpperCase();
+  return /^[EINSFTJP]{4}$/.test(trimmed) ? trimmed : '';
+}
+
+function resolveTypeDisplay(rawTypeCode) {
+  const typeCode = normalizeTypeCode(rawTypeCode);
+  if (!typeCode) {
+    return {
+      code: '----',
+      name: 'Onbekend type'
+    };
   }
 
+  const typeName = RESULT_CONTENT?.types?.[typeCode]?.personalitytitel;
+  return {
+    code: typeCode,
+    name: typeof typeName === 'string' && typeName.trim() !== '' ? typeName.trim() : 'Onbekend type'
+  };
+}
+
+function formatDimensionSummary(scores, typeCode) {
   const dimensions = ['EI', 'SN', 'TF', 'JP'];
+  const fallbackMap = {
+    EI: typeCode[0],
+    SN: typeCode[1],
+    TF: typeCode[2],
+    JP: typeCode[3]
+  };
+
+  if (!scores || typeof scores !== 'object') {
+    return dimensions
+      .map((dimension) => `${dimension}: ${fallbackMap[dimension] || 'n.v.t.'}`)
+      .join(' • ');
+  }
+
   const summary = dimensions.map((dimension) => {
     const raw = Number(scores[dimension]);
-    if (!Number.isFinite(raw)) return `${dimension}: n.v.t.`;
+    if (!Number.isFinite(raw)) {
+      return `${dimension}: ${fallbackMap[dimension] || 'n.v.t.'}`;
+    }
 
     const leftPole = dimension[0];
     const rightPole = dimension[1];
-    const dominantPole = raw >= 0 ? leftPole : rightPole;
+    const scoredPole = raw >= 0 ? leftPole : rightPole;
+    const dominantPole = fallbackMap[dimension] || scoredPole;
     const intensity = Math.min(100, Math.round(Math.abs(raw) * 10));
     return `${dimension}: ${dominantPole} ${intensity}%`;
   });
@@ -32,15 +67,15 @@ function formatDimensionSummary(scores) {
 function createCard(result) {
   const displayName = typeof result.display_name === 'string' ? result.display_name.trim() : '';
   const rawTypeCode = typeof result.type_code === 'string' ? result.type_code : result.type;
-  const typeCode = typeof rawTypeCode === 'string' && rawTypeCode.trim() !== '' ? rawTypeCode.trim() : '----';
+  const typeInfo = resolveTypeDisplay(rawTypeCode);
   const createdAt = typeof result.created_at === 'string' && result.created_at.trim() !== '' ? result.created_at.trim() : 'Onbekende datum';
-  const dimensions = formatDimensionSummary(result.scores);
+  const dimensions = formatDimensionSummary(result.scores, typeInfo.code);
 
   return `
     <article class="public-result-card">
       <header class="public-result-card__header">
         <p class="public-result-card__name">${escapeHtml(displayName)}</p>
-        <p class="public-result-card__type" translate="no">${escapeHtml(typeCode)}</p>
+        <p class="public-result-card__type" translate="no">${escapeHtml(typeInfo.code)} · ${escapeHtml(typeInfo.name)}</p>
       </header>
       <p class="public-result-card__date">${escapeHtml(createdAt)}</p>
       <p class="public-result-card__dimensions">${escapeHtml(dimensions)}</p>
