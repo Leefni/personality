@@ -247,17 +247,39 @@ function renderScoreBars(scores) {
           <p><strong>${insight.dominantPercent}% ${escapeHtml(insight.dominantPole)} (${escapeHtml(insight.strengthLabel)})</strong> — ${escapeHtml(insight.behaviorText)}</p>
           <p>${escapeHtml(insight.nuanceText)}</p>
         </div>
-        <div class="result-score-track" role="img" aria-label="Score ${escapeHtml(leftPole)} tegen ${escapeHtml(rightPole)}: ${percent}% ${escapeHtml(leftPole)}">
-          <span class="result-score-fill" style="width:${percent}%;"></span>
-        </div>
-        <div class="result-score-legend">
-          <span>${escapeHtml(leftPole)} (${percent}%)</span>
-          <span>${escapeHtml(rightPole)} (${100 - percent}%)</span>
+        <div class="result-score-row" role="group" aria-label="Verdeling ${escapeHtml(leftPole)} en ${escapeHtml(rightPole)}">
+          <p class="result-score-pole result-score-pole-left"><strong>${escapeHtml(leftPole)}</strong> — ${percent}%</p>
+          <div class="result-score-track" style="--left-pct:${percent}; --right-pct:${100 - percent};" role="img" aria-label="Score ${escapeHtml(leftPole)} tegen ${escapeHtml(rightPole)}: ${percent}% ${escapeHtml(leftPole)} en ${100 - percent}% ${escapeHtml(rightPole)}">
+            <span class="result-score-fill result-score-fill-left" aria-hidden="true"></span>
+            <span class="result-score-midpoint" aria-hidden="true"></span>
+            <span class="result-score-fill result-score-fill-right" aria-hidden="true"></span>
+          </div>
+          <p class="result-score-pole result-score-pole-right"><strong>${escapeHtml(rightPole)}</strong> — ${100 - percent}%</p>
         </div>
         <p class="result-score-raw">Ruwe score: ${Number.isFinite(rawScore) ? rawScore.toFixed(2) : 'n.v.t.'}</p>
       </article>
     `;
   }).join('');
+}
+
+function validateScoreBarCoherence(scores) {
+  const scorePayload = scores && typeof scores === 'object' ? scores : {};
+  const requiredDimensions = ['EI', 'SN', 'TF', 'JP'];
+
+  requiredDimensions.forEach((dimension) => {
+    const percent = scoreToPercent(scorePayload[dimension], dimension);
+    const counterpart = 100 - percent;
+    const hasValidPercentages = Number.isFinite(percent) && Number.isFinite(counterpart) && percent >= 0 && percent <= 100 && counterpart >= 0 && counterpart <= 100;
+
+    if (!hasValidPercentages || percent + counterpart !== 100) {
+      // Keep rendering resilient, but expose invalid states in diagnostics.
+      console.warn(`[results-view] Incoherente balkwaarden voor ${dimension}:`, {
+        rawScore: scorePayload[dimension],
+        percent,
+        counterpart
+      });
+    }
+  });
 }
 
 function buildSummaryText(payload, details) {
@@ -332,6 +354,7 @@ function downloadSummary(text, filename = 'persoonlijkheidssamenvatting.txt') {
  */
 export function renderResult(data, onRestart) {
   applyMaxScores(data);
+  validateScoreBarCoherence(data?.scores);
 
   const res = document.getElementById('result');
   const type = toSafeText(data?.type, '----');
