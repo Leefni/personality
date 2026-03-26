@@ -1176,6 +1176,7 @@ button.danger,
 
 .result-glass-shell {
   position: relative;
+  border-radius: 12px;
   border-color: rgba(148, 163, 184, 0.35);
   background: linear-gradient(160deg, rgba(255, 255, 255, 0.78), rgba(241, 245, 249, 0.56));
   backdrop-filter: blur(6px);
