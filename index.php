@@ -64,22 +64,26 @@ $metaDescription = 'Doe de Personality Test en ontdek jouw persoonlijkheidstype 
       <p class="subtle-disclaimer">Dit is een indicatief instrument voor zelfreflectie en geen klinische diagnose.</p>
     </section>
 
-    <section id="questions"></section>
-    <nav class="nav" id="nav"></nav>
-    <section class="recovery-prompt is-hidden" id="recovery-prompt" aria-label="Voortgang herstellen">
-      <button type="button" class="recovery-trigger" id="recovery-toggle" aria-expanded="false" aria-controls="recovery-panel">
-        Wil je later verder? Bewaar je voortgang via e-mail.
-      </button>
-      <p class="recovery-subtext">Optioneel — je kunt ook direct doorgaan zonder op te slaan.</p>
-      <div class="recovery-panel" id="recovery-panel" hidden>
-        <div class="recovery-controls">
-          <input type="email" id="recovery-email" placeholder="jij@example.com" autocomplete="email">
-          <button type="button" id="recovery-request">Stuur herstel-link</button>
+    <section id="question-screen">
+      <section id="questions"></section>
+      <nav class="nav" id="nav"></nav>
+      <section class="recovery-prompt is-hidden" id="recovery-prompt" aria-label="Voortgang herstellen">
+        <button type="button" class="recovery-trigger" id="recovery-toggle" aria-expanded="false" aria-controls="recovery-panel">
+          Wil je later verder? Bewaar je voortgang via e-mail.
+        </button>
+        <p class="recovery-subtext">Optioneel — je kunt ook direct doorgaan zonder op te slaan.</p>
+        <div class="recovery-panel" id="recovery-panel" hidden>
+          <div class="recovery-controls">
+            <input type="email" id="recovery-email" placeholder="jij@example.com" autocomplete="email">
+            <button type="button" id="recovery-request">Stuur herstel-link</button>
+          </div>
         </div>
-      </div>
-      <p class="recovery-status" id="recovery-status" aria-live="polite"></p>
+        <p class="recovery-status" id="recovery-status" aria-live="polite"></p>
+      </section>
     </section>
-    <section class="result" id="result"></section>
+    <section id="results-screen" hidden>
+      <section class="result" id="result"></section>
+    </section>
   </main>
 
   <div class="loading-overlay" id="loading-overlay" hidden aria-hidden="true">

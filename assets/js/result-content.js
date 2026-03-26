@@ -100,3 +100,34 @@ export const RESULT_CONTENT = {
     }
   }
 };
+
+function buildStructuredFields(type, details) {
+  const energy = type.startsWith('E')
+    ? 'Je richt je meer op jouw buitenwereld en gaat gemakkelijk op in activiteiten. Je houdt van veel mensen om je heen en omdat je enthousiast communiceert ervaren die al snel waar je mee bezig bent. De drukte die bij dit alles hoort geeft jou energie, anders zou je rusteloos worden.'
+    : 'Je richt je meer op jouw innerlijke wereld en gaat gemakkelijk op in gedachten. Je houdt van een rustige omgeving en omdat je doordacht communiceert ben je voor anderen wat moeilijker te doorgronden. De rustige omgeving heb je nodig voor zelfreflectie en om energie bij te tanken, anders zou je overprikkeld en geïrriteerd raken.';
+  const processing = type.includes('N')
+    ? 'Je bent meer op de toekomst gericht. Je start weliswaar met het opnemen van zintuiglijke informatie maar gaat dan al snel over tot het daaraan ontlenen van verbanden, tendensen en patronen. Het is een meer abstracte ideeënrijke beleving, eentje die uitgaat naar wat er zou kunnen zijn of ontstaan. Zo ontwikkelt zich vooral het intuïtieve (conceptuele) vermogen. Leren werkt voor jou zodra je het grote plaatje kent en daarin zaken kunt plaatsen.'
+    : 'Je bent vooral op het hier en nu gericht en beleeft de omgeving hoofdzakelijk naar wat er werkelijk is. Dat doe je met jouw zintuigen. Door te horen, zien, voelen, proeven en ruiken bouw je een schatkist aan ervaringen op. Ervaringsleren (het ondergaan) is dan ook jouw ding, het moet vooral praktisch en concreet zijn. In die oriëntatie merk je details van nature gemakkelijk op.';
+  const decisionStyle = type.includes('T')
+    ? 'Je wilt het doel bij voorkeur op een logische wijze bereiken en gebruikt daarvoor objectieve criteria. Daarbij let je op de voor- en nadelen van elk alternatief dat zich aandient, je focust je op verschillen en kunt kritisch overkomen. Je weegt de gevoelens van mensen mee als feiten die ook tellen maar legt er niet onnodig veel nadruk op. Je beslist meer met jouw hoofd heet het dan, waarbij je eerlijkheid en objectiviteit hoog in het vaandel hebt staan.'
+    : 'Je wilt het doel bij voorkeur in harmonie met jouw omgeving bereiken en gebruikt daarvoor meer subjectieve gevoelscriteria. Logische en objectieve argumenten spelen weliswaar een rol maar die toets je al snel aan innerlijke waarden, zo focus je op overeenkomsten en het in stand houden van de relatie. Je beslist meer met jouw hart heet het dan, waarbij je als het maar even kan betrokken, meevoelend en meelevend handelt.';
+  const structure = type.endsWith('J')
+    ? 'Je staat meer geordend in het leven en wilt graag zaken afronden. Daarom neem je al ras een standpunt in zodat er duidelijkheid ontstaat. Zo vaar je een resolute koers waarbij je zelf in de hand wilt houden wat er gebeurt. Je gedijt bij een optie die je taakgericht, stap voor stap tegemoet treedt, waarbij planningen en schema’s een belangrijke leidraad vormen. Aan onverwachte gebeurtenissen en verrassingen heb je een hekel, ze verstoren jouw doelgerichtheid.'
+    : 'Je staat meer waarnemend in het leven en wilt graag opties open houden. Door af te wachten zie je wel wat er gebeurt, jouw improvisatievermogen helpt jou verder. Het is een tolerante leefstijl waarin routines, vaste structuren en deadlines belemmerend werken. Standpunten zijn voorlopig en onderhevig aan verandering. Met die afwachtende houding speel je flexibel in op wat de veranderende omgeving nodig heeft en geef je invulling aan jouw behoefte aan vrijheid, afwisseling en variatie.';
+
+  return {
+    work_env: `${energy} ${structure}`,
+    communication: `${decisionStyle} ${energy}`,
+    team_risks: `${processing} ${decisionStyle}`,
+    collab_tips: `${structure} ${processing}`
+  };
+}
+
+Object.entries(RESULT_CONTENT.types).forEach(([type, details]) => {
+  const structuredFields = buildStructuredFields(type, details);
+
+  details.work_env = structuredFields.work_env;
+  details.communication = structuredFields.communication;
+  details.team_risks = structuredFields.team_risks;
+  details.collab_tips = structuredFields.collab_tips;
+});

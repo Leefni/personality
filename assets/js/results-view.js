@@ -29,7 +29,7 @@ export function renderResult(data, onRestart) {
 
   res.innerHTML = `
     <section class="result-card">
-      <h2>Resultaat</h2>
+      <h2 id="result-heading" tabindex="-1">Resultaat</h2>
       <p class="result-type">Persoonlijkheidstype: <strong translate="no">${escapeHtml(type)}</strong></p>
       <p class="result-short-description">${escapeHtml(shortDescription)}</p>
       <article class="result-section-card">
@@ -43,6 +43,9 @@ export function renderResult(data, onRestart) {
   `;
 
   res.querySelector('.restart')?.addEventListener('click', onRestart);
-
-  window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+  const resultHeading = res.querySelector('#result-heading');
+  if (resultHeading instanceof HTMLElement) {
+    resultHeading.focus({ preventScroll: true });
+  }
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
