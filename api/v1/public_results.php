@@ -16,4 +16,5 @@ json_success([
     'page' => $page,
     'per_page' => $perPage,
     'total' => $results['total'],
+    'max_scores' => $quizRepository->getMaxTheoreticalScores(),
 ]);

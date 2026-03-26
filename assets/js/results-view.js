@@ -1,15 +1,18 @@
 import { RESULT_CONTENT } from './result-content.js';
 import { publishResult } from './api-client.js';
 import { escapeHtml } from './utils.js';
+import {
+  DEFAULT_MAX_SCORES,
+  dominantPercentFromNormalized,
+  normalizedToPercent,
+  resolveMaxScores,
+  scoreToNormalized
+} from './score-utils.js';
 
 function toSafeText(value, fallback = '') {
   return typeof value === 'string' && value.trim() !== '' ? value.trim() : fallback;
 }
 
-// Fallback max scores based on the question set (count × 2.5 max deviation per answer).
-// These are overwritten by the value returned from the API so they stay accurate
-// even if the question set changes in future.
-const DEFAULT_MAX_SCORES = { EI: 75, SN: 47.5, TF: 92.5, JP: 85 };
 let dimensionMaxScores = { ...DEFAULT_MAX_SCORES };
 
 const SCORE_DIMENSIONS = {
@@ -23,28 +26,7 @@ const SCORE_DIMENSION_ENTRIES = Object.entries(SCORE_DIMENSIONS);
 
 
 function applyMaxScores(apiData) {
-  const ms = apiData?.max_scores;
-  if (!ms || typeof ms !== 'object') return;
-
-  ['EI', 'SN', 'TF', 'JP'].forEach((dim) => {
-    const v = Number(ms[dim]);
-    if (Number.isFinite(v) && v > 0) {
-      dimensionMaxScores[dim] = v;
-    }
-  });
-}
-
-function scoreToNormalized(score, dimension) {
-  const numericScore = Number(score);
-  if (!Number.isFinite(numericScore)) return 0;
-
-  const maxScore = dimensionMaxScores[dimension] || DEFAULT_MAX_SCORES[dimension] || 75;
-  const clamped = Math.max(-maxScore, Math.min(maxScore, numericScore));
-  return Number((clamped / maxScore).toFixed(3));
-}
-
-function normalizedToPercent(normalizedScore) {
-  return Math.round(50 + (normalizedScore * 50));
+  dimensionMaxScores = resolveMaxScores(apiData?.max_scores);
 }
 
 const STRENGTH_LABELS = {
@@ -122,14 +104,14 @@ function classifyStrength(dominancePercent) {
 
 function buildDimensionInsight(dimension, config, scoreValue) {
   const rawScore = Number(scoreValue);
-  const normalized = scoreToNormalized(rawScore, dimension);
+  const normalized = scoreToNormalized(rawScore, dimension, dimensionMaxScores);
   const percent = normalizedToPercent(normalized);
   const leftPole = config.poles[0];
   const rightPole = config.poles[1];
   const dominantPole = normalized >= 0 ? leftPole : rightPole;
   const nonDominantPole = dominantPole === leftPole ? rightPole : leftPole;
   const dominanceStrength = Math.abs(normalized);
-  const dominantPercent = Math.round((0.5 + (dominanceStrength / 2)) * 100);
+  const dominantPercent = dominantPercentFromNormalized(normalized);
   const strengthKey = classifyStrength(dominantPercent);
   const behaviorText = BEHAVIOR_BY_DIMENSION?.[dimension]?.[dominantPole]?.[strengthKey]
     || 'Je profiel toont een genuanceerde mix binnen deze dimensie.';
@@ -204,7 +186,7 @@ function validateScoreBarCoherence(scores) {
   const requiredDimensions = ['EI', 'SN', 'TF', 'JP'];
 
   requiredDimensions.forEach((dimension) => {
-    const percent = normalizedToPercent(scoreToNormalized(scorePayload[dimension], dimension));
+    const percent = normalizedToPercent(scoreToNormalized(scorePayload[dimension], dimension, dimensionMaxScores));
     const counterpart = 100 - percent;
     const hasValidPercentages = Number.isFinite(percent) && Number.isFinite(counterpart) && percent >= 0 && percent <= 100 && counterpart >= 0 && counterpart <= 100;
 
