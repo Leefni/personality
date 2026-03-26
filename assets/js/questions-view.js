@@ -366,22 +366,33 @@ export function updatePageHint(viewModel) {
   nav.appendChild(hint);
 }
 
-export function renderPageDots(viewModel) {
+export function renderPageDots(viewModel, handlers = {}) {
   const questionsContainer = document.getElementById('questions');
   if (!questionsContainer) return;
 
   const totalPages = Math.max(1, Math.ceil(viewModel.totalQuestions / viewModel.perPage));
   const dots = document.createElement('div');
   dots.className = 'page-dots';
-  dots.setAttribute('role', 'status');
-  dots.setAttribute('aria-label', `Paginastatus: pagina ${viewModel.page} van ${totalPages}`);
+  dots.setAttribute('role', 'navigation');
+  dots.setAttribute('aria-label', `Paginanavigatie: pagina ${viewModel.page} van ${totalPages}`);
 
   Array.from({ length: totalPages }).forEach((_, index) => {
-    const dot = document.createElement('span');
+    const pageNumber = index + 1;
+    const dot = document.createElement('button');
+    dot.type = 'button';
     dot.className = 'page-dot';
-    if (index + 1 === viewModel.page) {
+    dot.dataset.page = String(pageNumber);
+    dot.setAttribute('aria-label', `Ga naar pagina ${pageNumber}`);
+    if (pageNumber === viewModel.page) {
       dot.classList.add('is-active');
       dot.setAttribute('aria-current', 'page');
+      dot.disabled = true;
+    } else {
+      dot.addEventListener('click', (event) => {
+        if (typeof handlers.onPageSelect === 'function') {
+          handlers.onPageSelect(pageNumber, event);
+        }
+      });
     }
     dots.appendChild(dot);
   });
@@ -479,7 +490,7 @@ export function renderQuestions(viewModel, handlers) {
   viewModel.questions.forEach((q, index) => {
     qDiv.appendChild(createQuestionRow(q, index, viewModel));
   });
-  renderPageDots(viewModel);
+  renderPageDots(viewModel, handlers);
 
   renderNav(viewModel, handlers);
   updateProgress(viewModel);

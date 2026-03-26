@@ -31,7 +31,8 @@ function formatDimensionSummary(scores) {
 
 function createCard(result) {
   const displayName = typeof result.display_name === 'string' ? result.display_name.trim() : '';
-  const typeCode = typeof result.type_code === 'string' && result.type_code.trim() !== '' ? result.type_code.trim() : '----';
+  const rawTypeCode = typeof result.type_code === 'string' ? result.type_code : result.type;
+  const typeCode = typeof rawTypeCode === 'string' && rawTypeCode.trim() !== '' ? rawTypeCode.trim() : '----';
   const createdAt = typeof result.created_at === 'string' && result.created_at.trim() !== '' ? result.created_at.trim() : 'Onbekende datum';
   const dimensions = formatDimensionSummary(result.scores);
 

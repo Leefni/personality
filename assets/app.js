@@ -603,6 +603,32 @@ async function loadQuestionsPage() {
           setNavLoadingState(false);
         }
       },
+      onPageSelect: async (nextPage, event) => {
+        const requestedPage = Number(nextPage);
+        const stateNow = getState();
+        if (!Number.isInteger(requestedPage) || requestedPage < 1) return;
+        if (requestedPage === stateNow.page || getIsNavigating()) return;
+
+        const totalPages = Math.max(1, Math.ceil(stateNow.totalQuestions / stateNow.perPage));
+        if (requestedPage > totalPages) return;
+
+        setIsNavigating(true);
+        setNavLoadingState(true);
+
+        try {
+          await withButtonLoadingState(event?.currentTarget, async () => {
+            pageScrollPositions.set(stateNow.page, window.scrollY);
+            await flushPendingSaves();
+            setPagination({ page: requestedPage });
+            await loadQuestionsPage();
+            const targetY = pageScrollPositions.get(requestedPage) ?? 0;
+            window.scrollTo({ top: targetY, behavior: 'smooth' });
+          });
+        } finally {
+          setIsNavigating(false);
+          setNavLoadingState(false);
+        }
+      },
       onSubmit: submitTest
     });
     window.scrollTo({ top: 0, behavior: 'smooth' });
