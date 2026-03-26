@@ -175,11 +175,3 @@ export function publishResult(displayName) {
     body: JSON.stringify({ display_name: displayName })
   });
 }
-
-/**
- * Fetches published public results.
- * @returns {Promise<{ok?: boolean, items?: Array}>}
- */
-export function fetchPublicResults() {
-  return apiRequest('api/v1/public_results.php');
-}
