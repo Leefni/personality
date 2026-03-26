@@ -107,6 +107,37 @@ function run_migrations(PDO $pdo): void
     } catch (Throwable $e) {
         error_log('[migration result sharing] ' . $e->getMessage());
     }
+
+    // Migration 3: ensure public_results exists for publicly shared result pages.
+    try {
+        $publicResultsExists = (bool) $pdo->query(
+            "SELECT 1 FROM information_schema.TABLES
+             WHERE TABLE_SCHEMA = DATABASE()
+               AND TABLE_NAME = 'public_results'
+             LIMIT 1"
+        )->fetchColumn();
+
+        if (!$publicResultsExists && !table_exists($pdo, 'public_results')) {
+            $pdo->exec(
+                "CREATE TABLE public_results (
+                    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                    public_id VARCHAR(32) NOT NULL,
+                    visitor_id VARCHAR(64) NOT NULL,
+                    display_name VARCHAR(80) NOT NULL DEFAULT 'Anoniem',
+                    type_code CHAR(4) NOT NULL,
+                    scores_json LONGTEXT NOT NULL,
+                    is_visible TINYINT(1) NOT NULL DEFAULT 1,
+                    reported_count INT UNSIGNED NOT NULL DEFAULT 0,
+                    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE KEY uq_public_results_public_id (public_id),
+                    KEY idx_public_results_visible_created (is_visible, created_at),
+                    KEY idx_public_results_visitor_created (visitor_id, created_at)
+                )"
+            );
+        }
+    } catch (Throwable $e) {
+        error_log('[migration public_results] ' . $e->getMessage());
+    }
 }
 
 /**
