@@ -29,19 +29,28 @@ function get_cached_result(PDO $pdo, string $visitor): ?array
     ];
 }
 
-function cache_result(PDO $pdo, string $visitor, string $type, array $scores): void
+function cache_result(PDO $pdo, string $visitor, string $type, array $scores, ?string $displayName = null, bool $isPublic = true): void
 {
     if ($visitor === '' || $type === '') {
         return;
     }
 
     $stmt = $pdo->prepare(
-        'INSERT INTO results (visitor_id, type_code, detail_json)
-         VALUES (?, ?, ?)
-         ON DUPLICATE KEY UPDATE type_code = ?, detail_json = ?'
+        'INSERT INTO results (visitor_id, type_code, detail_json, display_name, is_public)
+         VALUES (?, ?, ?, ?, ?)
+         ON DUPLICATE KEY UPDATE type_code = ?, detail_json = ?, display_name = VALUES(display_name), is_public = VALUES(is_public)'
     );
     $encodedScores = json_encode($scores, JSON_UNESCAPED_UNICODE);
-    $stmt->execute([$visitor, $type, $encodedScores, $type, $encodedScores]);
+    $safeDisplayName = trim((string) ($displayName ?? ''));
+    $stmt->execute([
+        $visitor,
+        $type,
+        $encodedScores,
+        $safeDisplayName !== '' ? mb_substr($safeDisplayName, 0, 80) : null,
+        $isPublic ? 1 : 0,
+        $type,
+        $encodedScores,
+    ]);
 }
 
 function invalidate_cached_result(PDO $pdo, string $visitor): void

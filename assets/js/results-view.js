@@ -368,6 +368,7 @@ export function renderResult(data, onRestart) {
         ${renderScoreVisualizations(data?.scores)}
       </section>
       <div class="result-actions">
+        <a class="view-community-wall" href="public-results.php">Community wall bekijken</a>
         <label class="result-publish-name">
           <span>Naam (optioneel)</span>
           <input type="text" class="publish-name-input" maxlength="${DISPLAY_NAME_MAX_LENGTH}" autocomplete="name" placeholder="Bijv. Alex" />
@@ -380,6 +381,17 @@ export function renderResult(data, onRestart) {
   `;
 
   res.querySelector('.restart')?.addEventListener('click', onRestart);
+
+  // If a dedicated publish-success container exists, ensure it also links
+  // to the public browsing page.
+  const publishSuccess = res.querySelector('.publish-success');
+  if (publishSuccess instanceof HTMLElement && !publishSuccess.querySelector('.view-community-wall')) {
+    const communityLink = document.createElement('a');
+    communityLink.className = 'view-community-wall';
+    communityLink.href = 'public-results.php';
+    communityLink.textContent = 'Bekijk alle gedeelde resultaten';
+    publishSuccess.appendChild(communityLink);
+  }
   const publishButton = res.querySelector('.publish-result');
   const displayNameInput = res.querySelector('.publish-name-input');
   const publishStatus = res.querySelector('.result-publish-status');
