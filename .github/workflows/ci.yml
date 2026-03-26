@@ -39,11 +39,16 @@ jobs:
 
       - name: Lint all PHP files
         run: |
-          find . -name "*.php" -not -path "./vendor/*" \
-            | sort \
-            | xargs -I{} php -l {} \
-            | grep -v "No syntax errors" \
-            || true
+          failures=0
+          while IFS= read -r file; do
+            echo "::group::php -l ${file}"
+            if ! php -l "${file}"; then
+              failures=1
+            fi
+            echo "::endgroup::"
+          done < <(find . -name "*.php" -not -path "./vendor/*" | sort)
+
+          exit "${failures}"
 
   # ── 3. PHP unit tests (pure service logic, no DB dependency) ──────────────
   php-unit:
