@@ -306,7 +306,6 @@ export function renderNav(viewModel, handlers) {
   }
 
   const hasNext = viewModel.page * viewModel.perPage < viewModel.totalQuestions;
-  const unansweredOnPage = getUnansweredCountOnPage(viewModel);
   if (hasNext) {
     const next = document.createElement('button');
     next.type = 'button';
@@ -330,14 +329,41 @@ export function renderNav(viewModel, handlers) {
     nav.appendChild(submit);
   }
 
-  // Only show the unanswered-count hint when there are actually unanswered questions on this page.
-  if (unansweredOnPage > 0) {
-    const hint = document.createElement('p');
-    hint.className = 'page-hint';
-    const suffix = unansweredOnPage === 1 ? 'vraag' : 'vragen';
-    hint.textContent = `Nog ${unansweredOnPage} openstaande ${suffix} op deze pagina`;
-    nav.appendChild(hint);
+  updatePageHint(viewModel);
+}
+
+/**
+ * Updates the unanswered questions hint in #nav.
+ * @param {Object} viewModel
+ * @returns {void}
+ */
+export function updatePageHint(viewModel) {
+  const nav = document.getElementById('nav');
+  if (!(nav instanceof HTMLElement)) return;
+
+  const unansweredOnPage = getUnansweredCountOnPage(viewModel);
+  const hints = Array.from(nav.querySelectorAll('.page-hint'));
+  const existingHint = hints[0] instanceof HTMLElement ? hints[0] : null;
+
+  hints.slice(1).forEach((hint) => hint.remove());
+
+  if (unansweredOnPage <= 0) {
+    existingHint?.remove();
+    return;
   }
+
+  const suffix = unansweredOnPage === 1 ? 'vraag' : 'vragen';
+  const text = `Nog ${unansweredOnPage} openstaande ${suffix} op deze pagina`;
+
+  if (existingHint) {
+    existingHint.textContent = text;
+    return;
+  }
+
+  const hint = document.createElement('p');
+  hint.className = 'page-hint';
+  hint.textContent = text;
+  nav.appendChild(hint);
 }
 
 export function renderPageDots(viewModel) {
