@@ -4,6 +4,9 @@ import {
   loadLocalDraft,
   saveLocalDraft,
   clearLocalDraft,
+  loadPendingRetries,
+  savePendingRetries,
+  clearPendingRetries,
   buildDebugHint,
   showError,
   formatApiError
@@ -26,7 +29,9 @@ import {
   bumpSaveSession,
   getSaveSession,
   setPagination,
-  setQuestionChangeListenerAttached
+  setQuestionChangeListenerAttached,
+  setIsNavigating,
+  getIsNavigating
 } from './js/state.js';
 import {
   fetchProgress,
@@ -43,6 +48,7 @@ import {
   setProgressMessage,
   setupQuestionChangeListener,
   renderQuestions,
+  getUnansweredCountOnPage,
   updateNavState,
   updateProgress,
   updateQuestionRow,
@@ -52,6 +58,31 @@ import { renderResult } from './js/results-view.js';
 
 const pageScrollPositions = new Map();
 const RECOVERY_MIN_ANSWER_COUNT = 5;
+const SAVE_RETRY_ATTEMPTS = 3;
+const SAVE_RETRY_BASE_DELAY_MS = 350;
+
+function sleep(ms) {
+  return new Promise((resolve) => window.setTimeout(resolve, ms));
+}
+
+function isRetryableSaveError(error) {
+  const status = error?.status;
+  if (status === undefined) return true;
+  return status === 408 || status === 429 || status >= 500;
+}
+
+function markQuestionPendingRetry(questionId) {
+  const pendingRetries = loadPendingRetries();
+  pendingRetries[questionId] = true;
+  savePendingRetries(pendingRetries);
+}
+
+function clearQuestionPendingRetry(questionId) {
+  const pendingRetries = loadPendingRetries();
+  if (!pendingRetries[questionId]) return;
+  delete pendingRetries[questionId];
+  savePendingRetries(pendingRetries);
+}
 
 function updateIntroSectionsVisibility() {
   const state = getState();
@@ -76,8 +107,23 @@ function getViewModel() {
     perPage: state.perPage,
     totalQuestions: state.totalQuestions,
     pendingQuestionIds: state.pendingQuestionIds,
+    isNavigating: state.isNavigating,
     likertLabels
   };
+}
+
+function setNavLoadingState(isLoading) {
+  const nav = document.getElementById('nav');
+  if (!nav) return;
+
+  nav.querySelectorAll('button').forEach((button) => {
+    if (!(button instanceof HTMLButtonElement)) return;
+    button.disabled = isLoading;
+  });
+
+  if (!isLoading) {
+    updatePendingActionState();
+  }
 }
 
 function updatePendingActionState() {
@@ -124,6 +170,7 @@ function clearClientState() {
   state.pendingQuestionIds.clear();
   clearAnswers();
   clearLocalDraft();
+  clearPendingRetries();
 }
 
 function clearResultUi() {
@@ -323,7 +370,6 @@ async function loadQuestionsPage() {
     renderQuestions(getViewModel(), {
       isDevelopment: IS_DEVELOPMENT_ENV,
       onPrev: async () => {
-        await flushPendingSaves();
         const prevPage = getState().page - 1;
         setPagination({ page: prevPage });
         await loadQuestionsPage();
@@ -332,10 +378,51 @@ async function loadQuestionsPage() {
       },
       onNext: async () => {
         pageScrollPositions.set(getState().page, window.scrollY);
-        await flushPendingSaves();
         setPagination({ page: getState().page + 1 });
         await loadQuestionsPage();
         window.scrollTo({ top: 0, behavior: 'smooth' });
+      onPrev: async (event) => {
+        if (getIsNavigating()) return;
+        setIsNavigating(true);
+        setNavLoadingState(true);
+        const triggerButton = event?.currentTarget;
+        if (triggerButton instanceof HTMLButtonElement) {
+          triggerButton.textContent = 'Bezig...';
+          triggerButton.classList.add('is-loading');
+        }
+
+        try {
+          await flushPendingSaves();
+          const prevPage = getState().page - 1;
+          setPagination({ page: prevPage });
+          await loadQuestionsPage();
+          const savedY = pageScrollPositions.get(prevPage) ?? 0;
+          window.scrollTo({ top: savedY, behavior: 'smooth' });
+        } finally {
+          setIsNavigating(false);
+          setNavLoadingState(false);
+        }
+      },
+      onNext: async (event) => {
+        if (getIsNavigating()) return;
+        setIsNavigating(true);
+        setNavLoadingState(true);
+        const triggerButton = event?.currentTarget;
+        if (triggerButton instanceof HTMLButtonElement) {
+          triggerButton.textContent = 'Bezig...';
+          triggerButton.classList.add('is-loading');
+        }
+
+        try {
+          pageScrollPositions.set(getState().page, window.scrollY);
+          await flushPendingSaves();
+          setPagination({ page: getState().page + 1 });
+          await loadQuestionsPage();
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        } finally {
+          setIsNavigating(false);
+          setNavLoadingState(false);
+        }
       },
       onSubmit: submitTest
     });
@@ -379,16 +466,45 @@ async function persistAnswer(questionId, value, saveSession) {
   updatePendingActionState();
 
   try {
-    await saveAnswer(questionId, value);
+    let lastError = null;
+    for (let attempt = 0; attempt < SAVE_RETRY_ATTEMPTS; attempt += 1) {
+      if (getSaveSession() !== saveSession) return;
+
+      if (attempt > 0) {
+        await sleep(SAVE_RETRY_BASE_DELAY_MS * Math.pow(2, attempt - 1));
+      }
+
+      try {
+        await saveAnswer(questionId, value);
+        lastError = null;
+        break;
+      } catch (error) {
+        lastError = error;
+        const isFinalAttempt = attempt >= SAVE_RETRY_ATTEMPTS - 1;
+        if (isFinalAttempt || !isRetryableSaveError(error)) {
+          throw error;
+        }
+      }
+    }
+
+    if (lastError) {
+      throw lastError;
+    }
+
     if (getSaveSession() !== saveSession) return;
+    clearQuestionPendingRetry(questionId);
     saveLocalDraft(state.answers);
     // Show brief save confirmation badge on the question card.
     const questionEl = document.querySelector(`[data-question-id="${questionId}"]`);
     if (questionEl) flashSavedQuestion(questionEl);
   } catch (error) {
     if (getSaveSession() !== saveSession) return;
+    markQuestionPendingRetry(questionId);
     saveLocalDraft(state.answers);
-    const message = formatApiError(error, 'Opslaan mislukt. Probeer het opnieuw.');
+    const message = formatApiError(
+      error,
+      'Opslaan mislukt. Antwoord blijft lokaal bewaard en wordt later opnieuw geprobeerd.'
+    );
     showError(message);
   } finally {
     state.pendingQuestionIds.delete(questionId);
@@ -476,6 +592,7 @@ async function submitTest() {
       document.title = `Jouw type: ${type} – Personality Test`;
     }
     clearLocalDraft();
+    clearPendingRetries();
     renderResult(data, resetTest);
     updatePendingActionState();
   } catch (error) {
