@@ -326,6 +326,35 @@ export function renderResult(data, onRestart) {
   const longDescription = toSafeText(details?.longDescriptionNl, shortDescription);
 
   res.innerHTML = `
+    <section class="result-card result-theme-shell">
+      <div class="result-hero-background" aria-hidden="true">
+        <span class="result-hero-blob result-hero-blob--one"></span>
+        <span class="result-hero-blob result-hero-blob--two"></span>
+        <span class="result-hero-particles"></span>
+      </div>
+      <div class="result-content-stack">
+        <header class="result-hero">
+          <h2 id="result-heading" tabindex="-1">Resultaat</h2>
+          <div class="result-type-badge-frame">
+            <p class="result-type">Persoonlijkheidstype: <strong translate="no">${escapeHtml(type)}</strong></p>
+          </div>
+          <p class="result-short-description">${escapeHtml(shortDescription)}</p>
+        </header>
+        <article class="result-section-card result-glass-shell result-glass-shell--description">
+          <h3>Lange beschrijving</h3>
+          <p>${escapeHtml(longDescription)}</p>
+        </article>
+        <section class="result-score-grid result-glass-shell result-glass-shell--scores" aria-label="Dimensiescores">
+          <h3>Dimensiescores</h3>
+          <div class="result-dimension-shell-grid">
+            ${renderScoreVisualizations(data?.scores)}
+          </div>
+        </section>
+        <div class="result-action-rail">
+          <div class="result-actions">
+            <button type="button" class="restart">Opnieuw doen</button>
+          </div>
+        </div>
     <section class="result-card">
       <h2 id="result-heading" tabindex="-1">Resultaat</h2>
       <p class="result-type">Persoonlijkheidstype: <strong translate="no">${escapeHtml(type)}</strong></p>
