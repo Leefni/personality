@@ -54,6 +54,7 @@ import {
   getUnansweredCountOnPage,
   updateNavState,
   updateProgress,
+  updatePageHint,
   updateQuestionRow,
   flashSavedQuestion
 } from './js/questions-view.js';
@@ -684,6 +685,7 @@ function queueAnswerSave(questionId, value) {
   saveLocalDraft(state.answers);
   updateQuestionRow(questionId, getViewModel());
   updateProgress(getViewModel());
+  updatePageHint(getViewModel());
   updatePendingActionState();
   updateRecoveryVisibility();
 
