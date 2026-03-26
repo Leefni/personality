@@ -18,8 +18,8 @@ $basePath = $scriptDir === '/' ? '' : $scriptDir;
 $baseUrl = $scheme . '://' . $host . $basePath;
 $canonicalUrl = rtrim($baseUrl, '/') . '/index.php';
 
-$metaTitle = 'Personality Test – Ontdek jouw persoonlijkheidstype';
-$metaDescription = 'Doe de Personality Test en ontdek jouw persoonlijkheidstype op basis van EI, SN, TF en JP dimensies.';
+$metaTitle = 'Persoonlijkheidstest – Ontdek jouw persoonlijkheidstype';
+$metaDescription = 'Doe de persoonlijkheidstest en ontdek jouw persoonlijkheidstype op basis van EI-, SN-, TF- en JP-dimensies.';
 ?>
 <!DOCTYPE html>
 <html lang="nl">
@@ -48,7 +48,7 @@ $metaDescription = 'Doe de Personality Test en ontdek jouw persoonlijkheidstype 
     <p>Deze website werkt alleen met JavaScript. Zet JavaScript aan om de test te gebruiken.</p>
   </noscript>
   <main class="container" data-app-env="<?php echo htmlspecialchars($appEnv, ENT_QUOTES, 'UTF-8'); ?>">
-    <h1>Personality Test</h1>
+    <h1>Persoonlijkheidstest</h1>
     <p class="progress" id="progress">Laden...</p>
     <p class="test-meta" id="test-meta">Testversie laden...</p>
 
@@ -93,11 +93,11 @@ $metaDescription = 'Doe de Personality Test en ontdek jouw persoonlijkheidstype 
     <div class="loading-overlay__panel" role="status" aria-live="polite" aria-atomic="true">
       <span class="loading-overlay__spinner" aria-hidden="true"></span>
       <ul class="loading-overlay__messages" aria-hidden="true">
-        <li>Analyzing your personality...</li>
-        <li>Calculating results...</li>
-        <li>Generating your personality profile...</li>
+        <li>Je persoonlijkheid wordt geanalyseerd...</li>
+        <li>Resultaten worden berekend...</li>
+        <li>Je persoonlijkheidsprofiel wordt samengesteld...</li>
       </ul>
-      <p class="loading-overlay__live" id="loading-overlay-live">Analyzing your personality...</p>
+      <p class="loading-overlay__live" id="loading-overlay-live">Je persoonlijkheid wordt geanalyseerd...</p>
     </div>
   </div>
 
