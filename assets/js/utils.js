@@ -20,6 +20,15 @@ export const likertLabels = [
   'Helemaal eens'
 ];
 
+export function escapeHtml(value) {
+  return String(value)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
+}
+
 export function loadLocalDraft() {
   try {
     const raw = localStorage.getItem(ANSWERS_STORAGE_KEY);

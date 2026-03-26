@@ -1,14 +1,6 @@
 import { fetchPublicResults } from './api-client.js';
 import { RESULT_CONTENT } from './result-content.js';
-
-function escapeHtml(value) {
-  return String(value)
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#39;');
-}
+import { escapeHtml } from './utils.js';
 
 function normalizeTypeCode(value) {
   if (typeof value !== 'string') return '';
