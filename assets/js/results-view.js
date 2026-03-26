@@ -25,6 +25,26 @@ const SCORE_DIMENSIONS = {
 const SCORE_DIMENSION_ENTRIES = Object.entries(SCORE_DIMENSIONS);
 
 
+const FAMOUS_PEOPLE_BY_TYPE = {
+  INTJ: ['Elon Musk', 'Jane Austen', 'Michelle Obama'],
+  INTP: ['Albert Einstein', 'Bill Gates', 'Marie Curie'],
+  ENTJ: ['Steve Jobs', 'Margaret Thatcher', 'Gordon Ramsay'],
+  ENTP: ['Thomas Edison', 'Mark Twain', 'Céline Dion'],
+  INFJ: ['Nelson Mandela', 'Martin Luther King Jr.', 'Lady Gaga'],
+  INFP: ['J.R.R. Tolkien', 'William Shakespeare', 'Alicia Keys'],
+  ENFJ: ['Oprah Winfrey', 'Barack Obama', 'Maya Angelou'],
+  ENFP: ['Robin Williams', 'Robert Downey Jr.', 'Quentin Tarantino'],
+  ISTJ: ['Natalie Portman', 'George Washington', 'Warren Buffett'],
+  ISFJ: ['Beyoncé', 'Kate Middleton', 'Rosa Parks'],
+  ESTJ: ['Sonia Sotomayor', 'John D. Rockefeller', 'Emma Watson'],
+  ESFJ: ['Taylor Swift', 'Jennifer Lopez', 'Steve Harvey'],
+  ISTP: ['Michael Jordan', 'Tom Cruise', 'Scarlett Johansson'],
+  ISFP: ['Frida Kahlo', 'Michael Jackson', 'David Beckham'],
+  ESTP: ['Ernest Hemingway', 'Eddie Murphy', 'Madonna'],
+  ESFP: ['Jamie Oliver', 'Miley Cyrus', 'Adele']
+};
+
+
 function applyMaxScores(apiData) {
   dimensionMaxScores = resolveMaxScores(apiData?.max_scores);
 }
@@ -181,6 +201,54 @@ function renderScoreVisualizations(scores) {
   }).join('');
 }
 
+
+function resolveTypeLabel(type, details) {
+  const title = toSafeText(details?.personalitytitel, 'Onbekende titel');
+  if (!type || type === '----') {
+    return title;
+  }
+
+  return `${type} · ${title}`;
+}
+
+function renderTypeLetterLegend(typeCode = '') {
+  const code = typeof typeCode === 'string' ? typeCode.trim().toUpperCase() : '';
+  if (!/^[EINSFTJP]{4}$/.test(code)) {
+    return '<p class="result-type-legend-fallback">Typecode niet beschikbaar.</p>';
+  }
+
+  const dimensionOrder = ['EI', 'SN', 'TF', 'JP'];
+  const entries = dimensionOrder.map((dimension, index) => {
+    const selectedPole = code[index];
+    const cfg = RESULT_CONTENT?.dimensions?.[dimension];
+    const poles = Array.isArray(cfg?.poles) ? cfg.poles : [dimension[0], dimension[1]];
+    const names = Array.isArray(cfg?.names) ? cfg.names : [poles[0], poles[1]];
+    const selectedIndex = poles.indexOf(selectedPole);
+    const selectedName = selectedIndex >= 0 ? names[selectedIndex] : selectedPole;
+    const counterpartName = selectedIndex === 0 ? names[1] : names[0];
+
+    return `
+      <li>
+        <strong translate="no">${escapeHtml(selectedPole)}</strong>
+        <span>${escapeHtml(selectedName)}</span>
+        <small>(${escapeHtml(dimension)}: tegenover ${escapeHtml(counterpartName)})</small>
+      </li>
+    `;
+  });
+
+  return `<ul class="result-type-legend">${entries.join('')}</ul>`;
+}
+
+function renderFamousPeople(typeCode = '') {
+  const people = Array.isArray(FAMOUS_PEOPLE_BY_TYPE[typeCode]) ? FAMOUS_PEOPLE_BY_TYPE[typeCode] : [];
+  if (people.length === 0) {
+    return '<p class="result-famous-people-empty">Nog geen voorbeelden beschikbaar voor dit type.</p>';
+  }
+
+  const items = people.map((name) => `<li>${escapeHtml(name)}</li>`).join('');
+  return `<ul class="result-famous-people-list">${items}</ul>`;
+}
+
 function validateScoreBarCoherence(scores) {
   const scorePayload = scores && typeof scores === 'object' ? scores : {};
   const requiredDimensions = ['EI', 'SN', 'TF', 'JP'];
@@ -297,6 +365,7 @@ export function renderResult(data, onRestart) {
 
   const shortDescription = toSafeText(details?.shortDescription, 'Geen beschrijving beschikbaar voor dit type.');
   const longDescription = toSafeText(details?.longDescriptionNl, shortDescription);
+  const typeLabel = resolveTypeLabel(type, details);
 
   res.innerHTML = `
     <section class="result-card result-theme-shell">
@@ -309,10 +378,20 @@ export function renderResult(data, onRestart) {
         <header class="result-hero">
           <h2 id="result-heading" tabindex="-1">Resultaat</h2>
           <div class="result-type-badge-frame">
-            <p class="result-type">Persoonlijkheidstype: <strong translate="no">${escapeHtml(type)}</strong></p>
+            <p class="result-type">Persoonlijkheidstypecode: <strong translate="no">${escapeHtml(type)}</strong></p>
+            <p class="result-type-label">Type-naam: <strong>${escapeHtml(typeLabel)}</strong></p>
           </div>
           <p class="result-short-description">${escapeHtml(shortDescription)}</p>
         </header>
+        <article class="result-section-card result-glass-shell result-glass-shell--type-explainer">
+          <h3>Wat betekent ${escapeHtml(type)}?</h3>
+          ${renderTypeLetterLegend(type)}
+        </article>
+        <article class="result-section-card result-glass-shell result-glass-shell--famous-people">
+          <h3>Bekende mensen met dit type</h3>
+          <p class="result-famous-people-note">Dit zijn veelgenoemde voorbeelden in populaire typologie-overzichten.</p>
+          ${renderFamousPeople(type)}
+        </article>
         <article class="result-section-card result-glass-shell result-glass-shell--description">
           <h3>Lange beschrijving</h3>
           <p>${escapeHtml(longDescription)}</p>
