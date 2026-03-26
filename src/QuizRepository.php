@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 final class QuizRepository
 {
+    private const DISPLAY_NAME_MAX_LENGTH = 60;
+
     public function __construct(private PDO $pdo)
     {
     }
@@ -138,11 +140,7 @@ final class QuizRepository
             $normalizedDisplayName = 'Anoniem';
         }
 
-        if (function_exists('mb_substr')) {
-            $normalizedDisplayName = mb_substr($normalizedDisplayName, 0, 80);
-        } else {
-            $normalizedDisplayName = substr($normalizedDisplayName, 0, 80);
-        }
+        $normalizedDisplayName = self::truncateDisplayName($normalizedDisplayName);
         $encodedScores = json_encode($scores, JSON_UNESCAPED_UNICODE);
 
         if ($encodedScores === false) {
@@ -426,10 +424,19 @@ final class QuizRepository
             'UPDATE results SET display_name = ?, is_public = ? WHERE visitor_id = ?'
         );
         $stmt->execute([
-            $name !== '' ? mb_substr($name, 0, 80) : null,
+            $name !== '' ? self::truncateDisplayName($name) : null,
             $isPublic ? 1 : 0,
             $visitorId,
         ]);
+    }
+
+    private static function truncateDisplayName(string $displayName): string
+    {
+        if (function_exists('mb_substr')) {
+            return mb_substr($displayName, 0, self::DISPLAY_NAME_MAX_LENGTH);
+        }
+
+        return substr($displayName, 0, self::DISPLAY_NAME_MAX_LENGTH);
     }
 
     private static function buildAnonymousDisplayName(int $resultId, string $visitorId): string
