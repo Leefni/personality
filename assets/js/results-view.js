@@ -262,6 +262,7 @@ function renderScoreBars(scores) {
 
 function buildSummaryText(payload, details) {
   const type = toSafeText(payload?.type, '----');
+  const personalityTitle = toSafeText(details?.personalitytitel, 'Onbekende titel');
   const shortDescription = toSafeText(details?.shortDescription, 'Geen beschrijving beschikbaar.');
   const longDescription = toSafeText(details?.longDescriptionNl, shortDescription);
   const strengths = asStringList(details?.strengths);
@@ -276,7 +277,7 @@ function buildSummaryText(payload, details) {
   return [
     `Persoonlijkheidssamenvatting (${type})`,
     '',
-    `Persoonlijkheidstitel (${personalitytitel})`,
+    `Persoonlijkheidstitel (${personalityTitle})`,
     '',
     `Kern: ${shortDescription}`,
     '',
