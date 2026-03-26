@@ -72,6 +72,16 @@ const loadingMessages = [
 let loadingMessageTimer = null;
 let isSubmitting = false;
 
+function syncResultsDarkClass() {
+  const resultsScreen = document.getElementById('results-screen');
+  const isResultsVisible = resultsScreen instanceof HTMLElement && !resultsScreen.hidden;
+  const isLightTheme = typeof document.body.classList?.contains === 'function'
+    ? document.body.classList.contains('theme-light')
+    : String(document.body.className || '').split(/\s+/).includes('theme-light');
+  const shouldForceDark = isResultsVisible && !isLightTheme;
+  document.body.classList.toggle('results-dark', shouldForceDark);
+}
+
 function showQuestionScreen() {
   const questionScreen = document.getElementById('question-screen');
   const resultsScreen = document.getElementById('results-screen');
@@ -84,7 +94,7 @@ function showQuestionScreen() {
     resultsScreen.hidden = true;
   }
 
-  document.body.classList.remove('results-dark');
+  syncResultsDarkClass();
 }
 
 function showResultScreen() {
@@ -99,9 +109,7 @@ function showResultScreen() {
     resultsScreen.hidden = false;
   }
 
-  if (!document.body.classList.contains('theme-light')) {
-    document.body.classList.add('results-dark');
-  }
+  syncResultsDarkClass();
 }
 
 function getLoadingOverlayElements() {
@@ -955,4 +963,9 @@ async function bootstrap() {
 }
 
 initThemeToggle();
+syncResultsDarkClass();
+const themeToggleButton = document.getElementById('theme-toggle');
+if (themeToggleButton instanceof HTMLButtonElement) {
+  themeToggleButton.addEventListener('click', syncResultsDarkClass);
+}
 bootstrap();
