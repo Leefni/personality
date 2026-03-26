@@ -65,6 +65,33 @@ const loadingMessages = [
 ];
 
 let loadingMessageTimer = null;
+let isSubmitting = false;
+
+function showQuestionScreen() {
+  const questionScreen = document.getElementById('question-screen');
+  const resultsScreen = document.getElementById('results-screen');
+
+  if (questionScreen instanceof HTMLElement) {
+    questionScreen.hidden = false;
+  }
+
+  if (resultsScreen instanceof HTMLElement) {
+    resultsScreen.hidden = true;
+  }
+}
+
+function showResultScreen() {
+  const questionScreen = document.getElementById('question-screen');
+  const resultsScreen = document.getElementById('results-screen');
+
+  if (questionScreen instanceof HTMLElement) {
+    questionScreen.hidden = true;
+  }
+
+  if (resultsScreen instanceof HTMLElement) {
+    resultsScreen.hidden = false;
+  }
+}
 
 function getLoadingOverlayElements() {
   return {
@@ -225,7 +252,7 @@ function setNavLoadingState(isLoading) {
 
 function updatePendingActionState() {
   const state = getState();
-  updateNavState(state.answers, state.totalQuestions, state.pendingQuestionIds);
+  updateNavState(state.answers, state.totalQuestions, state.isNavigating);
   const restartButton = document.querySelector('#result .restart');
   if (restartButton) {
     restartButton.disabled = hasPendingSaves();
@@ -314,6 +341,7 @@ async function handleDeleteData() {
     await deleteData();
     clearClientState();
     clearResultUi();
+    showQuestionScreen();
     setPagination({ page: 1 });
     setProgressMessage('Gegevens verwijderd. Je kunt opnieuw beginnen.');
     await loadQuestionsPage();
@@ -669,6 +697,11 @@ export async function flushPendingSaves() {
 }
 
 async function submitTest() {
+  if (isSubmitting) {
+    return;
+  }
+
+  isSubmitting = true;
   showLoadingOverlay();
 
   try {
@@ -680,6 +713,7 @@ async function submitTest() {
     }
     clearLocalDraft();
     clearPendingRetries();
+    showResultScreen();
     renderResult(data, resetTest);
     updatePendingActionState();
   } catch (error) {
@@ -708,7 +742,9 @@ async function submitTest() {
       result.innerHTML = `<p class="error">${message}</p>`;
     }
   } finally {
+    isSubmitting = false;
     hideLoadingOverlay();
+    updatePendingActionState();
   }
 }
 
@@ -723,6 +759,7 @@ async function resetTest() {
     clearClientState();
     setPagination({ page: 1 });
     clearResultUi();
+    showQuestionScreen();
     await bootstrap();
     document.title = 'Personality Test – Ontdek jouw persoonlijkheidstype';
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -733,6 +770,7 @@ async function resetTest() {
 
 async function bootstrap() {
   try {
+    showQuestionScreen();
     setupQuestionChangeListener(
       () => getState().hasQuestionChangeListener,
       setQuestionChangeListenerAttached,
