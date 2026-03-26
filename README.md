@@ -1,140 +1,192 @@
 # Personality Quiz (API v1)
 
-This project is a PHP-based personality quiz with a JavaScript frontend.
+This repository is a full-stack personality test application:
 
-## Getting Started
+- **Backend**: PHP (procedural API endpoints + small service/repository classes)
+- **Frontend**: Vanilla JavaScript modules
+- **Persistence**: MySQL tables for questions, answers, result cache, public sharing, and recovery flows
 
-### Prerequisites
+The app serves a question flow, autosaves answers per visitor, computes a 4-letter type (E/I, S/N, T/F, J/P), supports recovery links, and optionally publishes a result to a public wall.
 
-- **PHP**: 8.1+ with `pdo_mysql` enabled.
-- **MySQL**: 8.0+.
-- **Web server**: Any server that can serve PHP (Apache, Nginx + PHP-FPM, or built-in PHP dev server) with this repo as the web root (or mapped subdirectory).
+## How the project is organized
 
-### Local configuration
+### High-level structure
 
-Runtime configuration comes from environment variables in `config.php`:
+- `index.php` → HTML shell, SEO tags, CSP/security headers, mounts JS app.
+- `assets/app.js` → frontend orchestrator (loads questions/progress, pagination, autosave retries, submit/reset/delete/recovery).
+- `assets/js/*.js` → view/state/api/helper modules.
+- `api/v1/*.php` → HTTP API endpoints.
+- `api/v1/http/*.php` → request/response/visitor helpers.
+- `src/QuizRepository.php` → DB queries + persistence rules.
+- `src/QuizService.php` → score normalization/completion/type derivation logic.
+- `db.php`, `config.php`, `db_bootstrap.php`, `init.sql`, `questions.sql` → config, DB connection, bootstrap + seed.
+- `scripts/cleanup_retention.php` → retention cleanup job.
+- `tests/*` → API checks, frontend syntax/runtime checks, unit tests.
 
-- `DB_HOST` (default: `127.0.0.1`)
-- `DB_PORT` (default: `3306`)
-- `DB_NAME` (default: `personality`)
-- `DB_USER` (default: `root`)
-- `DB_PASS` (default: empty string)
-- `DB_AUTO_BOOTSTRAP` (default: `true`)
-- `APP_ENV` (default: `production`)
-- `RECOVERY_TOKEN_TTL_SECONDS` (default: `900`)
-- `RECOVERY_RATE_LIMIT_WINDOW_SECONDS` (default: `3600`)
-- `RECOVERY_RATE_LIMIT_MAX_PER_VISITOR` (default: `3`)
-- `RECOVERY_RATE_LIMIT_MAX_PER_EMAIL` (default: `5`)
-- `RECOVERY_EMAIL_FROM` (default: `no-reply@example.test`)
-- `RECOVERY_BASE_URL` (default: auto-derived from current request)
-- `RETENTION_DAYS` (default: `90`) for maintenance cleanup window
-- `RETENTION_MAX_DELETE_PER_TABLE` (default: `5000`) max rows deleted per table per run
-- `RETENTION_DRY_RUN` (default: `false`) report candidate rows without deleting
+### Runtime configuration
 
-For local-only overrides, you can optionally create `config.local.php` at the repository root. If present and it returns an array, its values override env-derived defaults.
+`config.php` reads environment variables (optionally overridden by `config.local.php`).
 
-### Database bootstrap (`db_auto_bootstrap`)
+Important keys:
 
-When `DB_AUTO_BOOTSTRAP=true` (default), startup bootstrap will:
+- DB: `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASS`, `DB_AUTO_BOOTSTRAP`
+- App mode: `APP_ENV`
+- Recovery: `RECOVERY_TOKEN_TTL_SECONDS`, `RECOVERY_RATE_LIMIT_*`, `RECOVERY_EMAIL_FROM`, `RECOVERY_BASE_URL`
+- Retention: `RETENTION_DAYS`, `RETENTION_MAX_DELETE_PER_TABLE`, `RETENTION_DRY_RUN`
 
-1. Ensure required tables exist (`questions`, `answers`, `results`) by running `init.sql` if needed.
-2. Seed `questions` from `questions.sql` when the table is empty.
+## End-to-end flow (exact request lifecycle)
 
-When `DB_AUTO_BOOTSTRAP=false`, bootstrap is skipped, so schema and seed data must already exist.
+## 1) Browser loads app shell
 
-### First run
+1. User opens `index.php`.
+2. PHP returns static HTML with:
+   - content/security headers,
+   - container elements for question and result screens,
+   - `<script type="module" src="assets/app.js">`.
+3. Frontend JS starts and initializes theme + state + listeners.
 
-1. Start MySQL and create/login credentials matching your `DB_*` settings.
-2. Serve this folder via your web server.
-3. Open the app entrypoint in a browser: `http://<host>/<path>/index.php`.
-4. The frontend will call `/api/v1/*` endpoints from there.
+## 2) Visitor identity is established
 
-#### Smoke test (curl)
+The app tracks a visitor using a stable `visitor_id` (32-char hex).
 
-```bash
-# Health check
-curl -sS "http://localhost/personality/api/v1/health.php"
+- Frontend stores it in localStorage key: `personality.visitor_id.v1`.
+- Frontend sends it via `X-Visitor-ID` header when available.
+- Backend can also read from payload/cookie/header and can create one when needed.
 
-# Fetch first page of questions
-curl -sS "http://localhost/personality/api/v1/get_questions.php?page=1&per_page=5"
-```
+This ID is the key used for `answers`, `results`, and recovery mapping.
 
-### Troubleshooting
+## 3) Initial data load
 
-- **DB auth failure (dev/local)**: if you see `Database authentication failed. Check DB_USER/DB_PASS ... update env vars or config.local.php.`, verify `DB_USER`/`DB_PASS` (or `config.local.php`) and that the MySQL user is allowed from your `DB_HOST`.
-- **Missing tables / schema errors**: if requests fail with missing table errors (for example `questions`, `answers`, or `results`), either enable `DB_AUTO_BOOTSTRAP=true` or run `init.sql` (and `questions.sql` if needed) manually against `DB_NAME`.
+On startup frontend does:
 
-## Data retention cleanup (cron)
+1. `GET /api/v1/test_metadata.php` (version/date/question_count).
+2. `GET /api/v1/get_progress.php` (existing answers for current visitor).
+3. `GET /api/v1/get_questions.php?page=1&per_page=<pageSize>`.
 
-**Default decision (product/legal): `90` days.**  
-This keeps enough history for users to resume an unfinished test over a longer period while still enforcing automatic deletion for data minimization.
-
-Use `scripts/cleanup_retention.php` to remove stale rows from:
-
-- `answers`
-- `results`
-
-Rows are eligible when `COALESCE(updated_at, created_at)` is older than `RETENTION_DAYS`.
-
-### Environment variables
-
-- `RETENTION_DAYS` (default: `90`)
-- `RETENTION_MAX_DELETE_PER_TABLE` (default: `5000`)
-- `RETENTION_DRY_RUN` (`true`/`false`, default: `false`)
-
-### Manual run
-
-```bash
-php scripts/cleanup_retention.php
-```
-
-Sample output:
+`get_questions` returns:
 
 ```json
 {
-  "ok": true,
-  "dry_run": false,
-  "retention_days": 90,
-  "cutoff_utc": "2025-12-19 10:00:00",
-  "batch_size": 5000,
-  "deleted": { "answers": 120, "results": 95 }
+  "questions": [{ "id": 1, "text": "..." }],
+  "page": 1,
+  "per_page": 10,
+  "total": 120,
+  "metadata": {
+    "version": "2026.03",
+    "date": "2026-03-18",
+    "question_count": 120
+  }
 }
 ```
 
-### Cron setup example
+Frontend merges server answers into local state, renders current page, and updates progress/navigation.
 
-Run daily at 02:15 UTC with the default 90-day retention window:
+## 4) Answering + autosave flow
 
-```cron
-15 2 * * * cd /path/to/personality && php scripts/cleanup_retention.php >> /var/log/personality-retention.log 2>&1
+When user selects an option:
+
+1. Frontend updates in-memory state immediately for responsive UI.
+2. Save is debounced.
+3. Frontend sends `POST /api/v1/save_answer.php`:
+
+```json
+{ "question_id": 42, "value": 5 }
 ```
 
-If you need a one-off override, you can still set env vars inline:
+4. Backend validates:
+   - `question_id` exists,
+   - `value` is integer `1..6` (canonical Likert scale).
+5. Backend upserts row in `answers` for `(question_id, visitor_id)`.
+6. Backend **invalidates cached result** for that visitor (`results` row delete), ensuring changed answers force recalculation later.
+7. Frontend handles transient failures with retry + pending retry tracking so unsynced items can be retried.
 
-```cron
-15 2 * * * cd /path/to/personality && RETENTION_DAYS=90 RETENTION_MAX_DELETE_PER_TABLE=10000 php scripts/cleanup_retention.php >> /var/log/personality-retention.log 2>&1
-```
+## 5) Pagination flow
 
-Suggested schedule: once per day during low traffic hours. Keep `RETENTION_MAX_DELETE_PER_TABLE` bounded to avoid long-running delete spikes.
+- Frontend requests question pages using `page`/`per_page`.
+- Server always returns `total` count, so frontend can compute page boundaries.
+- UI blocks submit if unanswered items remain on current page or if unsynced saves still exist.
 
-## API versioning
+## 6) Submit flow (result calculation + cache)
 
-All active endpoints are now under `api/v1/`:
+When user submits:
 
-- `GET /api/v1/get_questions.php?page=<number>&per_page=<number>`
+1. Frontend calls `POST /api/v1/submit_results.php`.
+2. Backend resolves visitor and checks DB cache first (`results` table by `visitor_id`).
+3. If cached result exists, it returns immediately.
+4. If not cached:
+   - count total questions,
+   - count answered questions,
+   - if incomplete => `422 Incomplete test` with `{ answered, total }`,
+   - if complete => compute dimension scores from answers + question direction/weight,
+   - derive 4-letter type using sign of each dimension,
+   - cache result into `results` table.
+5. Response includes:
+   - `type`,
+   - `scores`,
+   - `max_scores`,
+   - test `metadata`.
+
+## 7) Reset and deletion flows
+
+### Reset progress
+
+- `POST /api/v1/reset_progress.php`
+- Deletes visitor answers and visitor result cache; keeps session usable for a fresh retake.
+
+### Delete data (privacy)
+
+- `POST /api/v1/delete_data.php`
+- Same persistence cleanup intent for explicit privacy action.
+
+## 8) Recovery flow (email resume)
+
+### Request recovery
+
+1. Frontend calls `POST /api/v1/request_recovery.php` with email.
+2. Backend validates email and enforces rate limits:
+   - per visitor per window,
+   - per email per window.
+3. Backend creates one-time token (stored hashed + TTL).
+4. In dev/local app env, API returns a mock `recovery_link`.
+5. In production env, API sends email using `mail()`.
+
+### Redeem recovery
+
+1. Frontend reads `recovery_token` from URL and calls `POST /api/v1/redeem_recovery.php`.
+2. Backend validates + redeems token, binds visitor session/cookie, writes audit entry.
+3. Frontend reloads progress/questions for that recovered visitor context.
+
+## 9) Public sharing flow
+
+### Publish current result
+
+- `POST /api/v1/publish_result.php` with optional `display_name`.
+- Requires complete test (or existing cached result).
+- Creates `public_results` entry with generated `public_id`.
+
+### View public results
+
+- `GET /api/v1/public_results.php` for paginated wall.
+- `GET /api/v1/public_results.php?public_id=<id>` for one shared result.
+
+## API surface
+
+All active v1 endpoints:
+
+- `GET /api/v1/health.php` (readiness/liveness)
+- `GET /api/v1/test_metadata.php`
+- `GET /api/v1/get_questions.php?page=<n>&per_page=<n>`
 - `GET /api/v1/get_progress.php`
 - `POST /api/v1/save_answer.php`
 - `POST /api/v1/submit_results.php`
 - `POST /api/v1/reset_progress.php`
 - `POST /api/v1/delete_data.php`
-- `GET /api/v1/test_metadata.php`
-- `GET /api/v1/health.php`
 - `POST /api/v1/request_recovery.php`
 - `POST /api/v1/redeem_recovery.php`
+- `POST /api/v1/publish_result.php`
+- `GET /api/v1/public_results.php`
 
-## JSON error format
-
-All API errors use the same structure:
+### Standard error format
 
 ```json
 {
@@ -143,189 +195,59 @@ All API errors use the same structure:
 }
 ```
 
-Some endpoints can add extra fields (for example `answered` and `total` for incomplete quiz submission).
+Some errors include extra fields (for example `answered`, `total`).
 
-## Endpoint behavior
+## Database bootstrap behavior
 
-### `GET /api/v1/get_questions.php`
+When `DB_AUTO_BOOTSTRAP=true` (default):
 
-Supports pagination via optional query parameters:
+1. Ensures required tables exist by running `init.sql` when needed.
+2. Seeds questions from `questions.sql` if questions are empty.
 
-- `page` (default: `1`)
-- `per_page` (default: `10`)
+When `DB_AUTO_BOOTSTRAP=false`, schema/seed must already exist.
 
-Response:
+## Getting started locally
 
-```json
-{
-  "questions": [
-    { "id": 1, "text": "..." }
-  ],
-  "page": 1,
-  "per_page": 10,
-  "total": 50
-}
+1. Start MySQL with credentials matching your `DB_*` config.
+2. Serve this repo root with PHP-capable server.
+3. Open `http://<host>/<path>/index.php`.
+4. Interact with frontend; it talks to `/api/v1/*`.
+
+Quick smoke test:
+
+```bash
+curl -sS "http://localhost/personality/api/v1/health.php"
+curl -sS "http://localhost/personality/api/v1/get_questions.php?page=1&per_page=5"
 ```
 
-### `GET /api/v1/get_progress.php`
+## Data retention cleanup (cron)
 
-Returns current visitor answers:
+Default retention policy is **90 days**.
 
-```json
-[
-  { "question_id": 1, "value": 4 }
-]
+`php scripts/cleanup_retention.php` removes stale rows from `answers` and `results` where `COALESCE(updated_at, created_at)` is older than `RETENTION_DAYS`.
+
+Example cron (daily 02:15 UTC):
+
+```cron
+15 2 * * * cd /path/to/personality && php scripts/cleanup_retention.php >> /var/log/personality-retention.log 2>&1
 ```
-
-### `POST /api/v1/save_answer.php`
-
-Request body:
-
-```json
-{
-  "question_id": 1,
-  "value": 4
-}
-```
-
-API contract note: `value` uses the canonical **6-point** Likert scale and must be an integer from `1` to `6` (inclusive).
-
-Success response:
-
-```json
-{
-  "ok": true,
-  "visitor_id": "<id>"
-}
-```
-
-### `POST /api/v1/submit_results.php`
-
-Calculates the 4-letter personality type from saved answers and caches it in the `results` table (`visitor_id` -> `type_code` + `detail_json`).
-
-Success response:
-
-```json
-{
-  "type": "ENTJ",
-  "scores": { "EI": 6, "SN": -2, "TF": 1, "JP": 8 }
-}
-```
-
-If a cached DB result already exists for the visitor, the endpoint returns it without recalculation.
-
-### `POST /api/v1/reset_progress.php`
-
-Deletes visitor answers and invalidates the visitor's cached result entry.
-
-Response:
-
-```json
-{ "ok": true }
-```
-
-## Frontend changes
-
-The frontend (`assets/app.js`) now:
-
-- Loads questions page-by-page from `api/v1/get_questions.php`.
-- Shows `Prev` and `Next` buttons for navigation.
-- Saves answer changes with **300ms debounce** (instead of immediate save on every click).
-- Submits results through `POST /api/v1/submit_results.php`.
-
-## Result cache
-
-Result caching is canonicalized to the database `results` table only:
-
-- cache key: `visitor_id`
-- cached payload: `type_code` and `detail_json`
-- cache helpers: `api/v1/cache.php` (`get_cached_result`, `cache_result`, `invalidate_cached_result`)
-
-### Cache read/write behavior
-
-- `submit_results` checks `results` first. If a row exists, it returns that cached result immediately.
-- If no row exists, `submit_results` computes scores from `answers`, saves the canonical result, and upserts the `results` cache row.
-
-### Cache invalidation
-
-The DB cache entry for a visitor is deleted when:
-
-- an answer is created/updated (`save_answer`)
-- progress is reset (`reset_progress`)
-- privacy delete is requested (`delete_data`)
 
 ## Testing
 
-Run API checks through the shared test entrypoint:
+Primary integration command:
 
 - `BASE_URL="http://localhost/personality" bash tests/run_api_checks.sh`
 
-This command now runs both:
+This executes:
 
-1. `tests/frontend_syntax_check.sh` to validate JavaScript syntax for `assets/app.js` and `assets/js/*.js` before deploy.
-2. `tests/frontend_runtime_check.sh` to verify frontend load/error runtime behavior (including timeout handling).
-3. `tests/api_v1_endpoints_test.php` to exercise API endpoint behavior.
+1. `tests/frontend_syntax_check.sh`
+2. `tests/frontend_runtime_check.sh`
+3. `tests/api_v1_endpoints_test.php`
 
-You can still run the API-only test directly if needed:
+Additional checks:
 
-- `BASE_URL="http://localhost/personality" php tests/api_v1_endpoints_test.php`
-
-### CI parity (GitHub Actions)
-
-The repository CI workflow (`.github/workflows/ci.yml`) runs on both `push` and `pull_request` and currently executes:
-
-1. PHP lint checks (matrix: PHP 8.1, 8.2, 8.3)
-2. PHP unit tests (`tests/quiz_service_test.php` on PHP 8.2)
-
-To reproduce CI failures locally:
-
-```bash
-# 1) PHP lint checks
-find . -name "*.php" -not -path "./vendor/*" | sort | xargs -I{} php -l {}
-
-# 2) PHP unit tests
-php tests/quiz_service_test.php
-```
-
-If you do not already have a local server running, use the same fallback pattern as CI (local PHP server + local MySQL):
-
-```bash
-# Start MySQL first (matching README DB_* defaults), then:
-export DB_HOST=127.0.0.1 DB_PORT=3306 DB_NAME=personality DB_USER=root DB_PASS=root DB_AUTO_BOOTSTRAP=true
-php -S 127.0.0.1:8000 -t . &
-BASE_URL="http://127.0.0.1:8000" bash tests/run_api_checks.sh
-```
-
-For local or alternative CI environments, API checks can target either:
-
-- a custom `BASE_URL` (set via environment variables), or
-- the built-in fallback service path (`http://127.0.0.1:8000`) backed by a local MySQL instance.
-
-### Windows (PowerShell) debugging helpers
-
-For local debugging on Windows, use the PowerShell equivalents:
-
+- `php tests/quiz_service_test.php`
 - `pwsh tests/frontend_syntax_check.ps1`
 - `pwsh tests/frontend_runtime_check.ps1`
 
-### `GET /api/v1/test_metadata.php`
-
-Returns revision metadata for the active test:
-
-```json
-{
-  "version": "2026.03",
-  "date": "2026-03-18",
-  "question_count": 120
-}
-```
-
-### `POST /api/v1/delete_data.php`
-
-Explicit privacy action that removes current visitor answers and results cache.
-
-Response:
-
-```json
-{ "ok": true }
-```
+CI (`.github/workflows/ci.yml`) runs php lint + unit tests on pushes/PRs.
