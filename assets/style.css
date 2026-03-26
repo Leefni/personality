@@ -752,8 +752,7 @@ button.danger,
   margin-top: 8px;
 }
 
-.persona-toggles,
-.result-modules {
+.persona-toggles {
  border: 1px solid var(--border);
  border-radius: 12px;
  padding: var(--space-4);
@@ -762,8 +761,7 @@ button.danger,
  gap: var(--space-3);
 }
 
-.persona-toggles h3,
-.result-modules h3 {
+.persona-toggles h3 {
  margin: 0;
  font-size: var(--font-size-h3);
 }
@@ -800,24 +798,6 @@ button.danger,
  color: #fff;
 }
 
-.result-module-card {
- border: 1px solid var(--border);
- border-radius: 10px;
- background: #fff;
- padding: var(--space-3);
-}
-
-.result-module-card summary {
- cursor: pointer;
- font-weight: 600;
-}
-
-.module-advice {
- margin: var(--space-3) 0;
- color: #1f2937;
-}
-
-.copy-module,
 .result .restart {
  justify-self: start;
  border: 1px solid #c7d2e0;
@@ -827,7 +807,6 @@ button.danger,
  cursor: pointer;
 }
 
-.copy-module:hover,
 .result .restart:hover {
  border-color: #94a3b8;
 }
@@ -1144,7 +1123,6 @@ html {
 .recovery-controls button,
 button.danger,
 .result .restart,
-.copy-module,
 .result-actions button,
 .persona-toggle-option span {
   transition: background 0.15s ease, border-color 0.15s ease,
@@ -1153,8 +1131,7 @@ button.danger,
 
 /* Result action buttons: hover lift */
 .result-actions button:hover,
-.result .restart:hover,
-.copy-module:hover {
+.result .restart:hover {
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(15, 23, 42, 0.1);
 }
@@ -1389,15 +1366,6 @@ h1 {
     background: #21262d;
   }
 
-  .result-module-card {
-    background: #1c2128;
-    border-color: #30363d;
-    color: #e6edf3;
-  }
-
-  .result-module-card summary { color: #e6edf3; }
-  .module-advice { color: #e6edf3; }
-
   .result-disclaimer {
     background: #1a1200;
     border-color: #7d5a00;
@@ -1412,14 +1380,12 @@ h1 {
   .result-meta { color: #8b949e; }
 
   /* Persona toggles */
-  .persona-toggles,
-  .result-modules {
+  .persona-toggles {
     background: #1c2128;
     border-color: #30363d;
   }
 
-  .persona-toggles h3,
-  .result-modules h3 { color: #e6edf3; }
+  .persona-toggles h3 { color: #e6edf3; }
 
   .persona-toggle-option span {
     background: #21262d;
@@ -1434,7 +1400,6 @@ h1 {
   }
 
   /* Copy / action buttons */
-  .copy-module,
   .result .restart,
   .result-actions button {
     background: #21262d;
@@ -1442,7 +1407,6 @@ h1 {
     border-color: #30363d;
   }
 
-  .copy-module:hover,
   .result .restart:hover,
   .result-actions button:hover {
     background: #2d333b;
@@ -1481,7 +1445,6 @@ h1 {
   .result-summary-actions,
   .result-actions,
   .persona-toggles,
-  .copy-module,
   .page-dots,
   .progress-wrap,
   #progress,
@@ -1514,8 +1477,7 @@ h1 {
   }
 
   .result-score-card,
-  .result-section-card,
-  .result-module-card {
+  .result-section-card {
     border: 1px solid #ccc;
     break-inside: avoid;
   }
