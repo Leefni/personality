@@ -1,6 +1,6 @@
 import { fetchPublicResults } from './api-client.js';
 import { RESULT_CONTENT } from './result-content.js';
-import { escapeHtml } from './utils.js';
+import { escapeHtml, initThemeToggle } from './utils.js';
 
 function normalizeTypeCode(value) {
   if (typeof value !== 'string') return '';
@@ -113,4 +113,5 @@ async function initPublicResultsView() {
   }
 }
 
+initThemeToggle();
 initPublicResultsView();
