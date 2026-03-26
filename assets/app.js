@@ -24,6 +24,9 @@ import {
   clearPendingSavePromise,
   getPendingSavePromises,
   hasPendingSaves,
+  addUnsyncedQuestionId,
+  removeUnsyncedQuestionId,
+  setUnsyncedQuestionIds,
   clearSaveTimers,
   clearPendingSavesTracking,
   bumpSaveSession,
@@ -199,6 +202,7 @@ function markQuestionPendingRetry(questionId) {
   const pendingRetries = loadPendingRetries();
   pendingRetries[questionId] = true;
   savePendingRetries(pendingRetries);
+  addUnsyncedQuestionId(questionId);
 }
 
 function clearQuestionPendingRetry(questionId) {
@@ -206,6 +210,40 @@ function clearQuestionPendingRetry(questionId) {
   if (!pendingRetries[questionId]) return;
   delete pendingRetries[questionId];
   savePendingRetries(pendingRetries);
+  removeUnsyncedQuestionId(questionId);
+}
+
+function getUnsyncedQuestionIdSet() {
+  const pendingRetries = loadPendingRetries();
+  const pendingRetryIds = Object.keys(pendingRetries).map((id) => Number(id));
+  const state = getState();
+  const knownUnsyncedIds = Array.from(state.unsyncedQuestionIds ?? []);
+  const unsyncedIds = new Set(
+    [...pendingRetryIds, ...knownUnsyncedIds].filter((id) => Number.isInteger(id))
+  );
+  setUnsyncedQuestionIds(unsyncedIds);
+  return unsyncedIds;
+}
+
+function setSubmitInlineWarning(message = '') {
+  const questionScreen = document.getElementById('question-screen');
+  if (!(questionScreen instanceof HTMLElement)) return;
+
+  let warningElement = document.getElementById('submit-inline-warning');
+  if (!(warningElement instanceof HTMLElement)) {
+    warningElement = document.createElement('p');
+    warningElement.id = 'submit-inline-warning';
+    warningElement.className = 'error';
+    const nav = document.getElementById('nav');
+    if (nav?.parentElement) {
+      nav.parentElement.insertBefore(warningElement, nav);
+    } else {
+      questionScreen.appendChild(warningElement);
+    }
+  }
+
+  warningElement.textContent = message;
+  warningElement.hidden = !message;
 }
 
 function updateIntroSectionsVisibility() {
@@ -252,10 +290,14 @@ function setNavLoadingState(isLoading) {
 
 function updatePendingActionState() {
   const state = getState();
-  updateNavState(state.answers, state.totalQuestions, state.isNavigating);
+  const hasUnsyncedAnswers = getUnsyncedQuestionIdSet().size > 0;
+  if (!hasUnsyncedAnswers) {
+    setSubmitInlineWarning('');
+  }
+  updateNavState(state.answers, state.totalQuestions, state.isNavigating, hasUnsyncedAnswers);
   const restartButton = document.querySelector('#result .restart');
   if (restartButton) {
-    restartButton.disabled = hasPendingSaves();
+    restartButton.disabled = hasPendingSaves() || hasUnsyncedAnswers;
   }
 }
 
@@ -272,16 +314,23 @@ function mergeProgress(saved) {
   setAnswers(mergedAnswers);
 
   const unresolvedDraft = {};
+  const unresolvedQuestionIds = [];
   Object.entries(localDraft).forEach(([questionId, value]) => {
     if (serverAnswers[questionId] !== value) {
       unresolvedDraft[questionId] = value;
+      unresolvedQuestionIds.push(Number(questionId));
     }
   });
 
+  setUnsyncedQuestionIds(unresolvedQuestionIds);
   if (Object.keys(unresolvedDraft).length === 0) {
     clearLocalDraft();
   } else {
     saveLocalDraft(unresolvedDraft);
+    Object.entries(unresolvedDraft).forEach(([questionId, value]) => {
+      markQuestionPendingRetry(Number(questionId));
+      queueAnswerSave(Number(questionId), Number(value));
+    });
   }
 }
 
@@ -292,6 +341,7 @@ function clearClientState() {
   });
   state.saveTimers.clear();
   state.pendingQuestionIds.clear();
+  state.unsyncedQuestionIds.clear();
   clearAnswers();
   clearLocalDraft();
   clearPendingRetries();
@@ -542,6 +592,7 @@ async function loadQuestionsPage() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
     updateIntroSectionsVisibility();
     updateRecoveryVisibility();
+    updatePendingActionState();
   } catch (error) {
     const baseMessage = 'Fout bij laden. Controleer database en API-configuratie.';
     console.error('Vraaglijst laden mislukt:', error);
@@ -717,6 +768,8 @@ async function submitTest(event) {
     }
     clearLocalDraft();
     clearPendingRetries();
+    setUnsyncedQuestionIds([]);
+    setSubmitInlineWarning('');
     showResultScreen();
     renderResult(data, resetTest);
     updatePendingActionState();
@@ -736,6 +789,9 @@ async function submitTest(event) {
       if (result) {
         result.innerHTML = `<p class="error">${incompleteMessage}</p>`;
       }
+      setSubmitInlineWarning(`${incompleteMessage} Controleer je verbinding; antwoorden worden opnieuw opgeslagen.`);
+      setProgressMessage('Bezig met opnieuw opslaan van antwoorden...');
+      queueUnsyncedAnswersForRetry();
       return;
     }
 
@@ -750,6 +806,19 @@ async function submitTest(event) {
     hideLoadingOverlay();
     updatePendingActionState();
   }
+}
+
+function queueUnsyncedAnswersForRetry() {
+  const localDraft = loadLocalDraft();
+  const unsyncedIds = getUnsyncedQuestionIdSet();
+  const state = getState();
+
+  unsyncedIds.forEach((questionId) => {
+    const answerValue = Number(state.answers[questionId] ?? localDraft[questionId]);
+    if (!Number.isFinite(answerValue)) return;
+    markQuestionPendingRetry(questionId);
+    queueAnswerSave(questionId, answerValue);
+  });
 }
 
 async function resetTest() {
