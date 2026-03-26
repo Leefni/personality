@@ -21,10 +21,10 @@ const DEFAULT_MAX_SCORES = { EI: 75, SN: 47.5, TF: 92.5, JP: 85 };
 let dimensionMaxScores = { ...DEFAULT_MAX_SCORES };
 
 const SCORE_DIMENSIONS = {
-  EI: { poles: ['E', 'I'], labels: ['Extraversion', 'Introversion'], icon: '↔' },
-  SN: { poles: ['S', 'N'], labels: ['Sensing', 'iNtuition'], icon: '◉' },
-  TF: { poles: ['T', 'F'], labels: ['Thinking', 'Feeling'], icon: '⚖' },
-  JP: { poles: ['J', 'P'], labels: ['Judging', 'Perceiving'], icon: '⌁' }
+  EI: { poles: ['E', 'I'], labels: ['Extraversion', 'Introversion'] },
+  SN: { poles: ['S', 'N'], labels: ['Sensing', 'iNtuition'] },
+  TF: { poles: ['T', 'F'], labels: ['Thinking', 'Feeling'] },
+  JP: { poles: ['J', 'P'], labels: ['Judging', 'Perceiving'] }
 };
 
 const SCORE_DIMENSION_ENTRIES = Object.entries(SCORE_DIMENSIONS);
@@ -180,7 +180,6 @@ function renderScoreVisualizations(scores) {
         <header class="result-dimension-header">
           <h4>${escapeHtml(dimension)} · ${escapeHtml(config.labels[0])} ↔ ${escapeHtml(config.labels[1])}</h4>
           <p class="result-dimension-dominant">
-            <span class="result-dimension-icon" aria-hidden="true">${escapeHtml(config.icon)}</span>
             Dominant: <strong>${escapeHtml(insight.dominantPole)}</strong>
             <span class="result-dimension-strength">${insight.dominantPercent}% (${escapeHtml(insight.strengthLabel)})</span>
           </p>

@@ -934,11 +934,6 @@ button.danger,
   color: var(--text-muted);
 }
 
-.result-dimension-icon {
-  font-size: 0.95rem;
-  opacity: 0.8;
-}
-
 .result-dimension-strength {
   font-size: 0.85rem;
   padding: 2px 8px;
