@@ -66,6 +66,32 @@ const loadingMessages = [
 
 let loadingMessageTimer = null;
 
+function showQuestionScreen() {
+  const questionScreen = document.getElementById('question-screen');
+  const resultsScreen = document.getElementById('results-screen');
+
+  if (questionScreen instanceof HTMLElement) {
+    questionScreen.hidden = false;
+  }
+
+  if (resultsScreen instanceof HTMLElement) {
+    resultsScreen.hidden = true;
+  }
+}
+
+function showResultScreen() {
+  const questionScreen = document.getElementById('question-screen');
+  const resultsScreen = document.getElementById('results-screen');
+
+  if (questionScreen instanceof HTMLElement) {
+    questionScreen.hidden = true;
+  }
+
+  if (resultsScreen instanceof HTMLElement) {
+    resultsScreen.hidden = false;
+  }
+}
+
 function getLoadingOverlayElements() {
   return {
     overlay: document.getElementById('loading-overlay'),
@@ -314,6 +340,7 @@ async function handleDeleteData() {
     await deleteData();
     clearClientState();
     clearResultUi();
+    showQuestionScreen();
     setPagination({ page: 1 });
     setProgressMessage('Gegevens verwijderd. Je kunt opnieuw beginnen.');
     await loadQuestionsPage();
@@ -680,6 +707,7 @@ async function submitTest() {
     }
     clearLocalDraft();
     clearPendingRetries();
+    showResultScreen();
     renderResult(data, resetTest);
     updatePendingActionState();
   } catch (error) {
@@ -723,6 +751,7 @@ async function resetTest() {
     clearClientState();
     setPagination({ page: 1 });
     clearResultUi();
+    showQuestionScreen();
     await bootstrap();
     document.title = 'Personality Test – Ontdek jouw persoonlijkheidstype';
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -733,6 +762,7 @@ async function resetTest() {
 
 async function bootstrap() {
   try {
+    showQuestionScreen();
     setupQuestionChangeListener(
       () => getState().hasQuestionChangeListener,
       setQuestionChangeListenerAttached,
