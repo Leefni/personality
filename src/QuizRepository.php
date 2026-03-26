@@ -138,7 +138,11 @@ final class QuizRepository
             $normalizedDisplayName = 'Anoniem';
         }
 
-        $normalizedDisplayName = mb_substr($normalizedDisplayName, 0, 80);
+        if (function_exists('mb_substr')) {
+            $normalizedDisplayName = mb_substr($normalizedDisplayName, 0, 80);
+        } else {
+            $normalizedDisplayName = substr($normalizedDisplayName, 0, 80);
+        }
         $encodedScores = json_encode($scores, JSON_UNESCAPED_UNICODE);
 
         if ($encodedScores === false) {
