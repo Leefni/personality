@@ -64,9 +64,9 @@ import { renderResult } from './js/results-view.js';
 const pageScrollPositions = new Map();
 const RECOVERY_MIN_ANSWER_COUNT = 5;
 const loadingMessages = [
-  'Analyzing your personality...',
-  'Calculating results...',
-  'Generating your personality profile...'
+  'Je persoonlijkheid wordt geanalyseerd...',
+  'Resultaten worden berekend...',
+  'Je persoonlijkheidsprofiel wordt samengesteld...'
 ];
 
 let loadingMessageTimer = null;
@@ -845,7 +845,7 @@ async function submitTest(event) {
     const data = await submitResults();
     const { type } = data ?? {};
     if (typeof type === 'string' && type.trim()) {
-      document.title = `Jouw type: ${type} – Personality Test`;
+      document.title = `Jouw type: ${type} – Persoonlijkheidstest`;
     }
     clearLocalDraft();
     clearPendingRetries();
@@ -916,7 +916,7 @@ async function resetTest() {
     clearResultUi();
     showQuestionScreen();
     await bootstrap();
-    document.title = 'Personality Test – Ontdek jouw persoonlijkheidstype';
+    document.title = 'Persoonlijkheidstest – Ontdek jouw persoonlijkheidstype';
     window.scrollTo({ top: 0, behavior: 'smooth' });
   } catch (error) {
     showError('Resetten mislukt. Probeer het opnieuw.');

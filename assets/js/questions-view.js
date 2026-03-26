@@ -318,7 +318,7 @@ export function renderNav(viewModel, handlers) {
     const submit = document.createElement('button');
     submit.type = 'button';
     submit.className = 'submit';
-    submit.textContent = 'Bekijk resultaat';
+    submit.textContent = 'Bekijk resultaten';
     const answeredCount = Object.keys(viewModel.answers).length;
     const isComplete = answeredCount === viewModel.totalQuestions;
     submit.disabled = isNavigating || !isComplete;
