@@ -289,6 +289,7 @@ export function renderNav(viewModel, handlers) {
 
   if (viewModel.page > 1) {
     const prev = document.createElement('button');
+    prev.type = 'button';
     prev.className = 'prev';
     prev.textContent = '← Vorige';
     prev.disabled = isNavigating;
@@ -300,6 +301,7 @@ export function renderNav(viewModel, handlers) {
   const unansweredOnPage = getUnansweredCountOnPage(viewModel);
   if (hasNext) {
     const next = document.createElement('button');
+    next.type = 'button';
     next.className = 'next';
     next.textContent = 'Volgende →';
     next.disabled = isNavigating;
@@ -307,6 +309,7 @@ export function renderNav(viewModel, handlers) {
     nav.appendChild(next);
   } else {
     const submit = document.createElement('button');
+    submit.type = 'button';
     submit.className = 'submit';
     submit.textContent = 'Bekijk resultaat';
     const answeredCount = Object.keys(viewModel.answers).length;
