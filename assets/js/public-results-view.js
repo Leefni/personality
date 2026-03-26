@@ -1,6 +1,7 @@
 import { fetchPublicResults } from './api-client.js';
 import { RESULT_CONTENT } from './result-content.js';
 import { escapeHtml } from './utils.js';
+import { dominantPercentFromNormalized, resolveMaxScores, scoreToNormalized } from './score-utils.js';
 
 function normalizeTypeCode(value) {
   if (typeof value !== 'string') return '';
@@ -24,7 +25,7 @@ function resolveTypeDisplay(rawTypeCode) {
   };
 }
 
-function formatDimensionSummary(scores, typeCode) {
+function formatDimensionSummary(scores, typeCode, maxScores) {
   const dimensions = ['EI', 'SN', 'TF', 'JP'];
   const fallbackMap = {
     EI: typeCode[0],
@@ -49,19 +50,20 @@ function formatDimensionSummary(scores, typeCode) {
     const rightPole = dimension[1];
     const scoredPole = raw >= 0 ? leftPole : rightPole;
     const dominantPole = fallbackMap[dimension] || scoredPole;
-    const intensity = Math.min(100, Math.round(Math.abs(raw) * 10));
+    const normalized = scoreToNormalized(raw, dimension, maxScores);
+    const intensity = dominantPercentFromNormalized(normalized);
     return `${dimension}: ${dominantPole} ${intensity}%`;
   });
 
   return summary.join(' • ');
 }
 
-function createCard(result) {
+function createCard(result, maxScores) {
   const displayName = typeof result.display_name === 'string' ? result.display_name.trim() : '';
   const rawTypeCode = typeof result.type_code === 'string' ? result.type_code : result.type;
   const typeInfo = resolveTypeDisplay(rawTypeCode);
   const createdAt = typeof result.created_at === 'string' && result.created_at.trim() !== '' ? result.created_at.trim() : 'Onbekende datum';
-  const dimensions = formatDimensionSummary(result.scores, typeInfo.code);
+  const dimensions = formatDimensionSummary(result.scores, typeInfo.code, maxScores);
 
   return `
     <article class="public-result-card">
@@ -81,6 +83,7 @@ function renderResults(payload) {
   if (!(list instanceof HTMLElement) || !(status instanceof HTMLElement)) return;
 
   const entries = Array.isArray(payload?.results) ? payload.results : [];
+  const maxScores = resolveMaxScores(payload?.max_scores);
 
   status.hidden = true;
   status.setAttribute('aria-busy', 'false');
@@ -91,7 +94,7 @@ function renderResults(payload) {
     return;
   }
 
-  list.innerHTML = entries.map((entry) => createCard(entry)).join('');
+  list.innerHTML = entries.map((entry) => createCard(entry, maxScores)).join('');
 }
 
 function renderError() {
