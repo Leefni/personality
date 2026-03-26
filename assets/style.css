@@ -1020,16 +1020,6 @@ button.danger,
 
 .result-dimension-summary::-webkit-details-marker { display: none; }
 
-.result-dimension-summary::before {
-  content: '▸ ';
-  transition: transform 0.2s;
-  display: inline-block;
-}
-
-.result-dimension-details[open] .result-dimension-summary::before {
-  content: '▾ ';
-}
-
 .result-dimension-details-body {
   padding-top: 6px;
   display: grid;
