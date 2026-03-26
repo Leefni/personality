@@ -11,7 +11,8 @@ const state = {
   saveTimers: new Map(),
   queuedAnswerValues: new Map(),
   pendingSavePromises: new Map(),
-  saveSession: 0
+  saveSession: 0,
+  isNavigating: false
 };
 
 /**
@@ -158,6 +159,23 @@ export function getSaveSession() {
 }
 
 /**
+ * Marks whether pagination navigation is currently in-flight.
+ * @param {boolean} isNavigating - True while prev/next navigation is processing.
+ * @returns {void} Nothing.
+ */
+export function setIsNavigating(isNavigating) {
+  state.isNavigating = Boolean(isNavigating);
+}
+
+/**
+ * Returns whether pagination navigation is currently in-flight.
+ * @returns {boolean} True while prev/next navigation is processing.
+ */
+export function getIsNavigating() {
+  return state.isNavigating;
+}
+
+/**
  * Updates current pagination and total values.
  * @param {{page?: number, perPage?: number, totalQuestions?: number}} updates - Pagination values to overwrite.
  * @returns {void} Nothing.
@@ -176,4 +194,3 @@ export function setPagination(updates) {
 export function setQuestionChangeListenerAttached(attached) {
   state.hasQuestionChangeListener = Boolean(attached);
 }
-

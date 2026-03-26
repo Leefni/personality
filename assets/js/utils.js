@@ -6,6 +6,7 @@ const APP_ENV = (
 ).toLowerCase();
 export const IS_DEVELOPMENT_ENV = APP_ENV === 'development' || APP_ENV === 'local';
 const ANSWERS_STORAGE_KEY = 'personality.answers.v1';
+const PENDING_RETRY_STORAGE_KEY = 'personality.pendingRetries.v1';
 const API_TIMEOUT_MS = 12000;
 const API_RETRY_ATTEMPTS = 2;       // extra attempts after first failure
 const API_RETRY_BASE_DELAY_MS = 400; // first retry after 400 ms, doubles each time
@@ -53,6 +54,44 @@ export function saveLocalDraft(draft) {
 export function clearLocalDraft() {
   try {
     localStorage.removeItem(ANSWERS_STORAGE_KEY);
+  } catch (error) {
+    // Ignore storage failures.
+  }
+}
+
+export function loadPendingRetries() {
+  try {
+    const raw = localStorage.getItem(PENDING_RETRY_STORAGE_KEY);
+    if (!raw) return {};
+
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {};
+
+    const normalized = {};
+    Object.keys(parsed).forEach((questionId) => {
+      const id = Number(questionId);
+      if (Number.isInteger(id) && parsed[questionId]) {
+        normalized[id] = true;
+      }
+    });
+
+    return normalized;
+  } catch (error) {
+    return {};
+  }
+}
+
+export function savePendingRetries(markers) {
+  try {
+    localStorage.setItem(PENDING_RETRY_STORAGE_KEY, JSON.stringify(markers));
+  } catch (error) {
+    // Ignore storage failures (private mode / quota exceeded).
+  }
+}
+
+export function clearPendingRetries() {
+  try {
+    localStorage.removeItem(PENDING_RETRY_STORAGE_KEY);
   } catch (error) {
     // Ignore storage failures.
   }

@@ -921,6 +921,9 @@ button.danger,
 }
 
 .result-score-track {
+  --left-pct: 50;
+  --right-pct: 50;
+  position: relative;
   height: 14px;
   border-radius: 999px;
   background: #e2e8f0;
@@ -928,17 +931,52 @@ button.danger,
 }
 
 .result-score-fill {
-  display: block;
-  height: 100%;
-  border-radius: inherit;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  transition: width 220ms ease;
+}
+
+.result-score-fill-left {
+  left: 0;
+  width: calc(var(--left-pct) * 1%);
+  border-radius: 999px 0 0 999px;
   background: linear-gradient(90deg, #2563eb, #0ea5e9);
 }
 
-.result-score-legend {
-  display: flex;
-  justify-content: space-between;
-  font-size: 0.8rem;
+.result-score-fill-right {
+  right: 0;
+  width: calc(var(--right-pct) * 1%);
+  border-radius: 0 999px 999px 0;
+  background: linear-gradient(90deg, #22c55e, #16a34a);
+}
+
+.result-score-midpoint {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  transform: translateX(-50%);
+  background: rgba(15, 23, 42, 0.45);
+}
+
+.result-score-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(180px, 2.2fr) minmax(0, 1fr);
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.result-score-pole {
+  margin: 0;
+  font-size: 0.85rem;
   color: var(--text-muted);
+  overflow-wrap: anywhere;
+}
+
+.result-score-pole-right {
+  text-align: right;
 }
 
 .result-score-raw {
@@ -962,6 +1000,15 @@ button.danger,
   .result-score-header {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .result-score-row {
+    grid-template-columns: 1fr;
+    gap: var(--space-1);
+  }
+
+  .result-score-pole-right {
+    text-align: left;
   }
 
   .result-actions {
@@ -1154,9 +1201,12 @@ h1 {
 }
 
 /* Result score fill: gradient */
-.result-score-fill {
+.result-score-fill-left {
   background: linear-gradient(90deg, #2563eb, #0ea5e9, #06b6d4);
-  border-radius: inherit;
+}
+
+.result-score-fill-right {
+  background: linear-gradient(90deg, #22c55e, #16a34a, #0ea5a4);
 }
 
 /* Container: subtle inner glow on left edge */
@@ -1332,7 +1382,7 @@ h1 {
 
   .result-score-header h4 { color: #e6edf3; }
   .result-score-header p { color: #8b949e; }
-  .result-score-legend { color: #8b949e; }
+  .result-score-pole { color: #8b949e; }
   .result-score-raw { color: #8b949e; }
 
   .result-score-track {
@@ -1510,8 +1560,12 @@ h1 {
   }
 
   /* Score fill in dark mode */
-  .result-score-fill {
+  .result-score-fill-left {
     background: linear-gradient(90deg, #1f6feb, #388bfd, #58a6ff);
+  }
+
+  .result-score-fill-right {
+    background: linear-gradient(90deg, #238636, #2ea043, #3fb950);
   }
 
   /* Question stagger animation: slightly stronger in dark */
