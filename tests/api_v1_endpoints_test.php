@@ -53,7 +53,7 @@ if ($baseUrl === '') {
     exit(1);
 }
 
-$visitor = 'testvisitor1234567890abcdef12345678';
+$visitor = '4f8d2c7b9a1e6d3c5b0f4a2d8e7c1b9a';
 
 function request_json(string $method, string $url, ?array $payload = null, ?string $visitor = null): array
 {
@@ -140,10 +140,14 @@ function test_get_progress(string $baseUrl, string $visitor): void
     $response = request_json('GET', $baseUrl . '/api/v1/get_progress.php', null, $visitor);
     assert_true($response['status'] === 200, 'get_progress status' . debug_response($response));
     assert_true(is_array($response['json']), 'get_progress array');
+    assert_true(count($response['json']) === 0, 'get_progress should be empty for a fresh visitor' . debug_response($response));
 }
 
 function test_save_answer(string $baseUrl, string $visitor, int $questionId): void
 {
+    $before = request_json('GET', $baseUrl . '/api/v1/get_progress.php', null, $visitor);
+    assert_true($before['status'] === 200, 'save_answer pre-check get_progress status' . debug_response($before));
+
     $validMaxResponse = request_json('POST', $baseUrl . '/api/v1/save_answer.php', [
         'question_id' => $questionId,
         'value' => 6,
@@ -151,6 +155,11 @@ function test_save_answer(string $baseUrl, string $visitor, int $questionId): vo
 
     assert_true($validMaxResponse['status'] === 200, 'save_answer status for value=6' . debug_response($validMaxResponse));
     assert_true(($validMaxResponse['json']['ok'] ?? false) === true, 'save_answer ok for value=6');
+    assert_true(($validMaxResponse['json']['visitor_id'] ?? '') === $visitor, 'save_answer should preserve provided visitor_id' . debug_response($validMaxResponse));
+
+    $after = request_json('GET', $baseUrl . '/api/v1/get_progress.php', null, $visitor);
+    assert_true($after['status'] === 200, 'save_answer post-check get_progress status' . debug_response($after));
+    assert_true((int) ($after['json'][(string) $questionId] ?? 0) === 6, 'save_answer should persist the submitted value' . debug_response($after));
 
     $invalidResponse = request_json('POST', $baseUrl . '/api/v1/save_answer.php', [
         'question_id' => $questionId,
@@ -164,25 +173,34 @@ function test_save_answer(string $baseUrl, string $visitor, int $questionId): vo
 function test_submit_results_incomplete(string $baseUrl, string $visitor): void
 {
     $response = request_json('POST', $baseUrl . '/api/v1/submit_results.php', [], $visitor);
-    assert_true(in_array($response['status'], [200, 422], true), 'submit_results status should be 200 or 422' . debug_response($response));
-
-    $isErrorPayload = ($response['json']['error'] ?? false) === true;
-    if ($response['status'] === 422 || $isErrorPayload) {
-        assert_true($isErrorPayload, 'submit_results error shape' . debug_response($response));
-        assert_true(isset($response['json']['message']) && is_string($response['json']['message']), 'submit_results message' . debug_response($response));
-        return;
-    }
-
-    $type = $response['json']['type'] ?? $response['json']['type_code'] ?? null;
-    assert_true(is_string($type) && $type !== '', 'submit_results type' . debug_response($response));
-    assert_true(isset($response['json']['scores']) && is_array($response['json']['scores']), 'submit_results scores' . debug_response($response));
+    assert_true($response['status'] === 422, 'submit_results should reject incomplete answers' . debug_response($response));
+    assert_true(($response['json']['error'] ?? false) === true, 'submit_results error shape' . debug_response($response));
+    assert_true(($response['json']['message'] ?? '') === 'Incomplete test', 'submit_results should fail due to incompleteness' . debug_response($response));
+    assert_true(isset($response['json']['answered']) && is_int($response['json']['answered']), 'submit_results answered count' . debug_response($response));
+    assert_true(isset($response['json']['total']) && is_int($response['json']['total']), 'submit_results total count' . debug_response($response));
+    assert_true($response['json']['answered'] < $response['json']['total'], 'submit_results should report answered < total' . debug_response($response));
 }
 
 function test_reset_progress(string $baseUrl, string $visitor): void
 {
+    $questionResponse = request_json('GET', $baseUrl . '/api/v1/get_questions.php?page=1&per_page=1');
+    assert_true($questionResponse['status'] === 200, 'reset_progress setup get_questions status' . debug_response($questionResponse));
+    $questionId = (int) ($questionResponse['json']['questions'][0]['id'] ?? 0);
+    assert_true($questionId > 0, 'reset_progress setup question id' . debug_response($questionResponse));
+
+    $seedResponse = request_json('POST', $baseUrl . '/api/v1/save_answer.php', [
+        'question_id' => $questionId,
+        'value' => 3,
+    ], $visitor);
+    assert_true($seedResponse['status'] === 200, 'reset_progress setup save_answer status' . debug_response($seedResponse));
+
     $response = request_json('POST', $baseUrl . '/api/v1/reset_progress.php', [], $visitor);
     assert_true($response['status'] === 200, 'reset_progress status' . debug_response($response));
     assert_true(($response['json']['ok'] ?? false) === true, 'reset_progress ok');
+
+    $progress = request_json('GET', $baseUrl . '/api/v1/get_progress.php', null, $visitor);
+    assert_true($progress['status'] === 200, 'reset_progress verify get_progress status' . debug_response($progress));
+    assert_true(is_array($progress['json']) && count($progress['json']) === 0, 'reset_progress should clear all answers' . debug_response($progress));
 }
 
 function test_legacy_wrapper_get_progress(string $baseUrl, string $visitor): void
