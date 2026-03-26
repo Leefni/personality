@@ -1,6 +1,7 @@
 import {
   IS_DEVELOPMENT_ENV,
   likertLabels,
+  initThemeToggle,
   loadLocalDraft,
   saveLocalDraft,
   clearLocalDraft,
@@ -951,4 +952,5 @@ async function bootstrap() {
   }
 }
 
+initThemeToggle();
 bootstrap();

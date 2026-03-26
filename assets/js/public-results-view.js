@@ -1,6 +1,6 @@
 import { fetchPublicResults } from './api-client.js';
 import { RESULT_CONTENT } from './result-content.js';
-import { escapeHtml } from './utils.js';
+import { escapeHtml, initThemeToggle } from './utils.js';
 import { dominantPercentFromNormalized, resolveMaxScores, scoreToNormalized } from './score-utils.js';
 
 function normalizeTypeCode(value) {
@@ -116,4 +116,5 @@ async function initPublicResultsView() {
   }
 }
 
+initThemeToggle();
 initPublicResultsView();

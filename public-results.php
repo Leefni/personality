@@ -21,6 +21,9 @@ header("Content-Security-Policy: default-src 'self'; script-src 'self'; style-sr
   <link rel="stylesheet" href="assets/style.css">
 </head>
 <body class="theme-dark">
+  <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Schakel tussen licht en donker thema" title="Wissel licht/donker">
+    ☀️ Licht
+  </button>
   <main class="container public-results-container" data-app-env="<?php echo htmlspecialchars($appEnv, ENT_QUOTES, 'UTF-8'); ?>">
     <header class="public-results-header">
       <p class="public-results-kicker">Community</p>

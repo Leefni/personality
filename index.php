@@ -41,6 +41,9 @@ $metaDescription = 'Doe de Personality Test en ontdek jouw persoonlijkheidstype 
   <link rel="stylesheet" href="assets/style.css">
 </head>
 <body>
+  <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Schakel tussen licht en donker thema" title="Wissel licht/donker">
+    🌙 Donker
+  </button>
   <noscript>
     <p>Deze website werkt alleen met JavaScript. Zet JavaScript aan om de test te gebruiken.</p>
   </noscript>

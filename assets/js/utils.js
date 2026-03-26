@@ -7,6 +7,7 @@ const APP_ENV = (
 export const IS_DEVELOPMENT_ENV = APP_ENV === 'development' || APP_ENV === 'local';
 const ANSWERS_STORAGE_KEY = 'personality.answers.v1';
 const PENDING_RETRY_STORAGE_KEY = 'personality.pendingRetries.v1';
+const THEME_STORAGE_KEY = 'personality.theme.v1';
 const API_TIMEOUT_MS = 12000;
 const API_RETRY_ATTEMPTS = 2;       // extra attempts after first failure
 const API_RETRY_BASE_DELAY_MS = 400; // first retry after 400 ms, doubles each time
@@ -124,6 +125,54 @@ export function showError(message) {
   window.setTimeout(() => {
     notice.remove();
   }, 5000);
+}
+
+function getSystemTheme() {
+  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+}
+
+export function getSavedTheme() {
+  try {
+    const raw = localStorage.getItem(THEME_STORAGE_KEY);
+    return raw === 'light' || raw === 'dark' ? raw : null;
+  } catch (error) {
+    return null;
+  }
+}
+
+export function applyTheme(theme) {
+  const body = document.body;
+  if (!(body instanceof HTMLElement)) return;
+
+  body.classList.toggle('theme-dark', theme === 'dark');
+  body.classList.toggle('theme-light', theme === 'light');
+}
+
+export function initThemeToggle() {
+  const button = document.getElementById('theme-toggle');
+  if (!(button instanceof HTMLButtonElement)) return;
+
+  let activeTheme = getSavedTheme() ?? getSystemTheme();
+  applyTheme(activeTheme);
+
+  const updateButtonText = () => {
+    const isDark = activeTheme === 'dark';
+    button.textContent = isDark ? '☀️ Licht' : '🌙 Donker';
+    button.setAttribute('aria-pressed', isDark ? 'true' : 'false');
+  };
+
+  updateButtonText();
+
+  button.addEventListener('click', () => {
+    activeTheme = activeTheme === 'dark' ? 'light' : 'dark';
+    applyTheme(activeTheme);
+    updateButtonText();
+    try {
+      localStorage.setItem(THEME_STORAGE_KEY, activeTheme);
+    } catch (error) {
+      // Ignore storage failures.
+    }
+  });
 }
 
 /**
