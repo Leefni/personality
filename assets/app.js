@@ -830,6 +830,7 @@ async function submitTest(event) {
       const answered = Number(error.payload.answered);
       const total = Number(error.payload.total);
       const incompleteMessage = `Test is nog niet compleet: ${answered} van ${total} vragen beantwoord.`;
+      const retryHintMessage = 'Je antwoorden staan lokaal opgeslagen op dit apparaat. We proberen opnieuw te synchroniseren met de server op de achtergrond. Probeer over enkele seconden opnieuw je resultaat op te vragen.';
 
       if (progress) {
         progress.textContent = incompleteMessage;
@@ -837,7 +838,7 @@ async function submitTest(event) {
       if (result) {
         result.innerHTML = `<p class="error">${incompleteMessage}</p>`;
       }
-      setSubmitInlineWarning(`${incompleteMessage} Controleer je verbinding; antwoorden worden opnieuw opgeslagen.`);
+      setSubmitInlineWarning(retryHintMessage);
       setProgressMessage('Bezig met opnieuw opslaan van antwoorden...');
       queueUnsyncedAnswersForRetry();
       return;

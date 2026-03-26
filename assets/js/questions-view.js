@@ -177,7 +177,7 @@ export function updateNavState(
 
   const answeredCount = Object.keys(answers).length;
   const isComplete = answeredCount === totalQuestions;
-  submitButton.disabled = !isComplete || isNavigating || hasUnsyncedAnswers;
+  submitButton.disabled = !isComplete || isNavigating;
   submitButton.title = !isComplete
     ? 'Beantwoord eerst alle vragen voordat je het resultaat bekijkt.'
     : (hasUnsyncedAnswers
