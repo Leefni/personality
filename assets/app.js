@@ -29,7 +29,9 @@ import {
   bumpSaveSession,
   getSaveSession,
   setPagination,
-  setQuestionChangeListenerAttached
+  setQuestionChangeListenerAttached,
+  setIsNavigating,
+  getIsNavigating
 } from './js/state.js';
 import {
   fetchProgress,
@@ -46,6 +48,7 @@ import {
   setProgressMessage,
   setupQuestionChangeListener,
   renderQuestions,
+  getUnansweredCountOnPage,
   updateNavState,
   updateProgress,
   updateQuestionRow,
@@ -104,8 +107,23 @@ function getViewModel() {
     perPage: state.perPage,
     totalQuestions: state.totalQuestions,
     pendingQuestionIds: state.pendingQuestionIds,
+    isNavigating: state.isNavigating,
     likertLabels
   };
+}
+
+function setNavLoadingState(isLoading) {
+  const nav = document.getElementById('nav');
+  if (!nav) return;
+
+  nav.querySelectorAll('button').forEach((button) => {
+    if (!(button instanceof HTMLButtonElement)) return;
+    button.disabled = isLoading;
+  });
+
+  if (!isLoading) {
+    updatePendingActionState();
+  }
 }
 
 function updatePendingActionState() {
@@ -363,6 +381,48 @@ async function loadQuestionsPage() {
         setPagination({ page: getState().page + 1 });
         await loadQuestionsPage();
         window.scrollTo({ top: 0, behavior: 'smooth' });
+      onPrev: async (event) => {
+        if (getIsNavigating()) return;
+        setIsNavigating(true);
+        setNavLoadingState(true);
+        const triggerButton = event?.currentTarget;
+        if (triggerButton instanceof HTMLButtonElement) {
+          triggerButton.textContent = 'Bezig...';
+          triggerButton.classList.add('is-loading');
+        }
+
+        try {
+          await flushPendingSaves();
+          const prevPage = getState().page - 1;
+          setPagination({ page: prevPage });
+          await loadQuestionsPage();
+          const savedY = pageScrollPositions.get(prevPage) ?? 0;
+          window.scrollTo({ top: savedY, behavior: 'smooth' });
+        } finally {
+          setIsNavigating(false);
+          setNavLoadingState(false);
+        }
+      },
+      onNext: async (event) => {
+        if (getIsNavigating()) return;
+        setIsNavigating(true);
+        setNavLoadingState(true);
+        const triggerButton = event?.currentTarget;
+        if (triggerButton instanceof HTMLButtonElement) {
+          triggerButton.textContent = 'Bezig...';
+          triggerButton.classList.add('is-loading');
+        }
+
+        try {
+          pageScrollPositions.set(getState().page, window.scrollY);
+          await flushPendingSaves();
+          setPagination({ page: getState().page + 1 });
+          await loadQuestionsPage();
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        } finally {
+          setIsNavigating(false);
+          setNavLoadingState(false);
+        }
       },
       onSubmit: submitTest
     });
