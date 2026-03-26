@@ -11,8 +11,14 @@ Thanks for taking the time to contribute! This guide covers the local setup, cod
 git clone https://github.com/<your-org>/personality.git
 cd personality
 
-# Copy the env example and fill in your local DB credentials
-cp .env.example .env
+# Optional local-only overrides: create config.local.php at repo root.
+# It should return an array. Common keys:
+# DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASS, DB_AUTO_BOOTSTRAP, APP_ENV,
+# RECOVERY_TOKEN_TTL_SECONDS, RECOVERY_RATE_LIMIT_WINDOW_SECONDS,
+# RECOVERY_RATE_LIMIT_MAX_PER_VISITOR, RECOVERY_RATE_LIMIT_MAX_PER_EMAIL,
+# RECOVERY_EMAIL_FROM, RECOVERY_BASE_URL, RETENTION_DAYS,
+# RETENTION_MAX_DELETE_PER_TABLE, RETENTION_DRY_RUN.
+# (Runtime defaults and canonical key list are in README.md.)
 
 # Start MySQL and create the database (auto-bootstrapped on first request)
 # Then serve with the PHP built-in server:
@@ -34,11 +40,15 @@ bash tests/frontend_runtime_check.sh
 # API endpoint integration tests (requires the PHP server to be running)
 bash tests/run_api_checks.sh
 
-# PHP unit tests (requires phpunit)
-phpunit --bootstrap db_bootstrap.php tests/quiz_service_test.php
+# PHP unit tests
+php tests/quiz_service_test.php
 ```
 
 The GitHub Actions CI workflow runs PHP lint (8.1–8.3 matrix) and PHP unit tests automatically on every push and pull request. Frontend syntax/runtime checks remain recommended local checks.
+
+## Single source of truth for runtime config
+
+To avoid documentation drift, treat `README.md` as the canonical list of runtime configuration keys and defaults (the **Local configuration** section). When updating config docs here, mirror README rather than re-listing a divergent subset.
 
 ## Code conventions
 

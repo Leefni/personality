@@ -6,8 +6,8 @@ This project is a PHP-based personality quiz with a JavaScript frontend.
 
 ### Prerequisites
 
-- **PHP**: 8.0+ with `pdo_mysql` enabled.
-- **MySQL**: 5.7+ (8.x recommended).
+- **PHP**: 8.1+ with `pdo_mysql` enabled.
+- **MySQL**: 8.0+.
 - **Web server**: Any server that can serve PHP (Apache, Nginx + PHP-FPM, or built-in PHP dev server) with this repo as the web root (or mapped subdirectory).
 
 ### Local configuration
