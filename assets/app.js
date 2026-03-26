@@ -696,7 +696,11 @@ export async function flushPendingSaves() {
   updatePendingActionState();
 }
 
-async function submitTest() {
+async function submitTest(event) {
+  if (event?.preventDefault) {
+    event.preventDefault();
+  }
+
   if (isSubmitting) {
     return;
   }
