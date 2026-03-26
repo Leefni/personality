@@ -94,13 +94,16 @@ export async function fetchQuestions(page, perPage) {
  * Saves one selected answer for a question.
  * @param {number} questionId - Question id being answered.
  * @param {number} value - Selected answer value.
+ * @param {{ timeoutMs?: number }} [options] - Optional transport options.
  * @returns {Promise<any>} API payload returned by the save endpoint.
  */
-export function saveAnswer(questionId, value) {
+export function saveAnswer(questionId, value, options = {}) {
+  const { timeoutMs } = options;
   return apiRequest('api/v1/save_answer.php', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ question_id: questionId, value })
+    body: JSON.stringify({ question_id: questionId, value }),
+    timeoutMs
   });
 }
 

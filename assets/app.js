@@ -186,8 +186,12 @@ function hideLoadingOverlay() {
   setInteractiveControlsDisabled(false);
 }
 
-const SAVE_RETRY_ATTEMPTS = 3;
+const SAVE_RETRY_ATTEMPTS = 2;
 const SAVE_RETRY_BASE_DELAY_MS = 350;
+const SAVE_REQUEST_TIMEOUT_MS = 1200;
+const SAVE_WAIT_BUDGET_MS = 3200;
+const FOREGROUND_SAVE_RETRY_ATTEMPTS = 1;
+const FOREGROUND_SAVE_WAIT_BUDGET_MS = 2400;
 
 function sleep(ms) {
   return new Promise((resolve) => window.setTimeout(resolve, ms));
@@ -623,8 +627,18 @@ async function loadQuestionsPage() {
   }
 }
 
-async function persistAnswer(questionId, value, saveSession) {
+async function persistAnswer(questionId, value, saveSession, options = {}) {
   const state = getState();
+  const maxAttempts = Number.isFinite(options.retryAttempts)
+    ? Math.max(1, Math.floor(options.retryAttempts))
+    : SAVE_RETRY_ATTEMPTS;
+  const timeoutMs = Number.isFinite(options.timeoutMs)
+    ? Math.max(200, Math.floor(options.timeoutMs))
+    : SAVE_REQUEST_TIMEOUT_MS;
+  const waitBudgetMs = Number.isFinite(options.waitBudgetMs)
+    ? Math.max(timeoutMs, Math.floor(options.waitBudgetMs))
+    : SAVE_WAIT_BUDGET_MS;
+  const startedAt = Date.now();
   // Optimistic UI: don't disable the question while saving.
   // Track pending saves only for submit-gating purposes.
   state.pendingQuestionIds.add(questionId);
@@ -632,20 +646,30 @@ async function persistAnswer(questionId, value, saveSession) {
 
   try {
     let lastError = null;
-    for (let attempt = 0; attempt < SAVE_RETRY_ATTEMPTS; attempt += 1) {
+    for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
       if (getSaveSession() !== saveSession) return;
 
+      const elapsedMs = Date.now() - startedAt;
+      if (elapsedMs >= waitBudgetMs) {
+        break;
+      }
+
       if (attempt > 0) {
-        await sleep(SAVE_RETRY_BASE_DELAY_MS * Math.pow(2, attempt - 1));
+        const retryDelayMs = SAVE_RETRY_BASE_DELAY_MS * Math.pow(2, attempt - 1);
+        const remainingBudgetMs = waitBudgetMs - (Date.now() - startedAt);
+        if (remainingBudgetMs <= 0) {
+          break;
+        }
+        await sleep(Math.min(retryDelayMs, remainingBudgetMs));
       }
 
       try {
-        await saveAnswer(questionId, value);
+        await saveAnswer(questionId, value, { timeoutMs });
         lastError = null;
         break;
       } catch (error) {
         lastError = error;
-        const isFinalAttempt = attempt >= SAVE_RETRY_ATTEMPTS - 1;
+        const isFinalAttempt = attempt >= maxAttempts - 1;
         if (isFinalAttempt || !isRetryableSaveError(error)) {
           throw error;
         }
@@ -738,7 +762,11 @@ export async function flushPendingSaves() {
     clearQueuedAnswerValue(questionId);
     if (!Number.isFinite(queuedValue)) return Promise.resolve();
 
-    const savePromise = persistAnswer(questionId, Number(queuedValue), currentSession);
+    const savePromise = persistAnswer(questionId, Number(queuedValue), currentSession, {
+      retryAttempts: FOREGROUND_SAVE_RETRY_ATTEMPTS,
+      timeoutMs: SAVE_REQUEST_TIMEOUT_MS,
+      waitBudgetMs: FOREGROUND_SAVE_WAIT_BUDGET_MS
+    });
     setPendingSavePromise(questionId, savePromise);
     return savePromise.finally(() => {
       clearPendingSavePromise(questionId);
@@ -746,6 +774,11 @@ export async function flushPendingSaves() {
   });
 
   await Promise.allSettled([...debouncedPromises, ...getPendingSavePromises()]);
+  if (getUnsyncedQuestionIdSet().size > 0) {
+    setSubmitInlineWarning(
+      'Niet alle antwoorden zijn direct opgeslagen. Je kunt doorgaan; we blijven op de achtergrond opnieuw proberen.'
+    );
+  }
   updatePendingActionState();
 }
 
