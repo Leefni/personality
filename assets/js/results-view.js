@@ -19,6 +19,16 @@ function escapeHtml(value) {
 const DEFAULT_MAX_SCORES = { EI: 75, SN: 47.5, TF: 92.5, JP: 85 };
 let dimensionMaxScores = { ...DEFAULT_MAX_SCORES };
 
+const SCORE_DIMENSIONS = {
+  EI: { poles: ['E', 'I'], labels: ['Extraversion', 'Introversion'], icon: '↔' },
+  SN: { poles: ['S', 'N'], labels: ['Sensing', 'iNtuition'], icon: '◉' },
+  TF: { poles: ['T', 'F'], labels: ['Thinking', 'Feeling'], icon: '⚖' },
+  JP: { poles: ['J', 'P'], labels: ['Judging', 'Perceiving'], icon: '⌁' }
+};
+
+const SCORE_DIMENSION_ENTRIES = Object.entries(SCORE_DIMENSIONS);
+
+
 function applyMaxScores(apiData) {
   const ms = apiData?.max_scores;
   if (!ms || typeof ms !== 'object') return;
@@ -31,17 +41,17 @@ function applyMaxScores(apiData) {
   });
 }
 
-function scoreToPercent(score, dimension) {
+function scoreToNormalized(score, dimension) {
   const numericScore = Number(score);
-  if (!Number.isFinite(numericScore)) return 50;
+  if (!Number.isFinite(numericScore)) return 0;
 
   const maxScore = dimensionMaxScores[dimension] || DEFAULT_MAX_SCORES[dimension] || 75;
-  // Clamp to the theoretical range, then map linearly to [0, 100].
-  // score = +maxScore → 100%  (full left-pole dominance)
-  // score = 0         →  50%  (perfectly balanced)
-  // score = -maxScore →   0%  (full right-pole dominance)
   const clamped = Math.max(-maxScore, Math.min(maxScore, numericScore));
-  return Math.round(50 + (clamped / maxScore) * 50);
+  return Number((clamped / maxScore).toFixed(3));
+}
+
+function normalizedToPercent(normalizedScore) {
+  return Math.round(50 + (normalizedScore * 50));
 }
 
 const STRENGTH_LABELS = {
@@ -118,12 +128,15 @@ function classifyStrength(dominancePercent) {
 }
 
 function buildDimensionInsight(dimension, config, scoreValue) {
-  const percent = scoreToPercent(scoreValue, dimension);
+  const rawScore = Number(scoreValue);
+  const normalized = scoreToNormalized(rawScore, dimension);
+  const percent = normalizedToPercent(normalized);
   const leftPole = config.poles[0];
   const rightPole = config.poles[1];
-  const dominantPole = percent >= 50 ? leftPole : rightPole;
+  const dominantPole = normalized >= 0 ? leftPole : rightPole;
   const nonDominantPole = dominantPole === leftPole ? rightPole : leftPole;
-  const dominantPercent = dominantPole === leftPole ? percent : 100 - percent;
+  const dominanceStrength = Math.abs(normalized);
+  const dominantPercent = Math.round((0.5 + (dominanceStrength / 2)) * 100);
   const strengthKey = classifyStrength(dominantPercent);
   const behaviorText = BEHAVIOR_BY_DIMENSION?.[dimension]?.[dominantPole]?.[strengthKey]
     || 'Je profiel toont een genuanceerde mix binnen deze dimensie.';
@@ -132,10 +145,13 @@ function buildDimensionInsight(dimension, config, scoreValue) {
     : `Wanneer de context verandert, kan ook je ${nonDominantPole}-kant duidelijk naar voren komen.`;
 
   return {
+    rawScore,
+    normalized,
     percent,
     dominantPole,
     nonDominantPole,
     dominantPercent,
+    dominanceStrength,
     strengthLabel: STRENGTH_LABELS[strengthKey],
     behaviorText,
     nuanceText,
@@ -144,35 +160,47 @@ function buildDimensionInsight(dimension, config, scoreValue) {
   };
 }
 
-function renderScoreBars(scores) {
+function renderScoreVisualizations(scores) {
   const scorePayload = scores && typeof scores === 'object' ? scores : {};
 
-  return SCORE_DIMENSIONS.map(([dimension, config]) => {
-    const rawScore = Number(scorePayload[dimension]);
-    const insight = buildDimensionInsight(dimension, config, rawScore);
-    const percent = insight.percent;
-    const leftPole = insight.leftPole;
-    const rightPole = insight.rightPole;
-    const leftName = config.names[0];
-    const rightName = config.names[1];
+  return SCORE_DIMENSION_ENTRIES.map(([dimension, config]) => {
+    const insight = buildDimensionInsight(dimension, config, scorePayload[dimension]);
+    const meterOffset = Math.abs(insight.normalized) * 50;
+    const dominantDirectionClass = insight.dominantPole === insight.leftPole
+      ? 'result-dimension-meter-badge--left'
+      : 'result-dimension-meter-badge--right';
+    const normalizedLabel = insight.normalized >= 0
+      ? `+${insight.normalized.toFixed(2)}`
+      : insight.normalized.toFixed(2);
 
     return `
-      <article class="result-score-card">
-        <div class="result-score-header">
-          <h4>${escapeHtml(leftPole)}/${escapeHtml(rightPole)} · ${escapeHtml(leftName)} ↔ ${escapeHtml(rightName)}</h4>
-          <p><strong>${insight.dominantPercent}% ${escapeHtml(insight.dominantPole)} (${escapeHtml(insight.strengthLabel)})</strong> — ${escapeHtml(insight.behaviorText)}</p>
-          <p>${escapeHtml(insight.nuanceText)}</p>
-        </div>
-        <div class="result-score-row" role="group" aria-label="Verdeling ${escapeHtml(leftPole)} en ${escapeHtml(rightPole)}">
-          <p class="result-score-pole result-score-pole-left"><strong>${escapeHtml(leftPole)}</strong> — ${percent}%</p>
-          <div class="result-score-track" style="--left-pct:${percent}; --right-pct:${100 - percent};" role="img" aria-label="Score ${escapeHtml(leftPole)} tegen ${escapeHtml(rightPole)}: ${percent}% ${escapeHtml(leftPole)} en ${100 - percent}% ${escapeHtml(rightPole)}">
-            <span class="result-score-fill result-score-fill-left" aria-hidden="true"></span>
-            <span class="result-score-midpoint" aria-hidden="true"></span>
-            <span class="result-score-fill result-score-fill-right" aria-hidden="true"></span>
+      <article class="result-dimension-card">
+        <header class="result-dimension-header">
+          <h4>${escapeHtml(dimension)} · ${escapeHtml(config.labels[0])} ↔ ${escapeHtml(config.labels[1])}</h4>
+          <p class="result-dimension-dominant">
+            <span class="result-dimension-icon" aria-hidden="true">${escapeHtml(config.icon)}</span>
+            Dominant: <strong>${escapeHtml(insight.dominantPole)}</strong>
+            <span class="result-dimension-strength">${insight.dominantPercent}% (${escapeHtml(insight.strengthLabel)})</span>
+          </p>
+        </header>
+
+        <div class="result-dimension-meter" role="img" aria-label="${escapeHtml(dimension)} score: dominant ${escapeHtml(insight.dominantPole)}, sterkte ${insight.dominantPercent} procent, genormaliseerd ${normalizedLabel}, ruwe score ${Number.isFinite(insight.rawScore) ? insight.rawScore.toFixed(2) : 'niet beschikbaar'}.">
+          <div class="result-dimension-meter-axis" aria-hidden="true">
+            <span class="result-dimension-meter-end result-dimension-meter-end--left">${escapeHtml(insight.leftPole)}</span>
+            <span class="result-dimension-meter-zero">0</span>
+            <span class="result-dimension-meter-end result-dimension-meter-end--right">${escapeHtml(insight.rightPole)}</span>
           </div>
-          <p class="result-score-pole result-score-pole-right"><strong>${escapeHtml(rightPole)}</strong> — ${100 - percent}%</p>
+          <div class="result-dimension-meter-track" style="--meter-offset:${meterOffset}%;">
+            <span class="result-dimension-meter-center" aria-hidden="true"></span>
+            <span class="result-dimension-meter-badge ${dominantDirectionClass}" aria-hidden="true">${escapeHtml(insight.dominantPole)}</span>
+          </div>
         </div>
-        <p class="result-score-raw">Ruwe score: ${Number.isFinite(rawScore) ? rawScore.toFixed(2) : 'n.v.t.'}</p>
+
+        <p class="result-dimension-metrics">
+          <span><strong>Genormaliseerd:</strong> ${normalizedLabel}</span>
+          <span><strong>Ruwe score:</strong> ${Number.isFinite(insight.rawScore) ? insight.rawScore.toFixed(2) : 'n.v.t.'}</span>
+        </p>
+        <p class="result-dimension-explainer"><strong>${escapeHtml(insight.behaviorText)}</strong> ${escapeHtml(insight.nuanceText)}</p>
       </article>
     `;
   }).join('');
@@ -183,7 +211,7 @@ function validateScoreBarCoherence(scores) {
   const requiredDimensions = ['EI', 'SN', 'TF', 'JP'];
 
   requiredDimensions.forEach((dimension) => {
-    const percent = scoreToPercent(scorePayload[dimension], dimension);
+    const percent = normalizedToPercent(scoreToNormalized(scorePayload[dimension], dimension));
     const counterpart = 100 - percent;
     const hasValidPercentages = Number.isFinite(percent) && Number.isFinite(counterpart) && percent >= 0 && percent <= 100 && counterpart >= 0 && counterpart <= 100;
 
@@ -207,7 +235,7 @@ function buildSummaryText(payload, details) {
   const attentionPoints = asStringList(details?.attentionPoints);
   const tips = asStringList(details?.tips);
 
-  const scoreLines = SCORE_DIMENSIONS.map(([dimension, config]) => {
+  const scoreLines = SCORE_DIMENSION_ENTRIES.map(([dimension, config]) => {
     const insight = buildDimensionInsight(dimension, config, payload?.scores?.[dimension]);
     return `${config.poles[0]}-${config.poles[1]}: ${insight.dominantPercent}% ${insight.dominantPole} (${insight.strengthLabel}) — ${insight.behaviorText} ${insight.nuanceText}`;
   });
@@ -288,6 +316,10 @@ export function renderResult(data, onRestart) {
         <h3>Lange beschrijving</h3>
         <p>${escapeHtml(longDescription)}</p>
       </article>
+      <section class="result-score-grid" aria-label="Dimensiescores">
+        <h3>Dimensiescores</h3>
+        ${renderScoreVisualizations(data?.scores)}
+      </section>
       <div class="result-actions">
         <button type="button" class="restart">Opnieuw doen</button>
       </div>
