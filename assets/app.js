@@ -293,6 +293,25 @@ function setNavLoadingState(isLoading) {
   }
 }
 
+async function withButtonLoadingState(button, asyncAction) {
+  const triggerButton = button instanceof HTMLButtonElement ? button : null;
+  const originalButtonText = triggerButton?.textContent ?? null;
+
+  if (triggerButton) {
+    triggerButton.textContent = 'Bezig...';
+    triggerButton.classList.add('is-loading');
+  }
+
+  try {
+    await asyncAction();
+  } finally {
+    if (triggerButton) {
+      triggerButton.textContent = originalButtonText;
+      triggerButton.classList.remove('is-loading');
+    }
+  }
+}
+
 function updatePendingActionState() {
   const state = getState();
   const hasUnsyncedAnswers = getUnsyncedQuestionIdSet().size > 0;
@@ -553,19 +572,16 @@ async function loadQuestionsPage() {
         if (getIsNavigating()) return;
         setIsNavigating(true);
         setNavLoadingState(true);
-        const triggerButton = event?.currentTarget;
-        if (triggerButton instanceof HTMLButtonElement) {
-          triggerButton.textContent = 'Bezig...';
-          triggerButton.classList.add('is-loading');
-        }
 
         try {
-          await flushPendingSaves();
-          const prevPage = getState().page - 1;
-          setPagination({ page: prevPage });
-          await loadQuestionsPage();
-          const savedY = pageScrollPositions.get(prevPage) ?? 0;
-          window.scrollTo({ top: savedY, behavior: 'smooth' });
+          await withButtonLoadingState(event?.currentTarget, async () => {
+            await flushPendingSaves();
+            const prevPage = getState().page - 1;
+            setPagination({ page: prevPage });
+            await loadQuestionsPage();
+            const savedY = pageScrollPositions.get(prevPage) ?? 0;
+            window.scrollTo({ top: savedY, behavior: 'smooth' });
+          });
         } finally {
           setIsNavigating(false);
           setNavLoadingState(false);
@@ -575,18 +591,15 @@ async function loadQuestionsPage() {
         if (getIsNavigating()) return;
         setIsNavigating(true);
         setNavLoadingState(true);
-        const triggerButton = event?.currentTarget;
-        if (triggerButton instanceof HTMLButtonElement) {
-          triggerButton.textContent = 'Bezig...';
-          triggerButton.classList.add('is-loading');
-        }
 
         try {
-          pageScrollPositions.set(getState().page, window.scrollY);
-          await flushPendingSaves();
-          setPagination({ page: getState().page + 1 });
-          await loadQuestionsPage();
-          window.scrollTo({ top: 0, behavior: 'smooth' });
+          await withButtonLoadingState(event?.currentTarget, async () => {
+            pageScrollPositions.set(getState().page, window.scrollY);
+            await flushPendingSaves();
+            setPagination({ page: getState().page + 1 });
+            await loadQuestionsPage();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          });
         } finally {
           setIsNavigating(false);
           setNavLoadingState(false);
