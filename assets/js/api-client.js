@@ -145,12 +145,6 @@ export function requestRecovery(email) {
 }
 
 /**
- * Redeems a one-time recovery token and binds server-side visitor state.
- * @param {string} token - One-time token from recovery email link.
- * @returns {Promise<{ok: boolean, visitor_id: string}>}
- */
-
-/**
  * Loads public shared results for the community wall.
  * @returns {Promise<{results: Array}>}
  */
@@ -158,6 +152,11 @@ export function fetchPublicResults() {
   return apiRequest('api/v1/public_results.php');
 }
 
+/**
+ * Redeems a one-time recovery token and binds server-side visitor state.
+ * @param {string} token - One-time token from recovery email link.
+ * @returns {Promise<{ok: boolean, visitor_id: string}>}
+ */
 export function redeemRecovery(token) {
   return apiRequest('api/v1/redeem_recovery.php', {
     method: 'POST',
