@@ -1,17 +1,9 @@
 import { RESULT_CONTENT } from './result-content.js';
 import { publishResult } from './api-client.js';
+import { escapeHtml } from './utils.js';
 
 function toSafeText(value, fallback = '') {
   return typeof value === 'string' && value.trim() !== '' ? value.trim() : fallback;
-}
-
-function escapeHtml(value) {
-  return String(value)
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#39;');
 }
 
 // Fallback max scores based on the question set (count × 2.5 max deviation per answer).
